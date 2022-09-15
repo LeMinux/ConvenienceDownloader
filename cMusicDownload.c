@@ -159,7 +159,7 @@ void convertMove(char* songName, const char* musicDirectory){
 	if(moveMP3 == NULL)
 		printError(1);
 			
-	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 9, "mv %s VLC/%s",songName, musicDirectory);
+	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 9, "mv %s %s",songName, musicDirectory);
 	snprintf(moveMP3, strlen(songName)+ 18, "mv %.*s.mp3 Unsynced/", noExtension, songName);
 	
 	printf("%s\n", moveMP4);
@@ -191,14 +191,19 @@ int repeat(void){
 		return 1;
 }
 
-//testing with directories
-char* findDirectory(void){
-	//TODO 
-	return("HE HE HE HA");
+int isDirectory(char* path){
+	struct stat isDirectory;
+	//checks if it is an actual directory and not a file
+	stat(path, &isDirectory); 
+	if(S_ISDIR(isDirectory.st_mode))
+		return 0;
+	else
+		return 1;
 }
 
 //forces the input of a valid directory to be returned
 char* getDirectory(void){
+	//verifies if DownloadTo.txt has been set
 	struct stat knowWhere;
 	if(stat("DownloadTo.txt", &knowWhere)){
 		puts("DownloadTo.txt does not exist. Please use the -w flag to specify the directory to download to.");
@@ -207,61 +212,42 @@ char* getDirectory(void){
 		puts("DownloadTo.txt is empty. Please use the -w flag to specify the directory to download to.");	
 		exit(1);
 	}
-	DIR* scan;
-	//if(scan = opendir(<-w Flag thing>) == NULL)
+	//gets directory from DownloadTo.txt
+	char rootDir [101] = "";
+	FILE* readFile = fopen("DownloadTo.txt", "r");
+	fgets(rootDir, 101, readFile);
+	fclose(readFile);
+	DIR* scan = opendir(rootDir);
+	if(scan == NULL)
 		printError(6);
 
-	closedir(scan);
-	//STOP HERE WORK ON READING FIRST
+	//asks user for desired directory
 	int valid = 1;
 	while(valid == 1){
-		char directory [26] = "";
+		char input [101] = "";
 		do{
 			printf("Where do you want to download the song? or type exit: ");
-			fgets(directory, 25, stdin);
-		}while(strlen(directory) == 0 && strrchr(directory, '\n') == NULL);
+			fgets(input, 101, stdin);
+		}while(strlen(input) == 0 && strrchr(input, '\n') == NULL);
 		
 		//finds the \n at the end and replaces it with \0
-		directory[strcspn(directory, "\n")] = '\0';
-		//puts to lowercase to make it easier for input and validating
-		int i = 0;
-		for(;i < strlen(directory); ++i)
-			directory[i] = tolower(directory[i]);
-	
-		//checks the available directories
-		if(strcmp(directory, "electro") == 0)
-			return "Electro";
-				
-		if(strcmp(directory, "hardblin") == 0)
-			return "HardBlin";
-			
-		if(strcmp(directory, "mincecraft") == 0)
-			return "MinceCraft";
-			
-		if(strcmp(directory, "mr.intense") == 0)
-			return "Mr.Intense";
-				
-		if(strcmp(directory, "ohyes") == 0)
-			return "OhYes";
-				
-		if(strcmp(directory, "phonkdeeznuts") == 0)
-			return "PhonkDeezNuts";
-				
-		if(strcmp(directory, "teamfortress2") == 0)
-			return "TeamFortress2";
-				
-		if(strcmp(directory, "troll") == 0)
-			return "Troll";
-			
-		if(strcmp(directory, "test") == 0)
-			return "Test";
-				
-		if(strcmp(directory, "exit") == 0)
+		input[strcspn(input, "\n")] = '\0';
+		
+		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
 			exit(0);
-			
-		printf("Invalid directory of %s retry entry\n", directory);		
+
+		
+		char* directory = malloc(strlen(rootDir) + strlen(input) + 1);
+		snprintf(directory, strlen(rootDir) + strlen(input) + 1, "%s%s", rootDir, input);
+		if(isDirectory(directory) == 0){
+			closedir(scan);
+			return directory;
+		}else{
+			free(directory);
+			printf("Could not find the directory %s. Remember case matters.\n", input);
+		}
 	}
-	//in case it some how skips the whole loop
+	closedir(scan);
 	return "SKIPPED";
 }
 
@@ -275,13 +261,14 @@ char* getDirectory(void){
 int main(int argc, char** argv){
 	switch(argc){
 		case 1:
+			//default case if only using command
 			do{
 				char* where = getDirectory();
 				if(strcmp(where, "SKIPPED") == 0)
 					printError(9);
 					
 				//downloadSong(where);
-				printf("You have desired to download to VLC/%s\n", where);
+				printf("You have desired to download to %s\n", where);
 				char* url = getURL();
 				downloadURL(url);
 				char* youtubeID = getID(url);
@@ -290,22 +277,36 @@ int main(int argc, char** argv){
 				free(youtubeID);
 				convertMove(song, where);
 				free(song);
+				free(where);
 				puts("Download was successful");
 			}while(repeat() == 0);
 		break;
 		case 2:
+			//lists only subdirectoires in the given directory in DownloadTo.txt
 			if(strcmp(argv[1], "-l") == 0){
-				char buffer [101] = "";
+				//double checks the directory
+				char inFileDir [101] = "";
 				FILE* downloadTo = fopen("DownloadTo.txt", "r");
-				fgets(buffer, 101, downloadTo);
-				DIR* openDir = opendir(buffer);
+				fgets(inFileDir, 101, downloadTo);
+				fclose(downloadTo);
+				DIR* openDir = opendir(inFileDir);
 				if(openDir == NULL)
 					printError(6);
-			
-				fclose(downloadTo);
+				
+				//reads through directory
+				struct dirent* subDir;
+				while((subDir = readdir(openDir)) != NULL){
+					if(strcmp(subDir->d_name, "..") == 0 || 
+					   strcmp(subDir->d_name, ".") == 0)
+						continue;
+					
+					char fullPath [201] = "";
+					snprintf(fullPath, strlen(inFileDir) + strlen(subDir->d_name) + 2, "%s/%s", inFileDir, subDir->d_name);
+					if(isDirectory(fullPath) == 0)
+						puts(subDir->d_name);
+				}
 				closedir(openDir);
-			
-				printf("%s\n", buffer);
+				printf("These subdirectories are in %s\n", inFileDir);
 				exit(0);
 			}
 		break;
@@ -323,7 +324,7 @@ int main(int argc, char** argv){
 				printf("Downloading URLS to VLC/%s\n", where);
 		
 				char urls [101] = "";
-				while(fgets(urls, 100, inFile) != NULL){
+				while(fgets(urls, 101, inFile) != NULL){
 					urls[strcspn(urls, "\n")] = '\0';
 					downloadURL(urls);
 					char* youtubeID = getID(urls);
