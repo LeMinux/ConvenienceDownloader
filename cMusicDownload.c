@@ -52,8 +52,10 @@ void downloadURL(char* youtubeURL){
 	if(strstr(youtubeURL, "&list") == NULL)
 		snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
 	else
-		snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", strstr(youtubeURL, "&list"));
-	
+		snprintf(downloadCommand, strstr(youtubeURL, "&list") - youtubeURL + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
+
+	printf("%s\n", downloadCommand);
+	exit(0);	
 	int retry = 0;
 	while(system(downloadCommand) > 0 && retry <= 4){
 		puts("Retrying download");
