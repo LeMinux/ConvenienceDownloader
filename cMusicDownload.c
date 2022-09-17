@@ -8,30 +8,31 @@
 //for making code look nicer
 void printError(int code){
 	switch(code){
-		case 1: perror("Error MEM: Allocation of memory failed"); exit(1);
+		case 1: puts("Error MEM: Allocation of memory failed"); exit(1);
 		break;
-		case 2: perror("Error INF4: infinite loop detected while downloading"); exit(1);
+		case 2: puts("Error INF4: infinite loop detected while downloading"); exit(2);
 		break;
-		case 3: perror("Error FILE: Error in opening temporary file to obtain name"); exit(1);
+		case 3: puts("Error FILE: Error in opening temporary file to obtain name"); exit(3);
 		break;
-		case 4: perror("ERROR READ: Error in reading temporary file to obtain name"); exit(1);
+		case 4: puts("ERROR READ: Error in reading temporary file to obtain name"); exit(4);
 		break;
-		case 5: perror("ERROR GVFL: Error in reading given file. File does not exist"); exit(1);
+		case 5: puts("ERROR GVFL: Error in reading given file. File does not exist"); exit(5);
 		break;
-		case 6: perror("ERROR GVDR: Error in reading given directory. Directory does not exist"); exit(1);
+		case 6: puts("ERROR GVDR: Error in reading given directory. Directory does not exist"); exit(6);
 		break;
-		case 7: perror("ERROR CNVT: Error in converting from .mp4 to .mp3"); exit(1);
+		case 7: puts("ERROR CNVT: Error in converting from .mp4 to .mp3"); exit(7);
 		break;
-		case 8: perror("ERROR MVP4: Error in moving video file to desired directory"); exit(1);
+		case 8: puts("ERROR MVP4: Error in moving video file to desired directory"); exit(8);
 		break;
-		case 9: perror("ERROR MVP3: Error in moving .mp3 file to /Unsynced directory"); exit(1);
+		case 9: puts("ERROR MVP3: Error in moving .mp3 file to /Unsynced directory"); exit(9);
 		break;
-		case 10: perror("ERROR INVD: Error in user skipping validation of music directories"); exit(1);
-		default: perror("An error has occured"); exit(1);
+		case 10: puts("ERROR INVD: Error in user skipping validation of music directories"); exit(10);
+		default: puts("An error has occured"); exit(11);
 	}
 }
 
-//asks user for a youtube URL more of a helper method
+//asks user for a youtube URL this will truncate to
+//the basic youtube ID for easier handling
 char * getURL(void){
 	//longest URL I've found went up to 98
 	char buffer [101] = "";
@@ -40,8 +41,15 @@ char * getURL(void){
 		fgets(buffer, 100, stdin);
 	}while(strlen(buffer) == 0 && strrchr(buffer, '\n') == NULL);
 	//dynamic memory since this will be passed around
-	char* youtubeURL = malloc(sizeof(buffer));
-	snprintf(youtubeURL, sizeof(buffer), "%s", buffer);
+	char* youtubeURL = NULL;
+	if(strstr(buffer, "&list") == NULL){
+		youtubeURL = malloc(strlen(buffer) + 1);
+		snprintf(youtubeURL, strlen(buffer) + 1, "%s", buffer);
+	}else{
+		youtubeURL = malloc(strstr(buffer, "&list") - buffer + 1);	
+		snprintf(youtubeURL, strstr(buffer, "&list") - buffer + 1, "%s", buffer);
+	}
+	printf("%s\n", youtubeURL);
 	return youtubeURL;
 }
 
@@ -49,11 +57,8 @@ char * getURL(void){
 void downloadURL(char* youtubeURL){
 	//--restrict-filenames makes it so escape characters don't need to be added
 	char downloadCommand [140]= "";
-	if(strstr(youtubeURL, "&list") == NULL)
-		snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
-	else
-		snprintf(downloadCommand, strstr(youtubeURL, "&list") - youtubeURL + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
-
+	snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
+	
 	int retry = 0;
 	while(system(downloadCommand) > 0 && retry <= 4){
 		puts("Retrying download");
@@ -68,11 +73,10 @@ void downloadURL(char* youtubeURL){
 //the Youtube ID is 11 characters, but it's dynamic in case that changes
 char* getID(char* youtubeURL){
 	char* id = NULL;
-	int idSize = 0;
 	
 	//finds video parameter
 	char* vPara = strstr(youtubeURL, "?v="); 
-	idSize = strrchr(youtubeURL, '\0') - (vPara + 3) - 1;
+	int idSize = strrchr(youtubeURL, '\0') - (vPara + 3) - 1;
 
 	id = malloc(idSize + 1);
 	if(id == NULL)
@@ -244,7 +248,7 @@ char* getDirectory(void){
 			return directory;
 		}else{
 			free(directory);
-			printf("Could not find the directory %s. Remember case matters.\n", input);
+			printf("Could not find the directory %s%s. Remember case matters.\n", rootDir,input);
 		}
 	}
 	closedir(scan);
