@@ -60,7 +60,7 @@ char* getURL(void){
 	do{
 		printf("Enter the youtube URL that you want to download -> ");
 		exactUserInput(&buffer, 44);
-	}while(strlen(buffer) == 0 /*&& strrchr(buffer, '\n') == NULL*/);
+	}while(strlen(buffer) == 0);
 	//dynamic memory since this will be passed around
 	char* youtubeURL = malloc(strlen(buffer));
 	snprintf(youtubeURL, strlen(buffer) + 1, "%s", buffer);
@@ -156,7 +156,6 @@ void convertMove(char* songName, const char* musicDirectory){
 	int noExtension = strrchr(songName, '.') - songName;
 	//not sure why I have to add +2
 	snprintf(convertCommand, strlen(FFMPEG) + strlen(songName) * 2 + 2, "%s%s %.*s.mp3", FFMPEG, songName, noExtension,songName);
-	
 	printf("%s", convertCommand);
 	if(system(convertCommand) > 0)
 		printError(6);
@@ -209,6 +208,7 @@ int repeat(void){
 
 //Obtains a list of directories given what root directory
 //DownloadTo.txt has provided. This will result in a case sensitive list
+//this also keeps <directory>/ to prevent further reading of the DownloadTo.txt
 char** getDirectories(int* totalStrings){
 	char* rootDir = malloc(101);
 	FILE* readFile = fopen("DownloadTo.txt", "r");
@@ -235,13 +235,11 @@ char** getDirectories(int* totalStrings){
 				char** temp2D = realloc(allDirectories, sizeof(char*) * (*totalStrings + 1));
 				if(temp2D != NULL){
 					allDirectories = temp2D;
-					//gets rid of the <directory>/
-					int length = strrchr(readingLine, '\0') - (strchr(readingLine, '/') + 1);
-					allDirectories[*totalStrings] = malloc(length + 1);
+					allDirectories[*totalStrings] = malloc(strlen(readingLine) + 1);
 					if(allDirectories[*totalStrings] == NULL)
 						printError(1);
 
-					snprintf(allDirectories[*totalStrings], length + 1, "%s", strchr(readingLine, '/') + 1);
+					snprintf(allDirectories[*totalStrings], strlen(readingLine) + 1, "%s", readingLine);
 				}else{
 					//memory freeing
 					int d = 0;
@@ -301,21 +299,24 @@ char* userDirectory(void){
 		do{
 			printf("Where do you want to download the song? or type exit: ");
 			exactUserInput(&input, 101);
-		}while(strlen(input) == 0 /*&& strrchr(input, '\n') == NULL*/);
+		}while(strlen(input) == 0);
 		
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
 			exit(0);
 
 		int s = 0;
 		for(;s < length; ++s){
+			int lastIndex = strrchr(listOfDirs[s], '/') + 1 - listOfDirs[s];
 			//little bit faster to check if the first
 			//character matches instead of comparing the entire word
-			if(listOfDirs[s][0] == input[0] && strcmp(listOfDirs[s], input) == 0)
+			if(listOfDirs[s][lastIndex] == input[0] && strcmp((*(listOfDirs + s) + lastIndex), input) == 0)
 				index = s;
 
-		} 
-		printf("Could not find the directory %s. Remember case matters.\n", input);
-		memset(input, '\0', strlen(input));
+		}
+		if(index == -1){
+			printf("\nCould not find the directory %s. Remember case matters.\n", input);
+			memset(input, '\0', strlen(input));
+		}
 	}
 	free(input);
 	//sets return variable
@@ -364,6 +365,7 @@ int main(int argc, char** argv){
 		case 2:
 			//lists only subdirectoires in the given directory in DownloadTo.txt
 			if(strcmp(argv[1], "-l") == 0){
+				puts("v List of availiable directories v");
 				int length = 0;
 				char** listOfDirs = getDirectories(&length);
 				int p = 0;
@@ -374,7 +376,6 @@ int main(int argc, char** argv){
 				FILE* downloadTo = fopen("DownloadTo.txt", "r");
 				char* directory = malloc(101);
 				exactFileInput(downloadTo, &directory, 101);
-				printf("These subdirectories are in %s\n", directory);
 				free(directory);
 				free(listOfDirs);
 			}
