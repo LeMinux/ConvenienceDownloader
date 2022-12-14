@@ -2,63 +2,79 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <dirent.h>
-#include <sys/stat.h>
 
 //for making code look nicer
 void printError(int code){
 	switch(code){
 		case 1: puts("Error MEM: Allocation of memory failed"); exit(1);
 		break;
-		case 2: puts("Error INF4: infinite loop detected while downloading"); exit(2);
+		case 2: puts("Error INF4: infinite loop detected while downloading"); exit(1);
 		break;
-		case 3: puts("Error FILE: Error in opening temporary file to obtain name"); exit(3);
+		case 3: puts("Error FILE: Error in creating temporary file"); exit(1);
 		break;
-		case 4: puts("ERROR READ: Error in reading temporary file to obtain name"); exit(4);
+		case 4: puts("ERROR READ: Error in reading temporary file"); exit(1);
 		break;
-		case 5: puts("ERROR GVFL: Error in reading given file. File does not exist"); exit(5);
+		case 5: puts("ERROR GVFL: Error in reading given file. File does not exist"); exit(1);
 		break;
-		case 6: puts("ERROR GVDR: Error in reading given directory. Directory does not exist"); exit(6);
+		case 6: puts("ERROR GVDR: Error in reading given directory. Directory does not exist"); exit(1);
 		break;
-		case 7: puts("ERROR CNVT: Error in converting from .mp4 to .mp3"); exit(7);
+		case 7: puts("ERROR CNVT: Error in converting from .mp4 to .mp3"); exit(1);
 		break;
-		case 8: puts("ERROR MVP4: Error in moving video file to desired directory"); exit(8);
+		case 8: puts("ERROR MVP4: Error in moving video file to desired directory"); exit(1);
 		break;
-		case 9: puts("ERROR MVP3: Error in moving .mp3 file to /Unsynced directory"); exit(9);
+		case 9: puts("ERROR MVP3: Error in moving .mp3 file to /Unsynced directory"); exit(1);
 		break;
-		case 10: puts("ERROR INVD: Error in user skipping validation of music directories"); exit(10);
-		default: puts("An error has occured"); exit(11);
+		case 10: puts("ERROR INVD: Error in user skipping validation of music directories"); exit(1);
+		default: puts("An error has occured"); exit(1);
 	}
 }
 
-//asks user for a youtube URL this will truncate to
-//the basic youtube ID for easier handling
-char * getURL(void){
-	//longest URL I've found went up to 98
-	char buffer [101] = "";
+//helper method to get input and clears stdin
+void exactUserInput(char** input, int buffer){
+	int index = 0;
+	int data = 0;
+	while(index < buffer - 1 && (data = getchar()) != '\n')
+		*(*input + index++) = data;
+	
+	//clears stdin
+	if(data != '\n')
+		while(getchar() != '\n'){}
+
+	*(*input + (buffer - 1)) = '\0';
+}
+
+//method for obtaining input from file streams
+void exactFileInput(FILE* stream, char** dest, int buffer){
+	int index = 0;
+	int data = 0;
+	while(index < buffer - 1 && (data = fgetc(stream)) != EOF && data != '\n')
+		*(*dest + index++) = data;
+	
+	*(*dest + (buffer - 1)) = '\0';
+}
+
+//asks user for a youtube URL more of a helper method
+char* getURL(void){
+	//strictly gets the portion that only contains the ID
+	char* buffer = malloc(44);
 	do{
 		printf("Enter the youtube URL that you want to download -> ");
-		fgets(buffer, 100, stdin);
-	}while(strlen(buffer) == 0 && strrchr(buffer, '\n') == NULL);
+		exactUserInput(&buffer, 44);
+	}while(strlen(buffer) == 0 /*&& strrchr(buffer, '\n') == NULL*/);
 	//dynamic memory since this will be passed around
-	char* youtubeURL = NULL;
-	if(strstr(buffer, "&list") == NULL){
-		youtubeURL = malloc(strlen(buffer) + 1);
-		snprintf(youtubeURL, strlen(buffer) + 1, "%s", buffer);
-	}else{
-		youtubeURL = malloc(strstr(buffer, "&list") - buffer + 1);	
-		snprintf(youtubeURL, strstr(buffer, "&list") - buffer + 1, "%s", buffer);
-	}
-	printf("%s\n", youtubeURL);
+	char* youtubeURL = malloc(strlen(buffer));
+	snprintf(youtubeURL, strlen(buffer) + 1, "%s", buffer);
+	free(buffer);
 	return youtubeURL;
 }
 
 //downloads a song given the URL for it
 void downloadURL(char* youtubeURL){
 	//--restrict-filenames makes it so escape characters don't need to be added
-	char downloadCommand [140]= "";
+	char downloadCommand [78]= "";
 	snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
-	
+
+	printf("%s\n", downloadCommand);
 	int retry = 0;
 	while(system(downloadCommand) > 0 && retry <= 4){
 		puts("Retrying download");
@@ -70,19 +86,12 @@ void downloadURL(char* youtubeURL){
 }
 
 //helper method for getting the ID
-//the Youtube ID is 11 characters, but it's dynamic in case that changes
+//the Youtube ID is 11 characters encoded by base 64 so there is no need
+//to keep it dynamic
+//With this system youtube can store 73,786,979,294,838,206,464 videos
 char* getID(char* youtubeURL){
-	char* id = NULL;
-	
-	//finds video parameter
-	char* vPara = strstr(youtubeURL, "?v="); 
-	int idSize = strrchr(youtubeURL, '\0') - (vPara + 3) - 1;
-
-	id = malloc(idSize + 1);
-	if(id == NULL)
-		printError(1);
-
-	snprintf(id, idSize + 1, "%s", vPara + 3);
+	char* id = malloc(12);
+	snprintf(id, 12, "%s", strstr(youtubeURL, "?v=") + 3);	
 	return id;
 }
 
@@ -178,96 +187,163 @@ void convertMove(char* songName, const char* musicDirectory){
 	free(moveMP3);
 }
 
-
+//helper method for if the user wants to repeat or not
+//dynamic memory is used due to how I wrote my helper method
 int repeat(void){
-	char yesNo [4] = "";
+	//just for reading in a character
+	char* yesNo = malloc(sizeof(char) + 1);
 	do{
 		printf("Do you want to download another song? Y/N: ");
-		fgets(yesNo, 3, stdin);
-		if(strlen(yesNo) > 1)
-			yesNo[0] = tolower(yesNo[0]);
+		exactUserInput(&yesNo, 2);	
+		switch(yesNo[0]){
+			case 'y': case 'Y': free(yesNo); return 1; break;
+			case 'n': case 'N': free(yesNo); return 0; break;
+			default: puts("~~Invalid input~~"); break;
+		}
 			
-	}while(strlen(yesNo) > 0 && yesNo[0] != 'y' && yesNo[0] != 'n');
-	
-	if(yesNo[0] == 'y')
-		return 0;
-	else
-		return 1;
+	}while(1==1);
+	//incase of some wack error
+	free(yesNo);
+	return 0;
 }
 
-int isDirectory(char* path){
-	struct stat isDirectory;
-	//checks if it is an actual directory and not a file
-	stat(path, &isDirectory); 
-	if(S_ISDIR(isDirectory.st_mode))
-		return 0;
-	else
-		return 1;
-}
-
-//forces the input of a valid directory to be returned
-char* getDirectory(void){
-	//verifies if DownloadTo.txt has been set
-	struct stat knowWhere;
-	if(stat("DownloadTo.txt", &knowWhere)){
-		puts("DownloadTo.txt does not exist. Please use the -w flag to specify the directory to download to.");
-		exit(1);
-	}else if(!knowWhere.st_size){
-		puts("DownloadTo.txt is empty. Please use the -w flag to specify the directory to download to.");	
-		exit(1);
-	}
-	//gets directory from DownloadTo.txt
-	char rootDir [101] = "";
+//Obtains a list of directories given what root directory
+//DownloadTo.txt has provided. This will result in a case sensitive list
+char** getDirectories(int* totalStrings){
+	char* rootDir = malloc(101);
 	FILE* readFile = fopen("DownloadTo.txt", "r");
-	fgets(rootDir, 101, readFile);
+	exactFileInput(readFile, &rootDir, 101);
 	fclose(readFile);
-	DIR* scan = opendir(rootDir);
-	if(scan == NULL)
-		printError(6);
 
+	char* findCommand = malloc(strlen(rootDir) + 19);
+	snprintf(findCommand, strlen(rootDir) + 19, "ls -d %s* > dirs.txt", rootDir);
+	free(rootDir);
+	system(findCommand);
+	
+	//reads what directories are available
+	readFile = fopen("dirs.txt", "r");
+	int data = '\0';
+	int length = 0;
+	char** allDirectories = NULL;
+	char* readingLine = malloc(25);
+	if(readingLine == NULL)
+		printError(3);
+	
+	while((data = fgetc(readFile)) != EOF){
+		switch(data){
+			case '\n':{
+				char** temp2D = realloc(allDirectories, sizeof(char*) * (*totalStrings + 1));
+				if(temp2D != NULL){
+					allDirectories = temp2D;
+					//gets rid of the <directory>/
+					int length = strrchr(readingLine, '\0') - (strchr(readingLine, '/') + 1);
+					allDirectories[*totalStrings] = malloc(length + 1);
+					if(allDirectories[*totalStrings] == NULL)
+						printError(1);
+
+					snprintf(allDirectories[*totalStrings], length + 1, "%s", strchr(readingLine, '/') + 1);
+				}else{
+					//memory freeing
+					int d = 0;
+					for(; d < *totalStrings; ++d)
+						free(allDirectories[d]);
+
+					free(allDirectories);
+					free(readingLine);
+					printError(1);
+				}
+				
+				//resets readingLine
+				free(readingLine);
+				readingLine = malloc(50);
+				if(readingLine == NULL)
+					printError(1);
+
+				length = 0;
+				*totalStrings += 1;
+			}break;
+			default:
+				readingLine[length++] = data;
+				if(length % 25 == 0){
+					char* temp = NULL;
+					if((temp = realloc(readingLine, length + 25)) == NULL){
+						//free memory out of memory error
+						free(readingLine);
+						int d = 0;
+						for(; d < *totalStrings; ++d)
+							free(allDirectories[d]);
+
+						free(allDirectories);
+						printError(1);
+					}else{
+						readingLine = temp;
+					}
+				}
+				readingLine[length] = '\0';
+			break;
+		}
+	}
+	free(readingLine);
+	fclose(readFile);
+	system("rm dirs.txt");
+	return allDirectories;
+}
+
+//gets from the user what directory they want to download into
+//with the help of getDirectories
+char* userDirectory(void){
 	//asks user for desired directory
-	int valid = 1;
-	while(valid == 1){
-		char input [101] = "";
+	int index = -1;
+	int length = 0;
+	char* input = malloc(101);
+	char** listOfDirs = getDirectories(&length);
+	while(index == -1){
 		do{
 			printf("Where do you want to download the song? or type exit: ");
-			fgets(input, 101, stdin);
-		}while(strlen(input) == 0 && strrchr(input, '\n') == NULL);
-		
-		//finds the \n at the end and replaces it with \0
-		input[strcspn(input, "\n")] = '\0';
+			exactUserInput(&input, 101);
+		}while(strlen(input) == 0 /*&& strrchr(input, '\n') == NULL*/);
 		
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
 			exit(0);
 
-		
-		char* directory = malloc(strlen(rootDir) + strlen(input) + 1);
-		snprintf(directory, strlen(rootDir) + strlen(input) + 1, "%s%s", rootDir, input);
-		if(isDirectory(directory) == 0){
-			closedir(scan);
-			return directory;
-		}else{
-			free(directory);
-			printf("Could not find the directory %s%s. Remember case matters.\n", rootDir,input);
-		}
+		int s = 0;
+		for(;s < length; ++s){
+			//little bit faster to check if the first
+			//character matches instead of comparing the entire word
+			if(listOfDirs[s][0] == input[0] && strcmp(listOfDirs[s], input) == 0)
+				index = s;
+
+		} 
+		printf("Could not find the directory %s. Remember case matters.\n", input);
+		memset(input, '\0', strlen(input));
 	}
-	closedir(scan);
-	return "SKIPPED";
+	free(input);
+	//sets return variable
+	char* directory = malloc(strlen(listOfDirs[index]) + 1);
+	snprintf(directory, strlen(listOfDirs[index]) + 1, "%s", listOfDirs[index]);
+
+	//freeing memory
+	int f = 0;
+	for(; f < length; ++f)
+		free(listOfDirs[f]);
+	
+	free(listOfDirs);
+	return directory;
 }
 
 /*NEED TO PLACE COMMAND LINE ARGUMENTS LATER
 *command line arguments will be
-* -l for listing valid directories
-* -f to specify downloading a file
+* -l for listing directories
+* -f to specify downloading a from a list of URLs in a file
 * -p for prompting each time <perhaps>
-* -w for writing into directory.txt file
+* -w for writing where to download to 
 */
 int main(int argc, char** argv){
 	switch(argc){
 		case 1:
 			//default case if only using command
 			do{
-				char* where = getDirectory();
+				char* where = userDirectory();
 				if(strcmp(where, "SKIPPED") == 0)
 					printError(9);
 					
@@ -283,35 +359,24 @@ int main(int argc, char** argv){
 				free(song);
 				free(where);
 				puts("Download was successful");
-			}while(repeat() == 0);
+			}while(repeat() == 1);
 		break;
 		case 2:
 			//lists only subdirectoires in the given directory in DownloadTo.txt
 			if(strcmp(argv[1], "-l") == 0){
-				//double checks the directory
-				char inFileDir [101] = "";
-				FILE* downloadTo = fopen("DownloadTo.txt", "r");
-				fgets(inFileDir, 101, downloadTo);
-				fclose(downloadTo);
-				DIR* openDir = opendir(inFileDir);
-				if(openDir == NULL)
-					printError(6);
-				
-				//reads through directory
-				struct dirent* subDir;
-				while((subDir = readdir(openDir)) != NULL){
-					if(strcmp(subDir->d_name, "..") == 0 || 
-					   strcmp(subDir->d_name, ".") == 0)
-						continue;
-					
-					char fullPath [201] = "";
-					snprintf(fullPath, strlen(inFileDir) + strlen(subDir->d_name) + 2, "%s/%s", inFileDir, subDir->d_name);
-					if(isDirectory(fullPath) == 0)
-						puts(subDir->d_name);
+				int length = 0;
+				char** listOfDirs = getDirectories(&length);
+				int p = 0;
+				for(;p < length; ++p){
+					printf("%s\n", listOfDirs[p]);
+					free(listOfDirs[p]);
 				}
-				closedir(openDir);
-				printf("These subdirectories are in %s\n", inFileDir);
-				exit(0);
+				FILE* downloadTo = fopen("DownloadTo.txt", "r");
+				char* directory = malloc(101);
+				exactFileInput(downloadTo, &directory, 101);
+				printf("These subdirectories are in %s\n", directory);
+				free(directory);
+				free(listOfDirs);
 			}
 		break;
 		case 3:		
@@ -320,7 +385,7 @@ int main(int argc, char** argv){
 				if(inFile == NULL)
 					printError(5);
 					
-				char* where = getDirectory();
+				char* where = userDirectory();
 				if(strcmp(where, "SKIPPED") == 0)
 					printError(9);
 					
@@ -342,20 +407,21 @@ int main(int argc, char** argv){
 
 			if(strcmp(argv[1], "-w") == 0){
 				//checks if directory exists
-				DIR* exists = opendir(argv[2]);
-				if(exists == NULL)
+				char* lsCommand = malloc(strlen(argv[2] + 16));
+				//suppreses output with 1>/dev/null
+				snprintf(lsCommand, strlen(argv[2]) + 16, "ls %s 1>/dev/null", argv[2]);
+				if(system(lsCommand) != 0){
+					free(lsCommand);
 					printError(6);
-				
-				closedir(exists);
+				}
+				free(lsCommand);
+
 				FILE* writeToFile = fopen("DownloadTo.txt", "w");
 				if(argv[2][strlen(argv[2]) - 1] == '/')
 					fputs(argv[2], writeToFile);
-				else{
-					char* withSlash = malloc(strlen(argv[2]) + 2);
-					snprintf(withSlash, strlen(argv[2]) + 2, "%s%c", argv[2], '/');
-					fputs(withSlash, writeToFile);
-					free(withSlash);
-				}
+				else
+					fprintf(writeToFile, "%s/\n", argv[2]);
+				
 				fclose(writeToFile);
 				puts("Successfully written to DownloadTo.txt");
 			}
