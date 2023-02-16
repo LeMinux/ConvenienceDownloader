@@ -3,30 +3,29 @@
 #include <string.h>
 #include <ctype.h>
 
-//for making code look nicer
-void printError(int code){
-	switch(code){
-		case 1: puts("Error MEM: Allocation of memory failed"); exit(1);
-		break;
-		case 2: puts("Error INF4: infinite loop detected while downloading"); exit(2);
-		break;
-		case 3: puts("Error FILE: Error in creating temporary file"); exit(3);
-		break;
-		case 4: puts("ERROR READ: Error in reading temporary file"); exit(4);
-		break;
-		case 5: puts("ERROR GVFL: Error in reading given file. File does not exist"); exit(5);
-		break;
-		case 6: puts("ERROR GVDR: Error in reading given directory. Directory does not exist"); exit(6);
-		break;
-		case 7: puts("ERROR CNVT: Error in converting from .mp4 to .mp3"); exit(7);
-		break;
-		case 8: puts("ERROR MVP4: Error in moving video file to desired directory"); exit(8);
-		break;
-		case 9: puts("ERROR MVP3: Error in moving .mp3 file to /Unsynced directory"); exit(9);
-		break;
-		case 10: puts("ERROR INVD: Error in user skipping validation of music directories"); exit(10);
-		default: puts("An error has occured"); exit(-1);
-	}
+//printing defines
+#define PNTGREEN "\x1B[32m"
+#define PNTRED "\x1B[31m"
+#define PNTRESET "\x1B[0m"
+
+//error code defines
+#define FAILED_MALLOC_MSG  PNTRED"\nError MEM: Allocation of memory failed" PNTRESET
+#define INFINITE_MSG  PNTRED"\nError INF4: infinite loop detected while downloading"PNTRESET
+#define TEMP_FILE_FAIL_MSG  PNTRED"\nERROR READ: Error in reading temporary file"PNTRESET
+#define FILE_FAIL_MSG  PNTRED"\nERROR GVFL: Error in reading given file. File does not exist"PNTRESET
+#define DIR_FAIL_MSG  PNTRED"\nERROR GVDR: Error in reading given directory. Directory does not exist"PNTRESET
+#define CONVERT_FAIL_MSG  PNTRED"\nERROR CNVT: Error in converting from .mp4 to .mp3"PNTRESET
+#define MP4_FAIL_MSG  PNTRED"\nERROR MVP4: Error in moving video file to desired directory"PNTRESET
+#define MP3_FAIL_MSG  PNTRED"\nERROR MVP3: Error in moving .mp3 file to /Unsynced directory"PNTRESET
+#define SKIP_VALID_MSG  PNTRED"\nERROR INVD: Error in user skipping validation of music directories"PNTRESET
+
+//NOTE snprintf includes the \0 in the buffer count
+
+//printing an Error is more dynamic and more compact
+//this also means there is no table to shift
+void printError(int code, const char* message){
+	puts(message);
+	exit(code);
 }
 
 //helper method to get input and clears stdin
@@ -34,14 +33,17 @@ void printError(int code){
 void exactUserInput(char* input, int buffer){
 	int index = 0;
 	int data = 0;
-	if(buffer != 1){
-		while(index < buffer - 1 && (data = getchar()) != '\n')
-			*(input + index++) = data;
-		
-		*(input + (buffer - 1)) = '\0';
-	}else{
-		*input = getchar();
-	}	
+	switch(buffer){
+		case 1:
+			*input = getchar();
+		break;
+		default:
+			while(index < buffer - 1 && (data = getchar()) != '\n')
+				*(input + index++) = data;
+
+			*(input + (buffer - 1)) = '\0';
+		break;
+	}
 
 	//clears stdin
 	if(data != '\n')
@@ -50,13 +52,28 @@ void exactUserInput(char* input, int buffer){
 }
 
 //method for obtaining input from file streams
-void exactFileInput(FILE* stream, char* dest, int buffer){
+//returns how many characters read for any error checking needed
+int exactFileInput(FILE* stream, char* dest, int buffer){
 	int index = 0;
 	int data = 0;
-	while(index < buffer - 1 && (data = fgetc(stream)) != EOF && data != '\n')
-		*(dest + index++) = data;
-	
-	*(dest + (buffer - 1)) = '\0';
+	switch(buffer){
+		case 1:
+			*dest = fgetc(stream);
+		break;
+		default:
+			while(index < buffer - 1 && (data = fgetc(stream)) != EOF && data != '\n')
+				*(dest + index++) = data;
+
+			*(dest + (buffer - 1)) = '\0';
+		break;
+     }
+
+	//clears to next line
+	if(data != '\n' && data != EOF)
+		while((data = fgetc(stream)) != '\n' && data != EOF){}
+
+	printf("%d\n", index);
+	return index;
 }
 
 //asks user for a youtube URL more of a helper method
@@ -65,14 +82,14 @@ char* getURL(){
 	char buffer [44];
 	
 	do{
-		memset(buffer, '\0', 44);	
+		memset(buffer, '\0', 44);
 		printf("Enter the youtube URL that you want to download -> ");
 		exactUserInput(buffer, 44);
 	}while(strlen(buffer) == 0);
 	//dynamic memory since this will be passed around
 	char* youtubeURL = malloc(sizeof(buffer));
 	if(youtubeURL == NULL)
-		printError(1);
+		printError(1, FAILED_MALLOC_MSG);
 	
 	snprintf(youtubeURL, sizeof(buffer), "%s", buffer);
 	return youtubeURL;
@@ -84,13 +101,13 @@ void downloadURL(char* youtubeURL){
 	char downloadCommand [78]= "";
 	snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
 
-	printf("%s\n", downloadCommand);
+	printf(PNTGREEN "%s\n" PNTRESET, downloadCommand);
 	int retry = 0;
 	while(system(downloadCommand) > 0 && retry <= 4){
 		puts("Retrying download");
 		++retry;
 		if(retry >= 4)
-			printError(2);
+			printError(2, INFINITE_MSG);
 		
 	}
 }
@@ -115,45 +132,35 @@ char* getSongName(char* id){
 	
 	grepCommand = malloc(strlen(id) + strlen(GREP_PT1) + strlen(GREP_PT2) + 1);
 	if(grepCommand == NULL)
-		printError(1);
+		printError(1, FAILED_MALLOC_MSG);
 	
 		
 	snprintf(grepCommand, strlen(id) + strlen(GREP_PT1) + strlen(GREP_PT2) + 1, "%s%s%s", GREP_PT1, id, GREP_PT2);
 		
-	printf("%s\n", grepCommand);
+	printf(PNTGREEN "%s\n" PNTRESET, grepCommand);
 	system(grepCommand);
 	free(grepCommand);
 	
 	//getting name
 	FILE* nameFile = fopen("name.txt", "r");
 	if(nameFile == NULL)
-		printError(3);
+		printError(3, TEMP_FILE_FAIL_MSG);
 	
-	
-	int chr = 0;
-	//size follows where nul is
-	int size = 1;
-	char* songName = NULL;
-	chr = fgetc(nameFile);
-	while(chr != EOF && chr != '\n'){
-		char* temp = realloc(songName, size + 1);			
-		if(temp == NULL)
-			printError(1);
-		else
-			songName = temp;
-		
-		songName[size - 1] = chr;
-		chr = fgetc(nameFile);
-		songName[size] = '\0';
+	//ftell() was not working for text files
+	//size will include the iteration to get to EOF
+	int size = 0;
+	int data = '\0';
+	while((data = fgetc(nameFile)) != EOF){
 		++size;
 	}
-	//checks if it actually did read the file
-	if(size == 0)
-		printError(4);
-	
+	printf("End is the size of %d\n", size);
+	fseek(nameFile, SEEK_SET, 0);
+
+	char* songName = malloc(size - 1);
+	exactFileInput(nameFile, songName, size);
 	
 	fclose(nameFile);
-	printf("Converting and moving %s\n", songName);
+	printf(PNTGREEN "Converting and moving %s\n" PNTRESET, songName);
 	printf("rm name.txt\n");
 	system("rm name.txt");
 	return songName;
@@ -162,44 +169,48 @@ char* getSongName(char* id){
 //converts and moves the song to the given directory
 void convertMove(char* songName, const char* musicDirectory){
 	const char FFMPEG [] = "ffmpeg -i ";
-	
+
+	//incase the file extension is not .mp4 or .mkv
+	int noExtension = strrchr(songName, '.') - songName - 1;
+	char* fileMP3 = malloc(noExtension + 5);
+	snprintf(fileMP3, noExtension + 6, "%.*s.mp3", noExtension, songName);
+
 	//converting
-	char* convertCommand = malloc(strlen(songName)*2 + sizeof(FFMPEG));
+	char* convertCommand = malloc(strlen(songName) + strlen(fileMP3) + sizeof(FFMPEG));
 	if(convertCommand == NULL)
-		printError(1);
-	
-	
-	int noExtension = strrchr(songName, '.') - songName;
-	//not sure why I have to add +2
-	snprintf(convertCommand, strlen(FFMPEG) + strlen(songName) * 2 + 2, "%s%s %.*s.mp3", FFMPEG, songName, noExtension,songName);
-	printf("%s", convertCommand);
+		printError(1, FAILED_MALLOC_MSG);
+
+	//+1 for the space in the command +1 since snprintf includes null in buffer
+	snprintf(convertCommand, sizeof(FFMPEG) + strlen(songName)+ strlen(fileMP3) + 2, "%s%s %s", FFMPEG, songName, fileMP3);
+	printf(PNTGREEN "%s\n" PNTRESET, convertCommand);
+
 	if(system(convertCommand) > 0)
-		printError(6);
+		printError(7, CONVERT_FAIL_MSG);
 		
 	free(convertCommand);
 
 	//moving stuff
-	char* moveMP4 = malloc(strlen(songName) + strlen(musicDirectory) + 9);
+	char* moveMP4 = malloc(strlen(songName) + strlen(musicDirectory) + 5);
 	if(moveMP4 == NULL)
-		printError(1);
-		
-	char* moveMP3 = malloc(strlen(songName) + 14);
-	if(moveMP3 == NULL)
-		printError(1);
-			
-	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 9, "mv %s %s",songName, musicDirectory);
-	snprintf(moveMP3, strlen(songName)+ 18, "mv %.*s.mp3 Unsynced/", noExtension, songName);
-	
-	printf("%s\n", moveMP4);
-	if(system(moveMP4) > 0)
-		printError(7);
+		printError(1, FAILED_MALLOC_MSG);
 
-	printf("%s\n", moveMP3);
+	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 6, "mv %s %s",songName, musicDirectory);
+	printf(PNTGREEN "%s\n" PNTRESET, moveMP4);
+	if(system(moveMP4) > 0)
+		printError(8, MP4_FAIL_MSG);
+
+	char* moveMP3 = malloc(strlen(fileMP3) + 14);
+	if(moveMP3 == NULL)
+		printError(1, FAILED_MALLOC_MSG);
+
+	snprintf(moveMP3, strlen(fileMP3) + 15, "mv %s Unsynced/", fileMP3);
+	printf(PNTGREEN "%s\n" PNTRESET, moveMP3);
 	if(system(moveMP3) > 0)
-		printError(8);
-	
+		printError(9, MP3_FAIL_MSG);
+
 	free(moveMP4);
 	free(moveMP3);
+	free(fileMP3);
 }
 
 //helper method for if the user wants to repeat or not
@@ -240,7 +251,7 @@ char** getDirectories(int* totalStrings){
 	char** allDirectories = NULL;
 	char* readingLine = malloc(25);
 	if(readingLine == NULL)
-		printError(3);
+		printError(1, FAILED_MALLOC_MSG);
 	
 	while((data = fgetc(readFile)) != EOF){
 		switch(data){
@@ -250,19 +261,19 @@ char** getDirectories(int* totalStrings){
 					allDirectories = temp2D;
 					allDirectories[*totalStrings] = malloc(strlen(readingLine) + 1);
 					if(allDirectories[*totalStrings] == NULL){
-						printError(1);
+						printError(1, FAILED_MALLOC_MSG);
 					}
 
 					snprintf(allDirectories[*totalStrings], strlen(readingLine) + 1, "%s", readingLine);
 				}else{
-					printError(1);
+					printError(1, FAILED_MALLOC_MSG);
 				}
 				
 				//resets readingLine
 				free(readingLine);
 				readingLine = malloc(50);
 				if(readingLine == NULL){
-					printError(1);
+					printError(1, FAILED_MALLOC_MSG);
 				}
 
 				length = 0;
@@ -273,7 +284,7 @@ char** getDirectories(int* totalStrings){
 				if(length % 25 == 0){
 					char* temp = NULL;
 					if((temp = realloc(readingLine, length + 25)) == NULL){
-						printError(1);
+						printError(1, FAILED_MALLOC_MSG);
 					}else{
 						readingLine = temp;
 					}
@@ -349,8 +360,7 @@ int main(int argc, char** argv){
 				//ask for directory
 				char* where = userDirectory();
 				if(strcmp(where, "SKIPPED") == 0)
-					printError(9);
-				
+					printError(9, SKIP_VALID_MSG);
 					
 				printf("You have desired to download to %s\n", where);
 
@@ -394,25 +404,26 @@ int main(int argc, char** argv){
 				free(listOfDirs);
 			}
 		break;
-		case 3:		
+		case 3:
 			//downloading via a file
 			if(strcmp(argv[1], "-f") == 0){
 				FILE* inFile = fopen(argv[2], "r");
 				if(inFile == NULL)
-					printError(5);
+					printError(5, FILE_FAIL_MSG);
 					
 				char* where = userDirectory();
 				if(strcmp(where, "SKIPPED") == 0)
-					printError(9);
+					printError(9, SKIP_VALID_MSG);
 					
 				//fileDownload(inFile, where);
-				printf("Downloading URLS to VLC/%s\n", where);
-		
-				char urls [101] = "";
+				printf("Downloading URLS to %s\n", where);
+
+				char urls [44] = "";
 				//get URLs assumming they are separating by \n
-				while(fgets(urls, 101, inFile) != NULL){
-					//get rid of \n
-					urls[strcspn(urls, "\n")] = '\0';
+				while(exactFileInput(inFile, urls, 44) == 43){
+					memset(urls,'\0', 44);
+					//obtain a URL from the file
+					exactFileInput(inFile, urls, 44);
 
 					//download URL
 					downloadURL(urls);
@@ -426,10 +437,10 @@ int main(int argc, char** argv){
 
 					//convert and move files
 					convertMove(song, where);
-
 					free(song);
-					free(where);
+					song = NULL;
 				}
+				free(where);
 				fclose(inFile);
 				puts("Download was successful");
 			}
@@ -440,7 +451,7 @@ int main(int argc, char** argv){
 				//suppreses output with 1>/dev/null
 				snprintf(lsCommand, strlen(argv[2]) + 16, "ls %s 1>/dev/null", argv[2]);
 				if(system(lsCommand) != 0)
-					printError(6);
+					printError(6, DIR_FAIL_MSG);
 
 				free(lsCommand);
 
