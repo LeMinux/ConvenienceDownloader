@@ -41,7 +41,7 @@ void exactUserInput(char* input, int buffer){
 			while(index < buffer - 1 && (data = getchar()) != '\n')
 				*(input + index++) = data;
 
-			*(input + (buffer - 1)) = '\0';
+			*(input + (index + 1)) = '\0';
 		break;
 	}
 
@@ -64,7 +64,7 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 			while(index < buffer - 1 && (data = fgetc(stream)) != EOF && data != '\n')
 				*(dest + index++) = data;
 
-			*(dest + (buffer - 1)) = '\0';
+			*(dest + (index + 1)) = '\0';
 		break;
      }
 
@@ -98,8 +98,13 @@ char* getURL(){
 //downloads a song given the URL for it
 void downloadURL(char* youtubeURL){
 	//--restrict-filenames makes it so escape characters don't need to be added
-	char downloadCommand [78]= "";
-	snprintf(downloadCommand, strlen(youtubeURL) + 33, "youtube-dl --restrict-filenames %s", youtubeURL);
+	const char* youtubeDL = "youtube-dl --restrict-filenames ";
+	int length = strlen(youtubeDL) + strlen(youtubeURL);
+	char* downloadCommand = malloc(length + 1);
+	if(downloadCommand == NULL)
+		printError(1, FAILED_MALLOC_MSG);
+
+	snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
 
 	printf(PNTGREEN "%s\n" PNTRESET, downloadCommand);
 	int retry = 0;
@@ -110,6 +115,7 @@ void downloadURL(char* youtubeURL){
 			printError(2, INFINITE_MSG);
 		
 	}
+	free(downloadCommand);
 }
 
 //helper method for getting the ID
@@ -156,7 +162,11 @@ char* getSongName(char* id){
 	printf("End is the size of %d\n", size);
 	fseek(nameFile, SEEK_SET, 0);
 
-	char* songName = malloc(size - 1);
+	//<POTETNTIAL FIXED>
+	char* songName = malloc(size);
+	if(songName == NULL)
+		printError(1, FAILED_MALLOC_MSG);
+
 	exactFileInput(nameFile, songName, size);
 	
 	fclose(nameFile);
@@ -171,9 +181,9 @@ void convertMove(char* songName, const char* musicDirectory){
 	const char FFMPEG [] = "ffmpeg -i ";
 
 	//incase the file extension is not .mp4 or .mkv
-	int noExtension = strrchr(songName, '.') - songName - 1;
+	int noExtension = strrchr(songName, '.') - songName;
 	char* fileMP3 = malloc(noExtension + 5);
-	snprintf(fileMP3, noExtension + 6, "%.*s.mp3", noExtension, songName);
+	snprintf(fileMP3, noExtension + 5, "%.*s.mp3", noExtension, songName);
 
 	//converting
 	char* convertCommand = malloc(strlen(songName) + strlen(fileMP3) + sizeof(FFMPEG));
@@ -184,8 +194,8 @@ void convertMove(char* songName, const char* musicDirectory){
 	snprintf(convertCommand, sizeof(FFMPEG) + strlen(songName)+ strlen(fileMP3) + 2, "%s%s %s", FFMPEG, songName, fileMP3);
 	printf(PNTGREEN "%s\n" PNTRESET, convertCommand);
 
-	if(system(convertCommand) > 0)
-		printError(7, CONVERT_FAIL_MSG);
+	//if(system(convertCommand) > 0)
+		//printError(7, CONVERT_FAIL_MSG);
 		
 	free(convertCommand);
 
@@ -194,19 +204,19 @@ void convertMove(char* songName, const char* musicDirectory){
 	if(moveMP4 == NULL)
 		printError(1, FAILED_MALLOC_MSG);
 
-	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 6, "mv %s %s",songName, musicDirectory);
+	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 5, "mv %s %s",songName, musicDirectory);
 	printf(PNTGREEN "%s\n" PNTRESET, moveMP4);
-	if(system(moveMP4) > 0)
-		printError(8, MP4_FAIL_MSG);
+	//if(system(moveMP4) > 0)
+		//printError(8, MP4_FAIL_MSG);
 
 	char* moveMP3 = malloc(strlen(fileMP3) + 14);
 	if(moveMP3 == NULL)
 		printError(1, FAILED_MALLOC_MSG);
 
-	snprintf(moveMP3, strlen(fileMP3) + 15, "mv %s Unsynced/", fileMP3);
+	snprintf(moveMP3, strlen(fileMP3) + 14, "mv %s Unsynced/", fileMP3);
 	printf(PNTGREEN "%s\n" PNTRESET, moveMP3);
-	if(system(moveMP3) > 0)
-		printError(9, MP3_FAIL_MSG);
+	//if(system(moveMP3) > 0)
+		//printError(9, MP3_FAIL_MSG);
 
 	free(moveMP4);
 	free(moveMP3);
@@ -307,13 +317,16 @@ char* userDirectory(void){
 	int index = -1;
 	int length = 0;
 	char* input = malloc(101);
+	if(input == NULL)
+		printError(1, FAILED_MALLOC_MSG);
+
 	char** listOfDirs = getDirectories(&length);
 	while(index == -1){
 		do{
 			printf("Where do you want to download the song? or type exit: ");
 			exactUserInput(input, 101);
 		}while(strlen(input) == 0);
-		
+
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
 			exit(0);
 
@@ -326,6 +339,7 @@ char* userDirectory(void){
 				index = s;
 
 		}
+
 		if(index == -1){
 			printf("\nCould not find the directory %s. Remember case matters.\n", input);
 			memset(input, '\0', strlen(input));
