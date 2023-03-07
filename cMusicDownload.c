@@ -177,7 +177,6 @@ char* getSongName(char* id){
 	}
 	fseek(nameFile, SEEK_SET, 0);
 
-	//<POTETNTIAL FIXED>
 	char* songName = malloc(size);
 	if(songName == NULL)
 		printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
@@ -223,16 +222,16 @@ void convertMove(char* songName, const char* musicDirectory){
 	printf(PNT_GREEN "%s\n" PNT_RESET, moveMP4);
 	if(system(moveMP4) > 0)
 		printError(MP4_FAIL_CODE, MP4_FAIL_MSG);
-
+    
 	char* moveMP3 = malloc(strlen(fileMP3) + 14);
 	if(moveMP3 == NULL)
 		printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-
+    
 	snprintf(moveMP3, strlen(fileMP3) + 14, "mv %s Unsynced/", fileMP3);
 	printf(PNT_GREEN "%s\n" PNT_RESET, moveMP3);
 	if(system(moveMP3) > 0)
 		printError(MP3_FAIL_CODE, MP3_FAIL_MSG);
-
+    
 	free(moveMP4);
 	free(moveMP3);
 	free(fileMP3);
@@ -463,8 +462,8 @@ int main(int argc, char** argv){
 
 				//fileDownload(inFile, where);
 				printf(PNT_GREEN"Downloading URLS to %s\n"PNT_RESET, where);
-
-				char urls [YT_URL_BUFFER + 1] = "";
+        
+				char urls [YT_URL_BUFFER] = "";
 				//get URLs assumming they are separating by \n
 				while(exactFileInput(inFile, urls, YT_URL_BUFFER) == YT_URL_BUFFER){
 					//download URL
