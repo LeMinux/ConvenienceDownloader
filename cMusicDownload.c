@@ -4,20 +4,21 @@
 #include <ctype.h>
 
 //printing defines
-#define PNTGREEN "\x1b[32m"
-#define PNTRED "\x1b[31m"
-#define PNTRESET "\x1b[0m"
+#define PNT_GREEN "\x1b[32m"
+#define PNT_RED "\x1b[31m"
+#define PNT_RESET "\x1b[0m"
 
 //error message defines
-#define FAILED_MALLOC_MSG  PNTRED"\nError MEM: Allocation of memory failed" PNTRESET
-#define INFINITE_MSG  PNTRED"\nError INF4: infinite loop detected while downloading"PNTRESET
-#define TEMP_FILE_FAIL_MSG  PNTRED"\nERROR READ: Error in reading temporary file"PNTRESET
-#define FILE_FAIL_MSG  PNTRED"\nERROR GVFL: Error in reading given file. File does not exist"PNTRESET
-#define DIR_FAIL_MSG  PNTRED"\nERROR GVDR: Error in reading given directory. Directory does not exist"PNTRESET
-#define CONVERT_FAIL_MSG  PNTRED"\nERROR CNVT: Error in converting from .mp4 to .mp3"PNTRESET
-#define MP4_FAIL_MSG  PNTRED"\nERROR MVP4: Error in moving video file to desired directory"PNTRESET
-#define MP3_FAIL_MSG  PNTRED"\nERROR MVP3: Error in moving .mp3 file to /Unsynced directory"PNTRESET
-#define SKIP_VALID_MSG  PNTRED"\nERROR INVD: Error in user skipping validation of music directories"PNTRESET
+#define FAILED_MALLOC_MSG  PNT_RED"\nError MEM: Allocation of memory failed" PNT_RESET
+#define INFINITE_MSG  PNT_RED"\nError INF4: infinite loop detected while downloading"PNT_RESET
+#define TEMP_FILE_FAIL_MSG  PNT_RED"\nERROR READ: Error in reading temporary file"PNT_RESET
+#define FILE_FAIL_MSG  PNT_RED"\nERROR GVFL: Error in reading given file. File does not exist"PNT_RESET
+#define DIR_FAIL_MSG  PNT_RED"\nERROR GVDR: Error in reading given directory. Directory does not exist"PNT_RESET
+#define DOWNLOAD_TO_FAIL PNT_RED"\nERROR DWTO: Error in reading DownloadTo.txt file"PNT_RESET
+#define CONVERT_FAIL_MSG  PNT_RED"\nERROR CNVT: Error in converting from .mp4 to .mp3"PNT_RESET
+#define MP4_FAIL_MSG  PNT_RED"\nERROR MVP4: Error in moving video file to desired directory"PNT_RESET
+#define MP3_FAIL_MSG  PNT_RED"\nERROR MVP3: Error in moving .mp3 file to /Unsynced directory"PNT_RESET
+#define SKIP_VALID_MSG  PNT_RED"\nERROR INVD: Error in user skipping validation of music directories"PNT_RESET
 
 //error code defines
 #define FAILED_MALLOC_CODE 1
@@ -25,13 +26,15 @@
 #define TEMP_FILE_FAIL_CODE 3
 #define FILE_FAIL_CODE 4
 #define DIR_FAIL_CODE 5
-#define CONVERT_FAIL_CODE 6
-#define MP4_FAIL_CODE 7
-#define MP3_FAIL_CODE 8
-#define SKIP_VALID_CODE 9
+#define DOWNLOAD_TO_CODE 6
+#define CONVERT_FAIL_CODE 7
+#define MP4_FAIL_CODE 8
+#define MP3_FAIL_CODE 9
+#define SKIP_VALID_CODE 10
 
 //some constant defines
-#define YT_BASE_LENGTH 44 //this is from the beginning to end of the ID parameter
+#define YT_URL_BUFFER 44 //this is from the beginning of the URL to the end of the ID parameter
+#define WHERE_SEND_FILES "DownloadTo.txt"
 
 //NOTE snprintf includes the \0 in the buffer count
 
@@ -55,7 +58,7 @@ void exactUserInput(char* input, int buffer){
 			while(index < buffer - 1 && (data = getchar()) != '\n')
 				*(input + index++) = data;
 
-			*(input + (index + 1)) = '\0';
+			*(input + index) = '\0';
 		break;
 	}
 
@@ -78,7 +81,7 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 			while(index < buffer - 1 && (data = fgetc(stream)) != EOF && data != '\n')
 				*(dest + index++) = data;
 
-			*(dest + (index + 1)) = '\0';
+			*(dest + index) = '\0';
 		break;
      }
 
@@ -86,19 +89,18 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 	if(data != '\n' && data != EOF)
 		while((data = fgetc(stream)) != '\n' && data != EOF){}
 
-	printf("%d\n", index);
-	return index;
+	return ++index;
 }
 
 //asks user for a youtube URL more of a helper method
 char* getURL(){
 	//strictly gets the portion that only contains the ID
-	char buffer [YT_BASE_LENGTH];
+	char buffer [YT_URL_BUFFER];
 	
 	do{
-		memset(buffer, '\0', YT_BASE_LENGTH);
+		memset(buffer, '\0', YT_URL_BUFFER);
 		printf("Enter the youtube URL that you want to download -> ");
-		exactUserInput(buffer, YT_BASE_LENGTH);
+		exactUserInput(buffer, YT_URL_BUFFER);
 	}while(strlen(buffer) == 0);
 	//dynamic memory since this will be passed around
 	char* youtubeURL = malloc(sizeof(buffer));
@@ -112,7 +114,7 @@ char* getURL(){
 //downloads a song given the URL for it
 void downloadURL(char* youtubeURL){
 	//--restrict-filenames makes it so escape characters don't need to be added
-	const char* youtubeDL = "youtube-dl --restrict-filenames ";
+	const char* youtubeDL = "yt-dlp --restrict-filenames ";
 	int length = strlen(youtubeDL) + strlen(youtubeURL);
 	char* downloadCommand = malloc(length + 1);
 	if(downloadCommand == NULL)
@@ -120,7 +122,7 @@ void downloadURL(char* youtubeURL){
 
 	snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
 
-	printf(PNTGREEN "%s\n" PNTRESET, downloadCommand);
+	printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
 	int retry = 0;
 	while(system(downloadCommand) > 0 && retry <= 4){
 		puts("Retrying download");
@@ -157,7 +159,7 @@ char* getSongName(char* id){
 		
 	snprintf(grepCommand, strlen(id) + strlen(GREP_PT1) + strlen(GREP_PT2) + 1, "%s%s%s", GREP_PT1, id, GREP_PT2);
 		
-	printf(PNTGREEN "%s\n" PNTRESET, grepCommand);
+	printf(PNT_GREEN "%s\n" PNT_RESET, grepCommand);
 	system(grepCommand);
 	free(grepCommand);
 	
@@ -173,7 +175,6 @@ char* getSongName(char* id){
 	while((data = fgetc(nameFile)) != EOF){
 		++size;
 	}
-	printf("End is the size of %d\n", size);
 	fseek(nameFile, SEEK_SET, 0);
 
 	//<POTETNTIAL FIXED>
@@ -184,7 +185,7 @@ char* getSongName(char* id){
 	exactFileInput(nameFile, songName, size);
 	
 	fclose(nameFile);
-	printf(PNTGREEN "Converting and moving %s\n" PNTRESET, songName);
+	printf(PNT_GREEN "Converting and moving %s\n" PNT_RESET, songName);
 	printf("rm name.txt\n");
 	system("rm name.txt");
 	return songName;
@@ -200,16 +201,16 @@ void convertMove(char* songName, const char* musicDirectory){
 	snprintf(fileMP3, noExtension + 5, "%.*s.mp3", noExtension, songName);
 
 	//converting
-	char* convertCommand = malloc(strlen(songName) + strlen(fileMP3) + sizeof(FFMPEG));
+	char* convertCommand = malloc(strlen(songName) + strlen(fileMP3) + sizeof(FFMPEG) + 2);
 	if(convertCommand == NULL)
 		printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 
 	//+1 for the space in the command +1 since snprintf includes null in buffer
-	snprintf(convertCommand, sizeof(FFMPEG) + strlen(songName)+ strlen(fileMP3) + 2, "%s%s %s", FFMPEG, songName, fileMP3);
-	printf(PNTGREEN "%s\n" PNTRESET, convertCommand);
+	snprintf(convertCommand, sizeof(FFMPEG) + strlen(songName) + strlen(fileMP3) + 2, "%s%s %s", FFMPEG, songName, fileMP3);
+	printf(PNT_GREEN "%s\n" PNT_RESET, convertCommand);
 
-	//if(system(convertCommand) > 0)
-		//printError(CONVERT_FAIL_CODE, CONVERT_FAIL_MSG);
+	if(system(convertCommand) > 0)
+		printError(CONVERT_FAIL_CODE, CONVERT_FAIL_MSG);
 		
 	free(convertCommand);
 
@@ -219,18 +220,18 @@ void convertMove(char* songName, const char* musicDirectory){
 		printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 
 	snprintf(moveMP4, strlen(songName) + strlen(musicDirectory) + 5, "mv %s %s",songName, musicDirectory);
-	printf(PNTGREEN "%s\n" PNTRESET, moveMP4);
-	//if(system(moveMP4) > 0)
-		//printError(MP4_FAIL_CODE, MP4_FAIL_MSG);
+	printf(PNT_GREEN "%s\n" PNT_RESET, moveMP4);
+	if(system(moveMP4) > 0)
+		printError(MP4_FAIL_CODE, MP4_FAIL_MSG);
 
 	char* moveMP3 = malloc(strlen(fileMP3) + 14);
 	if(moveMP3 == NULL)
 		printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 
 	snprintf(moveMP3, strlen(fileMP3) + 14, "mv %s Unsynced/", fileMP3);
-	printf(PNTGREEN "%s\n" PNTRESET, moveMP3);
-	//if(system(moveMP3) > 0)
-		//printError(MP3_FAIL_CODE, MP3_FAIL_MSG);
+	printf(PNT_GREEN "%s\n" PNT_RESET, moveMP3);
+	if(system(moveMP3) > 0)
+		printError(MP3_FAIL_CODE, MP3_FAIL_MSG);
 
 	free(moveMP4);
 	free(moveMP3);
@@ -258,52 +259,69 @@ int repeat(void){
 //DownloadTo.txt has provided. This will result in a case sensitive list
 //this also keeps <directory>/ to prevent further reading of the DownloadTo.txt
 char** getDirectories(int* totalStrings){
-	char* rootDir = malloc(101);
-	FILE* readFile = fopen("DownloadTo.txt", "r");
-	exactFileInput(readFile, rootDir, 101);
-	fclose(readFile);
+	int length = 0;
+	FILE* fileWithDir = fopen(WHERE_SEND_FILES, "r");
+	if(fileWithDir == NULL)
+		printError(DOWNLOAD_TO_CODE, DOWNLOAD_TO_FAIL);
 
-	char* findCommand = malloc(strlen(rootDir) + 19);
-	snprintf(findCommand, strlen(rootDir) + 19, "ls -d %s* > dirs.txt", rootDir);
-	free(rootDir);
-	system(findCommand);
+	while(fgetc(fileWithDir) != EOF)
+		++length;
+
+	char* downloadDir = malloc(length + 1);
+	//memset(downloadDir, '\0', length + 1);
+	fseek(fileWithDir, 0, SEEK_SET);
+	exactFileInput(fileWithDir, downloadDir, length + 1);
+	fclose(fileWithDir);
+
+	char* findCommand = malloc(length + 19);
+	snprintf(findCommand, length + 19, "ls -d %s* > dirs.txt", downloadDir);
+	if(system(findCommand) != 0){
+		printf(PNT_RED"Could not directory file %s\n"PNT_RESET, downloadDir);
+		printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
+	}
+	free(findCommand);
+	free(downloadDir);
 	
 	//reads what directories are available
-	readFile = fopen("dirs.txt", "r");
+	FILE* tempFile = fopen("dirs.txt", "r");
+	if(tempFile == NULL)
+		printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
+
+	//creating variables for making the 2D string array
 	int data = '\0';
-	int length = 0;
+	length = 0;
 	char** allDirectories = NULL;
 	char* readingLine = malloc(25);
 	if(readingLine == NULL)
 		printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 	
-	while((data = fgetc(readFile)) != EOF){
+	while((data = fgetc(tempFile)) != EOF){
 		switch(data){
 			case '\n':{
 				char** temp2D = realloc(allDirectories, sizeof(char*) * (*totalStrings + 1));
 				if(temp2D != NULL){
+					//sets to realloced block
 					allDirectories = temp2D;
 					allDirectories[*totalStrings] = malloc(strlen(readingLine) + 1);
-					if(allDirectories[*totalStrings] == NULL){
+					if(allDirectories[*totalStrings] == NULL)
 						printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-					}
 
 					snprintf(allDirectories[*totalStrings], strlen(readingLine) + 1, "%s", readingLine);
-				}else{
-					printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-				}
-				
-				//resets readingLine
-				free(readingLine);
-				readingLine = malloc(50);
-				if(readingLine == NULL){
-					printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-				}
+
+					//resets readingLine
+					free(readingLine);
+					readingLine = malloc(50);
+					if(readingLine == NULL)
+						printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 
 				length = 0;
 				*totalStrings += 1;
+				}else{
+					printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+				}
 			}break;
 			default:
+				//adjust buffer size if needed
 				readingLine[length++] = data;
 				if(length % 25 == 0){
 					char* temp = NULL;
@@ -319,7 +337,7 @@ char** getDirectories(int* totalStrings){
 	}
 
 	free(readingLine);
-	fclose(readFile);
+	fclose(tempFile);
 	system("rm dirs.txt");
 	return allDirectories;
 }
@@ -355,7 +373,7 @@ char* userDirectory(void){
 		}
 
 		if(index == -1){
-			printf("\nCould not find the directory %s. Remember case matters.\n", input);
+			printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
 			memset(input, '\0', strlen(input));
 		}
 	}
@@ -390,7 +408,7 @@ int main(int argc, char** argv){
 				if(strcmp(where, "SKIPPED") == 0)
 					printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 					
-				printf("You have desired to download to %s\n", where);
+				printf(PNT_GREEN"You have desired to download to %s\n"PNT_RESET, where);
 
 				//get URL from user
 				char* url = getURL();
@@ -444,15 +462,11 @@ int main(int argc, char** argv){
 					printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 
 				//fileDownload(inFile, where);
-				printf("Downloading URLS to %s\n", where);
+				printf(PNT_GREEN"Downloading URLS to %s\n"PNT_RESET, where);
 
-				char urls [YT_BASE_LENGTH] = "";
+				char urls [YT_URL_BUFFER + 1] = "";
 				//get URLs assumming they are separating by \n
-				while(exactFileInput(inFile, urls, YT_BASE_LENGTH) == YT_BASE_LENGTH - 1){
-					memset(urls,'\0', YT_BASE_LENGTH);
-					//obtain a URL from the file
-					exactFileInput(inFile, urls, YT_BASE_LENGTH);
-
+				while(exactFileInput(inFile, urls, YT_URL_BUFFER) == YT_URL_BUFFER){
 					//download URL
 					downloadURL(urls);
 					
@@ -466,7 +480,7 @@ int main(int argc, char** argv){
 					//convert and move files
 					convertMove(song, where);
 					free(song);
-					song = NULL;
+					memset(urls,'\0', YT_URL_BUFFER);
 				}
 				free(where);
 				fclose(inFile);
