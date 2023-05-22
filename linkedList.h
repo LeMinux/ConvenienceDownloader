@@ -29,7 +29,7 @@ void deleteList(Node_t**);
 void printList(Node_t*);
 
 //tries to find the specified string passed
-//if the element is found it return the index it was found at which is non-zero
+//if the element is found it return the index it was found at
 //return value starts at 0
 //if the element can not be found it returns -1
 int containsElement(Node_t*, const char*);

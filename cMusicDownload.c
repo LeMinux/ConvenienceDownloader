@@ -20,7 +20,7 @@ char* getURL(void){
 }
 
 //downloads a song given the URL for it
-void downloadURL(char* youtubeURL){
+void downloadURL(const char* youtubeURL){
 	//--restrict-filenames makes it so escape characters don't need to be added
 	//-R to specify 4 retries
 	const char* youtubeDL = "yt-dlp --restrict-filenames -R 4 ";
@@ -40,7 +40,7 @@ void downloadURL(char* youtubeURL){
  *With this system youtube can store 73,786,979,294,838,206,464 videos
  *Youtube will also truncate to 11 if the ID is greater than 11
  */
-char* getID(char* youtubeURL){
+char* getID(const char* youtubeURL){
 	char* id = malloc(YT_ID_SIZE + 1);
 	if(id == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 	snprintf(id, YT_ID_SIZE + 1, "%s", strstr(youtubeURL, "?v=") + 3);
@@ -48,7 +48,7 @@ char* getID(char* youtubeURL){
 }
 
 //obtains the songName with grep and using a temp file
-char* getSongName(char* id){
+char* getSongName(const char* id){
 	const char GREP_PT1 [] = "ls | grep \"";
 	const char GREP_PT2 [] = "\" > name.txt";
 	
@@ -107,7 +107,7 @@ char* getSongName(char* id){
 
  //converts a file into an mp3 via ffmpeg
  //this returns the newly created mp3 file
- char* convertToMp3(char* songName){
+ char* convertToMp3(const char* songName){
 	//create mp3 file name
 	const char FFMPEG [] = "ffmpeg -i ";
 	const char MP3_EXTENSTION [] = ".mp3";
@@ -134,7 +134,7 @@ char* getSongName(char* id){
 	return fileMP3;
  }
 
- void moveFile(char* file, const char* destination){
+ void moveFile(const char* file, const char* destination){
 	const char MOVE [] = "mv ";
 	int length = strlen(file) + strlen(destination) + strlen(MOVE);
 	//+1 for space
@@ -162,13 +162,25 @@ int repeat(void){
 	return 0;
 }
 
-Node_t* getDirectories(void){
+Node_t* getDirectories(int mode){
+	/*
 	const char LS [] = "ls -d ";
 	const char TO_DIRS [] = "* > dirs.txt";
+	*/
+	const char FIND [] = "find ";
+	const char OPTIONS [] = " -maxdepth 1 -type d";
+	const char TO_DIRS [] = " > dirs.txt";
 	int data = '\0';
 	int length = 0;
 	FILE* fileWithDir = fopen(WHERE_SEND_FILES, "r");
-	if(fileWithDir == NULL) printError(DOWNLOAD_TO_CODE, DOWNLOAD_TO_FAIL);
+	if(fileWithDir == NULL) printError(DOWNLOAD_TO_CODE, DOWNLOAD_TO_MSG);
+
+	//get the file pointer in position depending on the mode
+	switch(mode){
+		case 4: while(fgetc(fileWithDir) != '4' || fgetc(fileWithDir) != '>');break;
+		case 3: while(fgetc(fileWithDir) != '3' || fgetc(fileWithDir) != '>'); break;
+		default: printError(DOWNLOAD_TO_CODE,DOWNLOAD_TO_MSG); break;
+	}
 
 	//reads the line in the file
 	//reallocs until it has read the full line for more efficiency
@@ -184,9 +196,12 @@ Node_t* getDirectories(void){
 	fclose(fileWithDir);
 	downloadDir[length] = '\0';
 
-	length += strlen(LS) + strlen(TO_DIRS);
+	//length = strlen(LS) + strlen(TO_DIRS);
+	length += strlen(FIND) + strlen(OPTIONS) + strlen(TO_DIRS);
 	char* findCommand = malloc(length + 1);
-	snprintf(findCommand, length + 1, "%s%s%s", LS, downloadDir, TO_DIRS);
+	//snprintf(findCommand, length + 1, "%s%s%s", LS, downloadDir, TO_DIRS);
+	snprintf(findCommand, length + 1, "%s%s%s%s", FIND, downloadDir, OPTIONS, TO_DIRS);
+
 	if(system(findCommand) != 0){
 		printf(PNT_RED"Could not find directory file %s\n"PNT_RESET, downloadDir);
 		printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
@@ -237,11 +252,11 @@ Node_t* getDirectories(void){
 
 //gets from the user what directory they want to download into
 //with the help of getDirectories
-char* userDirectory(void){
+char* getMP4Dest(void){
 	//asks user for desired directory
 	int found = -1;
 	char* returnDir = NULL;
-	Node_t* listOfDirs = getDirectories();
+	Node_t* listOfDirs = getDirectories(4);
 
 	char* input = malloc(101);
 	if(input == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
@@ -249,7 +264,7 @@ char* userDirectory(void){
 	while(found == -1){
 		do{
 			printList(listOfDirs);
-			printf("Where do you want to download the song? or type exit: ");
+			printf("Where do you want to send the MP4? or type exit: ");
 			exactUserInput(input, 101);
 		}while(strlen(input) == 0);
 
@@ -270,138 +285,35 @@ char* userDirectory(void){
 	return returnDir;
 }
 
-/*NEED TO PLACE COMMAND LINE ARGUMENTS LATER
-*command line arguments will be
-* -l for listing directories
-* -f to specify downloading a from a list of URLs in a file
-* -p for prompting each time <perhaps>
-* -w for writing where to download to 
-*/
-int main(int argc, char** argv){
-	switch(argc){
-		case 1:
-			//default case if only using command
-			do{
-				//ask for directory
-				char* where = userDirectory();
-				if(where == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
+char* getMP3Dest(void){
+	//asks user for desired directory
+	int found = -1;
+	char* returnDir = NULL;
+	Node_t* listOfDirs = getDirectories(3);
 
-				printf(PNT_GREEN"You have desired to download to %s\n"PNT_RESET, where);
+	char* input = malloc(101);
+	if(input == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
 
-				//get URL from user
-				char* url = getURL();
-				
-				//download song via URL
-				downloadURL(url);
-				
-				//get the ID for later movement
-				char* youtubeID = getID(url);
-				free(url);
-				//get song name via youtube ID
-				char* song = getSongName(youtubeID);
-				free(youtubeID);
+	while(found == -1){
+		do{
+			printList(listOfDirs);
+			printf("Where do you want to send the MP3? or type exit: ");
+			exactUserInput(input, 101);
+		}while(strlen(input) == 0);
 
-				//convert to mp3 and move mp4 and mp3 to its spots
-				char* mp3 = convertToMp3(song);
-				moveFile(song, where);
-				moveFile(mp3, "../Unsynced/");
-				//convertMove(song, where);
+		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
+			exit(0);
 
-				free(mp3);
-				free(song);
-				free(where);
-				puts("Download was successful");
-			}while(repeat() == 1);
-		break;
-		case 2:
-			//lists only subdirectoires in the given directory in DownloadTo.txt
-			if(strcmp(argv[1], "-l") == 0){
-				puts("v List of availiable directories v");
-				Node_t* listOfDirs = getDirectories();
-				printList(listOfDirs);
-				deleteList(&listOfDirs);
-			}
-		break;
-		case 3:
-			//downloading via a file
-			if(strcmp(argv[1], "-f") == 0){
-				FILE* inFile = fopen(argv[2], "r");
-				if(inFile == NULL) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
-
-				char* where = userDirectory();
-				if(where == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
-
-				//fileDownload(inFile, where);
-				printf(PNT_GREEN"Downloading URLS to %s\n"PNT_RESET, where);
-
-				char urls [YT_URL_BUFFER] = "";
-				//get URLs assumming they are separating by \n
-				while(exactFileInput(inFile, urls, YT_URL_BUFFER) == YT_URL_BUFFER){
-					//download URL
-					downloadURL(urls);
-					
-					//get ID for movement
-					char* youtubeID = getID(urls);
-					
-					//obtain the song name
-					char* song = getSongName(youtubeID);
-					free(youtubeID);
-
-					//convert and move files
-					//convertMove(song, where);
-					char* mp3 = convertToMp3(song);
-					moveFile(song, where);
-					moveFile(mp3, "../Unsynced/");
-
-					free(mp3);
-					free(song);
-					memset(urls,'\0', YT_URL_BUFFER);
-				}
-				free(where);
-				fclose(inFile);
-				puts("Download was successful");
-			}
-
-			//where to send mp4(video) files
-			if(strcmp(argv[1], "-w4") == 0){
-				const char ls [] = "ls ";
-				//suppreses output with 1>/dev/null
-				const char suppress [] = " 1>/dev/null";
-				//checks if directory exists
-				int length = strlen(argv[2]) + strlen(ls) + strlen(suppress);
-				char* lsCommand = malloc(length + 1);
-				snprintf(lsCommand, length + 1, "ls %s 1>/dev/null", argv[2]);
-				if(system(lsCommand) != 0) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
-				free(lsCommand);
-
-				FILE* writeToFile = fopen("DownloadTo.txt", "w");
-				if(argv[2][strlen(argv[2]) - 1] == '/')
-					fputs(argv[2], writeToFile);
-				else
-					fprintf(writeToFile, "%s/\n", argv[2]);
-				
-				fclose(writeToFile);
-				puts("Successfully written to DownloadTo.txt where to send video files");
-			}
-
-			//FINISH IMPLEMETNING THIS this is for setting up where to send mp3 files
-			if(strcmp(argv[1], "-w3") == 0){
-				const char ls [] = "ls ";
-				//suppreses output with 1>/dev/null
-				const char suppress [] = " 1>/dev/null";
-				//checks if directory exists
-				int length = strlen(argv[2]) + strlen(ls) + strlen(suppress);
-				char* lsCommand = malloc(length + 1);
-				snprintf(lsCommand, length + 1, "ls %s 1>/dev/null", argv[2]);
-				if(system(lsCommand) != 0) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
-				free(lsCommand);
-
-				//figure out how to separate it in the same file
-				puts("Successfully written to DownloadTo.txt where to send audio files");
-
-			}
-		break;
-		default: puts("Too many arguments");
+		if((found = containsElement(listOfDirs, input)) != -1){
+			returnDir = getElement(listOfDirs, found);
+			found = 1;
+		}else{
+			printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
+			memset(input, '\0', strlen(input));
+		}
 	}
-	return 0;
+
+	free(input);
+	deleteList(&listOfDirs);
+	return returnDir;
 }

@@ -1,6 +1,6 @@
 # makefile for music downloader
 
-CFILES:= cMusicDownload.c linkedList.c helpers.c
+CFILES:= musicDriver.c cMusicDownload.c linkedList.c helpers.c writeArt.c
 
 test-run: test-compile
 	./test.out

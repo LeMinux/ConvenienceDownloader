@@ -51,5 +51,18 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 	if(data != '\n' && data != EOF)
 		while((data = fgetc(stream)) != '\n' && data != EOF){}
 
-	return ++index;
+	return index;
+}
+
+int checkIfExists(const char* check){
+	const char LS [] = "ls ";
+	//suppreses output with 1>/dev/null
+	const char SUPPRESS [] = " 1>/dev/null";
+	//checks if directory exists
+	int length = strlen(check) + strlen(LS) + strlen(SUPPRESS);
+	char* lsCommand = malloc(length + 1);
+	snprintf(lsCommand, length + 1, "%s%s%s", LS, check, SUPPRESS);
+	int result = system(lsCommand);
+	free(lsCommand);
+	return result == 0;
 }
