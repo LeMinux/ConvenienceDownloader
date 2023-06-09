@@ -173,13 +173,13 @@ Node_t* getDirectories(int mode){
 	int data = '\0';
 	int length = 0;
 	FILE* fileWithDir = fopen(WHERE_SEND_FILES, "r");
-	if(fileWithDir == NULL) printError(DOWNLOAD_TO_CODE, DOWNLOAD_TO_MSG);
+	if(fileWithDir == NULL) printError(DOWNLOAD_READ_CODE, DOWNLOAD_READ_MSG);
 
 	//get the file pointer in position depending on the mode
 	switch(mode){
 		case 4: while(fgetc(fileWithDir) != '4' || fgetc(fileWithDir) != '>');break;
 		case 3: while(fgetc(fileWithDir) != '3' || fgetc(fileWithDir) != '>'); break;
-		default: printError(DOWNLOAD_TO_CODE,DOWNLOAD_TO_MSG); break;
+		default: printError(DOWNLOAD_READ_CODE,DOWNLOAD_READ_MSG); break;
 	}
 
 	//reads the line in the file

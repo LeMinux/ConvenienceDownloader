@@ -9,7 +9,7 @@
 #define TEMP_FILE_FAIL_MSG  PNT_RED"\nERROR READ: Error in reading temporary file"PNT_RESET
 #define FILE_FAIL_MSG  PNT_RED"\nERROR GVFL: Error in reading given file. File does not exist"PNT_RESET
 #define DIR_FAIL_MSG  PNT_RED"\nERROR GVDR: Error in reading given directory. Directory does not exist"PNT_RESET
-#define DOWNLOAD_TO_MSG PNT_RED"\nERROR DWTO: Error in reading DownloadTo.txt file"PNT_RESET
+#define DOWNLOAD_READ_MSG PNT_RED"\nERROR DWTO: Error in reading DownloadTo.txt file"PNT_RESET
 #define DOWNLOAD_CREATE_MSG PNT_RED"\nERROR DWTC: Error in creating DownloadTo.txt file"PNT_RESET
 #define CONVERT_FAIL_MSG  PNT_RED"\nERROR CNVT: Error in converting from .mp4 to .mp3"PNT_RESET
 #define MP4_FAIL_MSG  PNT_RED"\nERROR MVP4: Error in moving video file to desired directory"PNT_RESET
@@ -22,7 +22,7 @@
 #define TEMP_FILE_FAIL_CODE 3
 #define FILE_FAIL_CODE 4
 #define DIR_FAIL_CODE 5
-#define DOWNLOAD_TO_CODE 6
+#define DOWNLOAD_READ_CODE 6
 #define DOWNLOAD_CREATE_CODE 7
 #define CONVERT_FAIL_CODE 8
 #define MP4_FAIL_CODE 9

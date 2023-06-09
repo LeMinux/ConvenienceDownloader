@@ -15,6 +15,7 @@
 
 #define BUFFER_SIZE 101
 #define LARGER_BUFFER_SIZE 201
+#define YOUTUBE_URL "https://www.youtube.com/watch?v="
 
 //printing an Error is more dynamic and more compact
 //this also means there is no table of errors
@@ -32,4 +33,9 @@ int exactFileInput(FILE* stream, char* dest, int buffer);
 //checks via ls if the passed in directory path or file exists
 int checkIfExists(const char*);
 
+//surrounds the passed in text with quotes
+//so something like-> this is a test message
+//turns into "this is a test message"
+//this is useful for simplifying adding escape characters
+char* surroundInQuotes(const char*);
 #endif

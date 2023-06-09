@@ -54,6 +54,7 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 	return index;
 }
 
+//checks if file exists
 int checkIfExists(const char* check){
 	const char LS [] = "ls ";
 	//suppreses output with 1>/dev/null
@@ -65,4 +66,14 @@ int checkIfExists(const char* check){
 	int result = system(lsCommand);
 	free(lsCommand);
 	return result == 0;
+}
+
+//surrounds a string in quotes
+//simplifies needing to do this\ is\ a\ test
+char* surroundInQuotes(const char* surround){
+	int length = strlen(surround);
+	//+2 for quotes
+	char* newString = malloc(length + 2 + 1);
+	snprintf(newString, length + 3, "\"%s\"",surround);
+	return newString;
 }
