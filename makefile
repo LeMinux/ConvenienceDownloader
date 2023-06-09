@@ -7,14 +7,14 @@ test-run: test-compile
 true-run: true-compile
 	./download.out
 debug-run: debug-compile
-	./debug.out
+	ASAN_OPTIONS=symbolize=1 ./debug.out
 debug-gdb-run: debug-gdb
 	gdb gdb.out
 
 test-compile:
 	gcc -Wall -o test.out $(CFILES)
 debug-compile:
-	gcc -Wall -fsanitize=address -fsanitize-recover=address -o debug.out $(CFILES)
+	gcc -g -Wall -fsanitize=address -fsanitize-recover=address -o debug.out $(CFILES)
 debug-gdb:
 	gcc -g -Wall -o gdb.out $(CFILES)
 true-compile:
