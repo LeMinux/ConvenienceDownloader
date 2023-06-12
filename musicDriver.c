@@ -38,7 +38,7 @@ int main(int argc, char** argv){
 					exit(1);
 				}
 
-				if(!checkIfExists(argv[c + 1])) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
+				if(!checkIfExists(argv[c + 1], 'f')) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
 
 				fileMode = 1;
 				fileFlagIndex = ++c;
@@ -51,11 +51,11 @@ int main(int argc, char** argv){
 				}
 
 				//check if directory exists
-				if(!checkIfExists(argv[++c])) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
+				if(!checkIfExists(argv[++c], 'd')) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
 
 				FILE* writeToFile = NULL;
 				//DownloadTo.txt does not exist must create it
-				if(!checkIfExists(WHERE_SEND_FILES)){
+				if(!checkIfExists(WHERE_SEND_FILES, 'f')){
 					writeToFile = fopen(WHERE_SEND_FILES, "w");
 					if(writeToFile == NULL) printError(DOWNLOAD_CREATE_CODE, DOWNLOAD_CREATE_MSG);
 
@@ -135,11 +135,11 @@ int main(int argc, char** argv){
 				}
 
 				//check if directory exists
-				if(!checkIfExists(argv[++c])) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
+				if(!checkIfExists(argv[++c], 'd')) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
 
 				FILE* writeToFile = NULL;
 				//File does not exist must create it
-				if(!checkIfExists(WHERE_SEND_FILES)){
+				if(!checkIfExists(WHERE_SEND_FILES, 'f')){
 					writeToFile = fopen(WHERE_SEND_FILES, "w");
 					if(writeToFile == NULL) printError(DOWNLOAD_CREATE_CODE, DOWNLOAD_CREATE_MSG);
 
@@ -217,7 +217,7 @@ int main(int argc, char** argv){
 					coverArtDefaultMode = 1;
 					coverArtMode = 1;
 				}else{
-					if(!checkIfExists(argv[c + 1])) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
+					if(!checkIfExists(argv[c + 1], 'f')) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
 					coverArtMode = 1;
 				}
 
@@ -306,12 +306,14 @@ int main(int argc, char** argv){
 				free(mp3);
 				free(song);
 			}else if(strstr(buffer, ".mp3") != NULL){
-				if(checkIfExists(buffer)){
+				char* quoted = surroundInQuotes(buffer);
+				if(checkIfExists(quoted, 'f')){
 					writeCover(buffer, argv[coverArtIndex]);
-					moveFile(buffer, sendMP3);
+					moveFile(quoted, sendMP3);
 				}else{
 					printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
 				}
+				free(quoted);
 			}else{
 				printf(PNT_RED"Line obtianed is not a youtube URL or .MP3 %s\n"PNT_RESET, buffer);
 			}

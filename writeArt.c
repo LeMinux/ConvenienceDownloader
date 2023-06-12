@@ -6,7 +6,7 @@ void writeCovers(FILE* songNames, const char* coverArt){
 	char originalName [LARGER_BUFFER_SIZE] = "";
 	while(exactFileInput(songNames, originalName, LARGER_BUFFER_SIZE) != 0){
 			char* name = surroundInQuotes(originalName);
-		if(!checkIfExists(name)){
+		if(!checkIfExists(name, 'f')){
 			printf(PNT_RED"can't find %s via its path\n"PNT_RESET, originalName);
 			memset(originalName, '\0', strlen(originalName));
 			free(name);

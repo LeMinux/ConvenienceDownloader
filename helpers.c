@@ -55,25 +55,67 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 }
 
 //checks if file exists
-int checkIfExists(const char* check){
-	const char LS [] = "ls ";
-	//suppreses output with 1>/dev/null
-	const char SUPPRESS [] = " 1>/dev/null";
-	//checks if directory exists
-	int length = strlen(check) + strlen(LS) + strlen(SUPPRESS);
-	char* lsCommand = malloc(length + 1);
-	snprintf(lsCommand, length + 1, "%s%s%s", LS, check, SUPPRESS);
-	int result = system(lsCommand);
-	free(lsCommand);
+int checkIfExists(const char* check, char mode){
+	const char FIND [] = "find ";
+	const char FILE_OPTIONS [] = " -maxdepth 1 -type f";
+	const char DIR_OPTIONS [] = " -maxdepth 1 -type d";
+	char* findCommand = NULL;
+	int length = 0;
+	switch(mode){
+		case 'f':
+			length = strlen(FIND) + strlen(check) + strlen(FILE_OPTIONS);
+			findCommand = malloc(length + 1);
+			if(findCommand == NULL) printError(FAILED_MALLOC_CODE,FAILED_MALLOC_MSG);
+			snprintf(findCommand, length + 1, "%s%s%s", FIND, check, FILE_OPTIONS);
+		break;
+		case 'd':
+			length = strlen(FIND) + strlen(check) + strlen(DIR_OPTIONS);
+			findCommand = malloc(length + 1);
+			if(findCommand == NULL) printError(FAILED_MALLOC_CODE,FAILED_MALLOC_MSG);
+			snprintf(findCommand, length + 1, "%s%s%s", FIND, check, DIR_OPTIONS);
+		break;
+		default: printf(PNT_RED"Passed in an invalid mode for finding"PNT_RESET);break;
+	}
+	puts(findCommand);
+	int result = system(findCommand);
+	free(findCommand);
 	return result == 0;
 }
 
 //surrounds a string in quotes
 //simplifies needing to do this\ is\ a\ test
+//single quotes could be used, but they can not escape characters
 char* surroundInQuotes(const char* surround){
 	int length = strlen(surround);
+	int i = 0;
+
+	//find if any characters need to be escaped
+	for(; i < length; ++i){
+		switch(surround[i]){
+			case '$': case '\"': case '\\': case '`':
+				++length;
+			break;
+			default: break;
+		}
+	}
+
 	//+2 for quotes
-	char* newString = malloc(length + 2 + 1);
-	snprintf(newString, length + 3, "\"%s\"",surround);
+	length += 2;
+	char* newString = malloc(length + 1);
+	if(newString == NULL) printError(FAILED_MALLOC_CODE,FAILED_MALLOC_MSG);
+	newString[0] = '\"';
+	i = 0;
+	int p = 1;
+	for(; i < strlen(surround); ++i, ++p){
+		switch(surround[i]){
+			case '$': newString[p] = '\\'; newString[++p] = '$'; break;
+			case '\"': newString[p] = '\\'; newString[++p] = '\"'; break;
+			case '\\': newString[p] = '\\'; newString[++p] = '\\'; break;
+			case '`': newString[p] = '\\'; newString[++p] = '`'; break;
+			default: newString[p] = surround[i]; break;
+		}
+	}
+	newString[length - 1] = '\"';
+	newString[length] = '\0';
 	return newString;
 }

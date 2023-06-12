@@ -30,8 +30,10 @@ void exactUserInput(char* input, int buffer);
 //this excludes the count for the nul byte
 int exactFileInput(FILE* stream, char* dest, int buffer);
 
-//checks via ls if the passed in directory path or file exists
-int checkIfExists(const char*);
+//checks via find if the passed in directory path or file exists
+//the second parameter is to specify to find a file or directory
+//pass in 'f' for files and 'd' for directories
+int checkIfExists(const char*, char);
 
 //surrounds the passed in text with quotes
 //so something like-> this is a test message
