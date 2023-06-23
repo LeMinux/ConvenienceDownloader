@@ -20,14 +20,33 @@ char* getURL(void){
 }
 
 //downloads a song given the URL for it
-void downloadURL(const char* youtubeURL){
+void downloadURL(const char* youtubeURL, int mode){
 	//--restrict-filenames makes it so escape characters don't need to be added
+	//-f bestvideo to force as .mp4
+	//--write-thumbnail to get thumnail
+	//--convert-thumbnail since the default is webp
 	//-R to specify 4 retries
-	const char* youtubeDL = "yt-dlp --restrict-filenames -R 4 ";
+	const char* youtubeDL = NULL;
+	switch(mode){
+		case 0:
+			youtubeDL = "yt-dlp"
+				" -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+				" --restrict-filenames -R 4 ";
+		break;
+		case 1:
+			youtubeDL = "yt-dlp"
+				" -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best "
+				" --restrict-filenames "
+				" --write-thumbnail "
+				" --convert-thumbnails jpg "
+				" -R 4 ";
+		break;
+		default: puts(PNT_RED"Unkown mode passed for downloading URL"PNT_RESET); exit(1); break;
+	}
+
 	int length = strlen(youtubeDL) + strlen(youtubeURL);
 	char* downloadCommand = malloc(length + 1);
 	if(downloadCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-
 	snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
 	printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
 	if(system(downloadCommand) > 0) printError(DOWNLOAD_FAIL_CODE, DOWNLOAD_FAIL_MSG);
@@ -49,38 +68,9 @@ char* getID(const char* youtubeURL){
 
 //obtains the songName with grep and using a temp file
 char* getSongName(const char* id){
-	const char GREP_PT1 [] = "ls | grep \"";
-	const char GREP_PT2 [] = "\" > name.txt";
-	
-	//greps youtube ID so that it can be found
-	char* grepCommand = NULL;
-
-	//checks if the id needs escape characters for the grep command
-	//the '-' character is the culprit if it's at the beginning
-	if(id[0] == '-'){
-		char newId [YT_ID_SIZE + 2];
-		int n = 1;
-		int s = 0;
-		for(;s < strlen(id);++n, ++s)
-			newId[n] = id[s];
-		
-		newId[YT_ID_SIZE + 1] = '\0';
-		newId[0] = '\\';
-		grepCommand = malloc(YT_ID_SIZE + 1 + strlen(GREP_PT1) + strlen(GREP_PT2) + 1);
-		if(grepCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-		snprintf(grepCommand,YT_ID_SIZE + 1 + strlen(GREP_PT1) + strlen(GREP_PT2) + 1, "%s%s%s", GREP_PT1, newId, GREP_PT2);
-	}else{
-		grepCommand = malloc(strlen(id) + strlen(GREP_PT1) + strlen(GREP_PT2) + 1);
-		if(grepCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-		snprintf(grepCommand, strlen(id) + strlen(GREP_PT1) + strlen(GREP_PT2) + 1, "%s%s%s", GREP_PT1, id, GREP_PT2);
-	}
-
-	printf(PNT_GREEN "%s\n" PNT_RESET, grepCommand);
-	if(system(grepCommand) != 0) printError(SONG_NOT_CODE, SONG_NOT_MSG);
-	free(grepCommand);
-
+	grepIntoFile(id);
 	//getting name
-	FILE* nameFile = fopen("name.txt", "r");
+	FILE* nameFile = fopen("GrepTemp.txt", "r");
 	if(nameFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
 
 	//ftell() was not working for text files
@@ -99,8 +89,7 @@ char* getSongName(const char* id){
 	
 	fclose(nameFile);
 	printf(PNT_GREEN "Converting and moving %s\n" PNT_RESET, songName);
-	printf("rm name.txt\n");
-	system("rm name.txt");
+	system("rm GrepTemp.txt");
 	return songName;
 }
 
@@ -252,11 +241,11 @@ Node_t* getDirectories(int mode){
 
 //gets from the user what directory they want to download into
 //with the help of getDirectories
-char* getMP4Dest(void){
+char* getDests(int mode, const char* prompt){
 	//asks user for desired directory
 	int found = -1;
 	char* returnDir = NULL;
-	Node_t* listOfDirs = getDirectories(4);
+	Node_t* listOfDirs = getDirectories(mode);
 
 	char* input = malloc(101);
 	if(input == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
@@ -264,40 +253,7 @@ char* getMP4Dest(void){
 	while(found == -1){
 		do{
 			printList(listOfDirs);
-			printf("Where do you want to send the MP4? or type exit: ");
-			exactUserInput(input, 101);
-		}while(strlen(input) == 0);
-
-		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
-			exit(0);
-
-		if((found = containsElement(listOfDirs, input)) != -1){
-			returnDir = getElement(listOfDirs, found);
-			found = 1;
-		}else{
-			printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
-			memset(input, '\0', strlen(input));
-		}
-	}
-
-	free(input);
-	deleteList(&listOfDirs);
-	return returnDir;
-}
-
-char* getMP3Dest(void){
-	//asks user for desired directory
-	int found = -1;
-	char* returnDir = NULL;
-	Node_t* listOfDirs = getDirectories(3);
-
-	char* input = malloc(101);
-	if(input == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-
-	while(found == -1){
-		do{
-			printList(listOfDirs);
-			printf("Where do you want to send the MP3? or type exit: ");
+			printf("%s", prompt);
 			exactUserInput(input, 101);
 		}while(strlen(input) == 0);
 

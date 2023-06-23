@@ -1,5 +1,5 @@
+#include <string.h>
 #include <stdio.h>
-
 #include "cMusicDownload.h"
 #include "helpers.h"
 #include "linkedList.h"
@@ -13,6 +13,7 @@
 #define MP3_ERROR PNT_RED"File must contain .MP3 files for writing cover art to"PNT_RESET
 
 int main(int argc, char** argv){
+	//modes for different execution
 	int fileMode = 0;
 	int fileFlagIndex = 0;
 	int coverArtMode = 0;
@@ -99,11 +100,12 @@ int main(int argc, char** argv){
 								fprintf(tempFile, "4>%s/", argv[c]);
 
 							moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
-							
+
 							//courrupted second line
 						}else{
 							printError(DOWNLOAD_READ_CODE, DOWNLOAD_READ_MSG);
 						}
+
 						//read MP3 line to copy into written file
 					}else{
 						FILE* tempFile = fopen("DownloadToTemp.txt", "w");
@@ -231,8 +233,8 @@ int main(int argc, char** argv){
 		//default execution
 		do{
 			//ask for directory
-			char* sendMP4 = getMP4Dest();
-			char* sendMP3 = getMP3Dest();
+			char* sendMP4 = getDests(4, "Where do you want to send the MP4? or type exit: ");
+			char* sendMP3 = getDests(3, "Where do you want to send the MP3? or type exit: ");
 
 			if(sendMP4 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 			if(sendMP3 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
@@ -243,7 +245,7 @@ int main(int argc, char** argv){
 			char* url = getURL();
 
 			//download song via URL
-			downloadURL(url);
+			downloadURL(url, 0);
 
 			//get the ID for later movement
 			char* youtubeID = getID(url);
@@ -271,17 +273,18 @@ int main(int argc, char** argv){
 	//This will also accept a file that contains both youtube URLS and .mp3 paths
 	//NEED TO FIGURE OUT WHAT TO DO WITH DEFAULT
 	if(fileMode && coverArtMode){
-		char buffer [LARGER_BUFFER_SIZE] = "";
+		char* buffer = NULL;
 		FILE* inFile = fopen(argv[fileFlagIndex], "r");
 		if(inFile == NULL) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
 
-		char* sendMP4 = getMP4Dest();
-		char* sendMP3 = getMP3Dest();
+		char* sendMP4 = getDests(4, "Where do you want to send the MP4? or type exit: ");
+		char* sendMP3 = getDests(3, "Where do you want to send the MP3? or type exit: ");
 		if(sendMP4 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 		if(sendMP3 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 		printf("MP4 will be sent to %s and the MP3 will be send to %s\n", sendMP4, sendMP3);
 
-		while(exactFileInput(inFile, buffer, LARGER_BUFFER_SIZE) != 0){
+		while(unkownFileRead(inFile, &buffer) != 0){
+			//if line read is a youtube URL
 			if(strstr(buffer, YOUTUBE_URL) != NULL){
 				//have to shorten URL so yt-dlp does not return
 				//early from parsing through a playlist
@@ -291,25 +294,60 @@ int main(int argc, char** argv){
 				//I didn't want compliation warnings
 				strncpy(shortenedURL, buffer, YT_URL_BUFFER);
 				shortenedURL[YT_URL_BUFFER - 1] = '\0';
-				downloadURL(shortenedURL);
+
+				char* mp3 = NULL;
+				char* song = NULL;
 				char* youtubeID = getID(shortenedURL);
-				char* song = getSongName(youtubeID);
+				if(coverArtDefaultMode){
+					downloadURL(shortenedURL, 1);
+					//get song name via youtube ID
+					grepIntoFile(youtubeID);
+
+					//read file to get both .jpg and .mp4
+					FILE* greppedFile = fopen("GrepTemp.txt", "r");
+					char* coverArt = NULL;
+
+					//the first line will always be the .jpg
+					unkownFileRead(greppedFile, &coverArt);
+					unkownFileRead(greppedFile, &song);
+
+					system("rm GrepTemp.txt");
+
+					//convert to mp3 and move mp4 and mp3 to its spots
+					mp3 = convertToMp3(song);
+					//add coverArt
+					writeCover(mp3, coverArt);
+					char* removeArt = malloc(3 + strlen(coverArt) + 1);
+					snprintf(removeArt, 3 + strlen(coverArt) + 1, "%s%s", "rm ", coverArt);
+					system(removeArt);
+					free(coverArt);
+					free(removeArt);
+					moveFile(song, sendMP4);
+					moveFile(mp3, sendMP3);
+				}else{
+					downloadURL(shortenedURL, 0);
+					song = getSongName(youtubeID);
+					//convert to mp3 and move mp4 and mp3 to its spots
+					mp3 = convertToMp3(song);
+					//add coverArt
+					writeCover(mp3, argv[coverArtIndex]);
+					moveFile(song, sendMP4);
+					moveFile(mp3, sendMP3);
+				}
+
 				free(youtubeID);
-
-				//convert to mp3 and move mp4 and mp3 to its spots
-				char* mp3 = convertToMp3(song);
-				//add coverArt
-				writeCover(mp3, argv[coverArtIndex]);
-				moveFile(song, sendMP4);
-				moveFile(mp3, sendMP3);
-
 				free(mp3);
 				free(song);
+			//if line read is a .mp3 file
 			}else if(strstr(buffer, ".mp3") != NULL){
 				char* quoted = surroundInQuotes(buffer);
 				if(checkIfExists(quoted, 'f')){
-					writeCover(buffer, argv[coverArtIndex]);
-					moveFile(quoted, sendMP3);
+					if(coverArtDefaultMode){
+						moveFile(quoted, sendMP3);
+					}else{
+						writeCover(buffer, argv[coverArtIndex]);
+						moveFile(quoted, sendMP3);
+					}
 				}else{
 					printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
 				}
@@ -317,26 +355,80 @@ int main(int argc, char** argv){
 			}else{
 				printf(PNT_RED"Line obtianed is not a youtube URL or .MP3 %s\n"PNT_RESET, buffer);
 			}
-			memset(buffer, '\0', strlen(buffer));
+			free(buffer);
+			buffer = NULL;
 		}
 		free(sendMP4);
 		free(sendMP3);
-
 		fclose(inFile);
 
 	//writes cover art while downloading youtube vidoes
 	}else if(coverArtMode){
 		//default mode is using the video thumbnail
 		if(coverArtDefaultMode){
-			//<TODO CODE>
+			do{
+				puts("NOTE: this will not ask to reset the cover art if you decide to download more!");
+				//ask for directory
+				char* sendMP4 = getDests(4, "Where do you want to send the MP4? or type exit: ");
+				char* sendMP3 = getDests(3, "Where do you want to send the MP4? or type exit: ");
+
+				if(sendMP4 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
+				if(sendMP3 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
+
+				printf("MP4 will be sent to %s and the MP3 will be send to %s\n", sendMP4, sendMP3);
+
+				//get URL from user
+				char* url = getURL();
+
+				//download song via URL
+				downloadURL(url, 1);
+
+				//get the ID for later movement
+				char* youtubeID = getID(url);
+				free(url);
+
+				//get song name via youtube ID
+				grepIntoFile(youtubeID);
+				free(youtubeID);
+
+				//read file to get both .jpg and .mp4
+				FILE* greppedFile = fopen("GrepTemp.txt", "r");
+				char* coverArt = NULL;
+				char* song = NULL;
+
+				//the first line will always be the .jpg
+				unkownFileRead(greppedFile, &coverArt);
+				unkownFileRead(greppedFile, &song);
+
+				system("rm GrepTemp.txt");
+
+				//convert to mp3 and move mp4 and mp3 to its spots
+				char* mp3 = convertToMp3(song);
+				//add coverArt
+				writeCover(mp3, coverArt);
+				char* removeArt = malloc(3 + strlen(coverArt) + 1);
+				snprintf(removeArt, 3 + strlen(coverArt) + 1, "%s%s", "rm ", coverArt);
+				system(removeArt);
+				free(coverArt);
+				free(removeArt);
+				moveFile(song, sendMP4);
+				moveFile(mp3, sendMP3);
+
+				free(mp3);
+				free(song);
+				free(coverArt);
+				free(sendMP4);
+				free(sendMP3);
+				puts("Download was successful");
+			}while(repeat() == 1);
 
 		//when a cover art is specified
 		}else{
 			do{
 				puts("NOTE: this will not ask to reset the cover art if you decide to download more!");
 				//ask for directory
-				char* sendMP4 = getMP4Dest();
-				char* sendMP3 = getMP3Dest();
+				char* sendMP4 = getDests(4, "Where do you want to send the MP4? or type exit: ");
+				char* sendMP3 = getDests(3, "Where do you want to send the MP3? or type exit: ");
 
 				if(sendMP4 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 				if(sendMP3 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
@@ -348,7 +440,7 @@ int main(int argc, char** argv){
 				char* url = getURL();
 
 				//download song via URL
-				downloadURL(url);
+				downloadURL(url, 0);
 
 				//get the ID for later movement
 				char* youtubeID = getID(url);
@@ -377,8 +469,8 @@ int main(int argc, char** argv){
 		FILE* inFile = fopen(argv[fileFlagIndex], "r");
 		if(inFile == NULL) printError(FILE_FAIL_CODE, FILE_FAIL_MSG);
 
-		char* sendMP4 = getMP4Dest();
-		char* sendMP3 = getMP3Dest();
+		char* sendMP4 = getDests(4, "Where do you want to send the MP4? or type exit: ");
+		char* sendMP3 = getDests(3, "Where do you want to send the MP4? or type exit: ");
 		if(sendMP4 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 		if(sendMP3 == NULL) printError(SKIP_VALID_CODE, SKIP_VALID_MSG);
 
@@ -388,7 +480,7 @@ int main(int argc, char** argv){
 		//get URLs assumming they are separating by \n
 		while(exactFileInput(inFile, urls, YT_URL_BUFFER) != 0){
 			//download URL
-			downloadURL(urls);
+			downloadURL(urls, 0);
 
 			//get ID for movement
 			char* youtubeID = getID(urls);
@@ -410,7 +502,6 @@ int main(int argc, char** argv){
 		free(sendMP4);
 		free(sendMP3);
 		puts("Download was successful");
-
 		fclose(inFile);
 	}
 

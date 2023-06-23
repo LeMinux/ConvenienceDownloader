@@ -54,6 +54,33 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 	return index;
 }
 
+int unkownFileRead(FILE* stream, char** dest){
+	int MAX_READ = 4095;
+	int reallocSize = 50;
+	int data = '\0';
+	int length = 0;
+
+	*dest = realloc(*dest, reallocSize);
+	if(*dest == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+
+	for(data = fgetc(stream); length < MAX_READ && data != '\n' && data != EOF; data = fgetc(stream)){
+		*(*dest + length++) = data;
+		if(length == reallocSize){
+			reallocSize += 25;
+			if((*dest = realloc(*dest, reallocSize)) == NULL)
+				printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+		}
+	}
+
+	//if the length is zero free the memory to avoid leaks
+	switch(length){
+		case 0: free(*dest); break;
+		default: *(*dest + length) = '\0'; break;
+	}
+
+	return length;
+}
+
 //checks if file exists
 int checkIfExists(const char* check, char mode){
 	const char FIND [] = "find ";
@@ -118,4 +145,27 @@ char* surroundInQuotes(const char* surround){
 	newString[length - 1] = '\"';
 	newString[length] = '\0';
 	return newString;
+}
+
+void grepIntoFile(const char* text){
+	const char GREP_PT1 [] = "ls | grep \"";
+	const char GREP_PT2 [] = "\" > GrepTemp.txt";
+	
+	//greps text so that it can be analyized more
+	char* grepCommand = NULL;
+	if(text[0] == '-'){
+		int length = strlen(GREP_PT1) + strlen(text) + strlen(GREP_PT2) + 1;
+		grepCommand = malloc(length + 1);
+		if(grepCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+		snprintf(grepCommand, length + 1, "%s\\%s%s", GREP_PT1, text, GREP_PT2);
+	}else{
+		int length = strlen(GREP_PT1) + strlen(text) + strlen(GREP_PT2);
+		grepCommand = malloc(length + 1);
+		if(grepCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+		snprintf(grepCommand, length + 1, "%s%s%s", GREP_PT1, text, GREP_PT2);
+	}
+
+	printf(PNT_GREEN "%s\n" PNT_RESET, grepCommand);
+	if(system(grepCommand) != 0) printError(FAILED_GREP_CODE, FAILED_GREP_MSG);
+	free(grepCommand);
 }

@@ -15,7 +15,6 @@
 #define MP4_FAIL_MSG  PNT_RED"\nERROR MVP4: Error in moving video file to desired directory"PNT_RESET
 #define MP3_FAIL_MSG  PNT_RED"\nERROR MVP3: Error in moving audio file to desired directory"PNT_RESET
 #define SKIP_VALID_MSG  PNT_RED"\nERROR INVD: Error in user skipping selecting a music directory"PNT_RESET
-#define SONG_NOT_MSG PNT_RED"\nERROR SGNF: Error in trying to convert song as song was not found"PNT_RESET
 
 //error code defines
 #define DOWNLOAD_FAIL_CODE 2
@@ -28,7 +27,6 @@
 #define MP4_FAIL_CODE 9
 #define MP3_FAIL_CODE 10
 #define SKIP_VALID_CODE 11
-#define SONG_NOT_CODE 12
 
 //some constant defines
 #define YT_URL_BUFFER 44 //this is from the beginning of the URL to the end of the ID parameter
@@ -39,7 +37,9 @@
 char* getURL(void);
 
 //downloads a song given the URL for it
-void downloadURL(const char*);
+//0 is false for downloading thumbnails
+//1 is true for downloading thumnbails
+void downloadURL(const char*, int);
 
 //helper method for getting the ID
 char* getID(const char*);
@@ -61,10 +61,16 @@ Node_t* getDirectories(int);
 
 //gets from the user what directory they want to download into
 //with the help of getDirectories
-char* getMP4Dest(void);
+//char* getMP4Dest(void);
 
 //gets where the user specified to download mp3 files
-char* getMP3Dest(void);
+//char* getMP3Dest(void);
+
+//depending on the mode it will ask the user from a certain directory
+//4 is for looking at the mp4 directory
+//3 is for looking at the mp3 directory
+//2 is for looking at a CoverArt directory
+char* getDests(int, const char*);
 
 //converts the passes video file into a .mp3 with ffmpeg
 //and return the newly created .mp3 file
