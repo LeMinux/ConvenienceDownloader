@@ -4,7 +4,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
 ## Usage
   - default
     
-    Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading.     The user is also prompted each time per URL where to send MP4 and MP3 files.  
+    Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading.     The user is also prompted each time per URL where to send MP4 and MP3 files. This will also download the youtube thumbnail and place it as a cover art.
   - -l
   
     List available directories to send files to specified in DownloadTo.txt. This will list for both MP4 and MP3.
