@@ -5,12 +5,32 @@
 #include "linkedList.h"
 #include "writeArt.h"
 
-#define UNKNOWN_ARG PNT_RED"Unknown argument of %s\n"PNT_RESET
-#define COVER_ART_NOT_GIVEN PNT_RED"Did not specify a file for Cover art"PNT_RESET
-#define FILE_NOT_GIVEN PNT_RED"Did not specify a file to use"PNT_RESET
-#define W4_NOT_GIVEN PNT_RED"Did not provide the path to download video files to"PNT_RESET
-#define W3_NOT_GIVEN PNT_RED"Did not provide the path to download audio files to"PNT_RESET
-#define MP3_ERROR PNT_RED"File must contain .MP3 files for writing cover art to"PNT_RESET
+#define UNKNOWN_ARG "Unknown argument of %s\n"
+#define COVER_ART_NOT_GIVEN "Did not specify a file for Cover art"
+#define FILE_NOT_GIVEN "Did not specify a file to use"
+#define W4_NOT_GIVEN "Did not provide the path to download video files to"
+#define W3_NOT_GIVEN "Did not provide the path to download audio files to"
+#define MP3_ERROR "File must contain .MP3 files for writing cover art to"
+
+void writeFormat(FILE* stream, char* string, int mode){
+	switch(mode){
+		case 3:
+			if(string[strlen(string) - 1] == '/')
+				fprintf(stream, "3>%s\n", string);
+			else
+				fprintf(stream, "3>%s/\n", string);
+		break;
+		case 4:
+			printf("placing %s\n",string);
+			if(string[strlen(string) - 1] == '/')
+				fprintf(stream, "4>%s\n", string);
+			else
+				fprintf(stream, "4>%s/\n", string);
+		break;
+		default: printError(1, "Client passed unknown mode for writing to DownloadTo.txt");
+		break;
+	}
+}
 
 int main(int argc, char** argv){
 	//modes for different execution
@@ -35,7 +55,7 @@ int main(int argc, char** argv){
 				deleteList(&listOfDirs);
 			}else if(strcmp("-f", argv[c]) == 0){
 				if(argc - 1 == c){
-					printf(FILE_NOT_GIVEN);
+					printError(1, FILE_NOT_GIVEN);
 					exit(1);
 				}
 
@@ -59,17 +79,15 @@ int main(int argc, char** argv){
 				if(!checkIfExists(WHERE_SEND_FILES, 'f')){
 					writeToFile = fopen(WHERE_SEND_FILES, "w");
 					if(writeToFile == NULL) printError(DOWNLOAD_CREATE_CODE, DOWNLOAD_CREATE_MSG);
+					writeFormat(writeToFile, argv[c], 4);
 
-					if(argv[c][strlen(argv[c]) - 1] == '/')
-						fprintf(writeToFile, "4>%s\n", argv[c]);
-					else
-						fprintf(writeToFile, "4>%s/\n", argv[c]);
 				//file exists and must check if second line exists
 				}else{
-					//int length = 0;
 					int data = '\0';
-					//char* line = NULL;
 					writeToFile = fopen(WHERE_SEND_FILES, "r");
+					FILE* tempFile = fopen("DownloadToTemp.txt", "w");
+					if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
+
 					//trying to overwrite mp4 files path want to find mp3 path
 					if(fgetc(writeToFile) != '3'){
 						//skip to second line
@@ -77,29 +95,16 @@ int main(int argc, char** argv){
 
 						//there is no second line
 						if((data = fgetc(writeToFile)) == EOF){
-							writeToFile = freopen(WHERE_SEND_FILES, "w", writeToFile);
-							if(writeToFile == NULL) printError(DOWNLOAD_CREATE_CODE, DOWNLOAD_CREATE_MSG);
-							if(argv[c][strlen(argv[c]) - 1] == '/')
-								fprintf(writeToFile, "4>%s\n", argv[c]);
-							else
-								fprintf(writeToFile, "4>%s/\n", argv[c]);
+							writeFormat(tempFile, argv[c], 4);
 
-							//second line is the mp3 path, copy to newly written
+						//second line is the mp3 path, copy to temp
 						}else if(data == '3'){
-							FILE* tempFile = fopen("DownloadToTemp.txt", "w");
-							if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
-
 							fputc('3', tempFile);
 							while((data = fgetc(writeToFile)) != '\n' && data != EOF)
 								fputc(data, tempFile);
 
 							fputc('\n', tempFile);
-							if(argv[c][strlen(argv[c]) - 1] == '/')
-								fprintf(tempFile, "4>%s", argv[c]);
-							else
-								fprintf(tempFile, "4>%s/", argv[c]);
-
-							moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
+							writeFormat(tempFile, argv[c], 4);
 
 							//courrupted second line
 						}else{
@@ -108,21 +113,15 @@ int main(int argc, char** argv){
 
 						//read MP3 line to copy into written file
 					}else{
-						FILE* tempFile = fopen("DownloadToTemp.txt", "w");
-						if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
-
 						fputc('3', tempFile);
 						while((data = fgetc(writeToFile)) != '\n' && data != EOF)
 							fputc(data, tempFile);
 
 						fputc('\n', tempFile);
-						if(argv[c][strlen(argv[c]) - 1] == '/')
-							fprintf(tempFile, "4>%s\n", argv[c]);
-						else
-							fprintf(tempFile, "4>%s/\n", argv[c]);
-
-						moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
+						writeFormat(tempFile, argv[c], 4);
 					}
+					fclose(tempFile);
+					moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
 				}
 				fclose(writeToFile);
 				puts("Successfully written to DownloadTo.txt where to send video files");
@@ -140,24 +139,20 @@ int main(int argc, char** argv){
 				if(!checkIfExists(argv[++c], 'd')) printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
 
 				FILE* writeToFile = NULL;
+
 				//File does not exist must create it
 				if(!checkIfExists(WHERE_SEND_FILES, 'f')){
 					writeToFile = fopen(WHERE_SEND_FILES, "w");
 					if(writeToFile == NULL) printError(DOWNLOAD_CREATE_CODE, DOWNLOAD_CREATE_MSG);
+					writeFormat(writeToFile, argv[c], 3);
 
-					if(argv[c][strlen(argv[c]) - 1] == '/')
-						fprintf(writeToFile, "3>%s\n", argv[c]);
-					else
-						fprintf(writeToFile, "3>%s/\n", argv[c]);
-					//file exists and must check if second line exists
+				//file exists and must check if second line exists
 				}else{
-					//int length = 0;
 					int data = '\0';
-					//char* line = NULL;
+					writeToFile = fopen(WHERE_SEND_FILES, "r");
 					FILE* tempFile = fopen("DownloadToTemp.txt", "w");
 					if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
 
-					writeToFile = fopen(WHERE_SEND_FILES, "r");
 					//find next line if it exists
 					if(fgetc(writeToFile) != '4'){
 						//skip to second line
@@ -166,49 +161,35 @@ int main(int argc, char** argv){
 						//there is no second line
 						if((data = fgetc(writeToFile)) == EOF){
 							if(writeToFile == NULL) printError(DOWNLOAD_CREATE_CODE, DOWNLOAD_CREATE_MSG);
-							if(argv[c][strlen(argv[c]) - 1] == '/')
-								fprintf(writeToFile, "3>%s\n", argv[c]);
-							else
-								fprintf(writeToFile, "3>%s/\n", argv[c]);
+							writeFormat(tempFile, argv[c], 3);
+
 						//second line has the mp4 path, copy to newly written
 						}else if(data == '4'){
-							FILE* tempFile = fopen("DownloadToTemp.txt", "w");
-							if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
-
 							fputc('4', tempFile);
 							while((data = fgetc(writeToFile)) != '\n' && data != EOF)
 								fputc(data, tempFile);
 
 							fputc('\n', tempFile);
-							if(argv[c][strlen(argv[c]) - 1] == '/')
-								fprintf(tempFile, "3>%s", argv[c]);
-							else
-								fprintf(tempFile, "3>%s/", argv[c]);
-
-							moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
+							writeFormat(tempFile, argv[c], 3);
 						}else{
 							printError(DOWNLOAD_READ_CODE, DOWNLOAD_READ_MSG);
 						}
+
 						//read MP4 line to copy into written file
 					}else{
-						FILE* tempFile = fopen("DownloadToTemp.txt", "w");
-						if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
-
 						fputc('4', tempFile);
 						while((data = fgetc(writeToFile)) != '\n' && data != EOF)
 							fputc(data, tempFile);
 
 						fputc('\n', tempFile);
-						if(argv[c][strlen(argv[c]) - 1] == '/')
-							fprintf(tempFile, "3>%s", argv[c]);
-						else
-							fprintf(tempFile, "3>%s/", argv[c]);
-
-						moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
+						writeFormat(tempFile, argv[c], 3);
 					}
+					fclose(tempFile);
+					moveFile("DownloadToTemp.txt", WHERE_SEND_FILES);
 				}
 				fclose(writeToFile);
 				puts("Successfully written to DownloadTo.txt where to send audio files");
+
 			}else if(strcmp("-ca", argv[c]) == 0){
 				if(argc - 1 == c){
 					printf(COVER_ART_NOT_GIVEN);
@@ -225,12 +206,13 @@ int main(int argc, char** argv){
 
 				coverArtIndex = ++c;
 			}else{
-				printf(UNKNOWN_ARG, argv[c]);
+				printError(1, UNKNOWN_ARG);
+				//printf(UNKNOWN_ARG, argv[c]);
 				exit(1);
 			}
 		}
 	}else{
-		//default execution
+		//default execution this also uses the default mode for cover arts
 		do{
 			//ask for directory
 			char* sendMP4 = getDests(4, "Where do you want to send the MP4? or type exit: ");
@@ -244,6 +226,46 @@ int main(int argc, char** argv){
 			//get URL from user
 			char* url = getURL();
 
+			//download song via URL
+			downloadURL(url, 1);
+
+			//get the ID for later movement
+			char* youtubeID = getID(url);
+			free(url);
+
+			//get song name via youtube ID
+			grepIntoFile(youtubeID);
+			free(youtubeID);
+
+			//read file to get both .jpg and .mp4
+			FILE* greppedFile = fopen("GrepTemp.txt", "r");
+			char* coverArt = NULL;
+			char* song = NULL;
+
+			//the first line will always be the .jpg
+			unkownFileRead(greppedFile, &coverArt);
+			unkownFileRead(greppedFile, &song);
+			system("rm GrepTemp.txt");
+
+			//convert to mp3 and move mp4 and mp3 to its spots
+			char* mp3 = convertToMp3(song);
+			//add coverArt
+			writeCover(mp3, coverArt);
+			char* removeArt = malloc(3 + strlen(coverArt) + 1);
+			snprintf(removeArt, 3 + strlen(coverArt) + 1, "%s%s", "rm ", coverArt);
+			system(removeArt);
+			free(removeArt);
+			moveFile(song, sendMP4);
+			moveFile(mp3, sendMP3);
+
+			free(mp3);
+			free(song);
+			free(coverArt);
+			free(sendMP4);
+			free(sendMP3);
+			puts("Download was successful");
+
+			/*
 			//download song via URL
 			downloadURL(url, 0);
 
@@ -263,6 +285,7 @@ int main(int argc, char** argv){
 			free(sendMP4);
 			free(sendMP3);
 			puts("Download was successful");
+			*/
 		}while(repeat() == 1);
 	}
 
@@ -409,7 +432,6 @@ int main(int argc, char** argv){
 				char* removeArt = malloc(3 + strlen(coverArt) + 1);
 				snprintf(removeArt, 3 + strlen(coverArt) + 1, "%s%s", "rm ", coverArt);
 				system(removeArt);
-				free(coverArt);
 				free(removeArt);
 				moveFile(song, sendMP4);
 				moveFile(mp3, sendMP3);

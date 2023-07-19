@@ -3,18 +3,17 @@
 #include <string.h>
 #include <ctype.h>
 #include "linkedList.h"
-
 //error message defines
-#define DOWNLOAD_FAIL_MSG  PNT_RED"\nError DWNF: Failed to download with provided URL"PNT_RESET
-#define TEMP_FILE_FAIL_MSG  PNT_RED"\nERROR READ: Error in reading temporary file"PNT_RESET
-#define FILE_FAIL_MSG  PNT_RED"\nERROR GVFL: Error in reading given file. File does not exist"PNT_RESET
-#define DIR_FAIL_MSG  PNT_RED"\nERROR GVDR: Error in reading given directory. Directory does not exist"PNT_RESET
-#define DOWNLOAD_READ_MSG PNT_RED"\nERROR DWTO: Error in reading DownloadTo.txt file"PNT_RESET
-#define DOWNLOAD_CREATE_MSG PNT_RED"\nERROR DWTC: Error in creating DownloadTo.txt file"PNT_RESET
-#define CONVERT_FAIL_MSG  PNT_RED"\nERROR CNVT: Error in converting from .mp4 to .mp3"PNT_RESET
-#define MP4_FAIL_MSG  PNT_RED"\nERROR MVP4: Error in moving video file to desired directory"PNT_RESET
-#define MP3_FAIL_MSG  PNT_RED"\nERROR MVP3: Error in moving audio file to desired directory"PNT_RESET
-#define SKIP_VALID_MSG  PNT_RED"\nERROR INVD: Error in user skipping selecting a music directory"PNT_RESET
+#define DOWNLOAD_FAIL_MSG "\nError DWNF: Failed to download with provided URL"
+#define TEMP_FILE_FAIL_MSG "\nERROR READ: Error in reading temporary file"
+#define FILE_FAIL_MSG  "\nERROR GVFL: Error in reading given file. File does not exist"
+#define DIR_FAIL_MSG  "\nERROR GVDR: Error in reading given directory. Directory does not exist"
+#define DOWNLOAD_READ_MSG "\nERROR DWTO: Error in reading DownloadTo.txt file"
+#define DOWNLOAD_CREATE_MSG "\nERROR DWTC: Error in creating DownloadTo.txt file"
+#define CONVERT_FAIL_MSG "\nERROR CNVT: Error in converting from .mp4 to .mp3"
+#define MP4_FAIL_MSG "\nERROR MVP4: Error in moving video file to desired directory"
+#define MP3_FAIL_MSG "\nERROR MVP3: Error in moving audio file to desired directory"
+#define SKIP_VALID_MSG "\nERROR INVD: Error in user skipping selecting a music directory"
 
 //error code defines
 #define DOWNLOAD_FAIL_CODE 2

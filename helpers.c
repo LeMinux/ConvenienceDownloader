@@ -3,7 +3,7 @@
 //printing an Error is more dynamic and more compact
 //this also means there is no table to shift
 void printError(int code, const char* message){
-	puts(message);
+	printf(PNT_RED"%s\n"PNT_RESET,message);
 	exit(code);
 }
 

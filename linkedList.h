@@ -6,9 +6,8 @@
 #include <string.h>
 #include "helpers.h"
 
-#define FAILED_LMALLOC_MSG  PNT_RED"\nError MEM: Allocation of memory failed for linked list"PNT_RESET
-#define FAILED_GET_MSG PNT_RED"\nUse of getElement in linked list went out of bounds"PNT_RESET
-
+#define FAILED_LMALLOC_MSG "\nError MEM: Allocation of memory failed for linked list"
+#define FAILED_GET_MSG "\nUse of getElement in linked list went out of bounds"
 //begins with 76 since 'L' = 76 in ASCII
 #define FAILED_LMALLOC_CODE 761
 #define FAILED_GET_CODE 762

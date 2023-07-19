@@ -7,10 +7,10 @@
 
 #include "helpers.h"
 
-#define ART_ERROR_MSG PNT_RED"Error in adding cover art to .mp3 file"PNT_RESET
-#define MV_TEMP_MSG PNT_RED"Error in overwriting original file to place cover art"PNT_RESET
-#define MP3_LIST_MSG PNT_RED"Error in opening MP3 list given. File does not exist"PNT_RESET
-#define COVER_ART_MSG PNT_RED"Error in finding cover art. Cover art file does not exist."PNT_RESET
+#define ART_ERROR_MSG "Error in adding cover art to .mp3 file"
+#define MV_TEMP_MSG "Error in overwriting original file to place cover art"
+#define MP3_LIST_MSG "Error in opening MP3 list given. File does not exist"
+#define COVER_ART_MSG "Error in finding cover art. Cover art file does not exist."
 
 //ASCII letter 'C' == 43
 #define ART_ERROR_CODE 431

@@ -10,8 +10,8 @@
 #define PNT_RED "\x1b[31m"
 #define PNT_RESET "\x1b[0m"
 
-#define FAILED_MALLOC_MSG  PNT_RED"\nError MEM: Allocation of memory failed"PNT_RESET
-#define FAILED_GREP_MSG PNT_RED"\nERROR SGNF: Error in trying to grep passed text into a file"PNT_RESET
+#define FAILED_MALLOC_MSG "\nError MEM: Allocation of memory failed"
+#define FAILED_GREP_MSG "\nERROR SGNF: Error in trying to grep passed text into a file"
 
 
 #define FAILED_MALLOC_CODE 1
