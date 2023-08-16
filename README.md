@@ -29,19 +29,16 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     If this flag is combined with the -f flag it has the ability to parse through a list
     that contains youtubeURLs and .mp3 file paths, and it will add the cover art to each entry.
     
-    Passing in "default" will download the thumbnail of the youtube video and add it to the .mp3 version.
-    This also works with -f, but it will not affect .mp3 in the list since the default for them is having no cover art.
+    Passing in "NO-ART" will just download the .mp3 file with no cover art. MP3 files that already have cover arts will not be affected by this option.
     
     ## Example Usage
   
-  -```./download.out -f listOfURLs.txt``` downloads all urls in that list to the specified mp4 and mp3 directory. This does not prompt per entry in the list.
+  -```./download.out -f listOfURLs.txt``` downloads all urls in that list to the specified mp4 and mp3 directory. This does not prompt per entry in the list. This also downloads the youtube thumbnail and places it into the .mp3.
   
-  -```./download.out -f listOfURLsANDMP3.txt -ca coverArt.jpg``` downloads all urls and adds cover art to .mp3 and sends them to the specified mp4 and mp3 directories
+  -```./download.out -f listOfURLsANDMP3.txt -ca coverArt.jpg``` downloads all urls and adds coverArt.jpg to .mp3 and sends them to the specified mp4 and mp3 directories
 
-  -```./download.out -f listOfURLsANDMP3.txt -ca default``` youtube urls will have their video downloaded as well as their thumbnail to add to its .mp3 file. Specifying .mp3 files though will have no affect since the default is to have no cover art.
+  -```./download.out -f listOfURLsANDMP3.txt``` youtube urls will have their video downloaded as well as their thumbnail to add to its .mp3 file. Specifying .mp3 files though will have no affect since the default is to have no cover art.
   
   -```./download.out -ca coverArt.png``` Adds the cover art for each downloaded video you specify. This will prompt for placement each time, but it will not ask to change the cover art (at least not yet).
 
-  -```./download.out -ca default``` Downloads the youtube video and its thumbnail. The thumbnail is then added as a cover art to the .mp3. Each reprompt will keep the default option,  so this is great for downloading unrelated videos and their thumbnails.
-  
-  -```./download.out``` downloads URLS that you give it and will prompt each time for placement into a mp4 and mp3 directory
+  -```./download.out``` Downloads the youtube video and its thumbnail. The thumbnail is then added as a cover art to the .mp3. This is great for downloading unrelated videos and their thumbnails.
