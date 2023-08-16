@@ -1,19 +1,20 @@
 #include "writeArt.h"
 #include "helpers.h"
 #include "cMusicDownload.h"
+#include <stdlib.h>
 
 void writeCovers(FILE* songNames, const char* coverArt){
 	char originalName [LARGER_BUFFER_SIZE] = "";
 	while(exactFileInput(songNames, originalName, LARGER_BUFFER_SIZE) != 0){
 			char* name = surroundInQuotes(originalName);
-		if(!checkIfExists(name, 'f')){
+		if(!checkIfExists(name)){
 			printf(PNT_RED"can't find %s via its path\n"PNT_RESET, originalName);
 			memset(originalName, '\0', strlen(originalName));
 			free(name);
 		}else{
 			//output is the name but with a '_' right before the .mp3
 			char* output = malloc(strlen(name) + 2);
-			if(output == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+			if(output == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 			char* extension = strrchr(name, '.');
 			int length = extension - name;
 
@@ -23,12 +24,12 @@ void writeCovers(FILE* songNames, const char* coverArt){
 
 			int size = strlen(FFMPEG) + 2 * strlen(DASH_I) + strlen(coverArt) + strlen(name) + strlen(OPTIONS) + strlen(output);
 			char* addArtCommand = malloc(size + 1);
-			if(addArtCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+			if(addArtCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 			//creates the command to move art to metadata
 			snprintf(addArtCommand, size + 1, "%s%s%s%s%s%s%s", FFMPEG, DASH_I, name, DASH_I, coverArt, OPTIONS, output);
 			puts(addArtCommand);
-			if(system(addArtCommand) > 0) printError(ART_ERROR_CODE, ART_ERROR_MSG);
+			if(system(addArtCommand) > 0) printError(EXIT_FAILURE, ART_ERROR_MSG);
 			free(addArtCommand);
 
 			moveFile(name, originalName);
@@ -43,7 +44,7 @@ void writeCover(const char* songName, const char* coverArt){
 
 	//output is the name but with a '_' right before the .mp3
 	char* output = malloc(strlen(name) + 2);
-	if(output == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(output == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 	char* extension = strrchr(name, '.');
 	int length = extension - name;
 
@@ -53,12 +54,12 @@ void writeCover(const char* songName, const char* coverArt){
 
 	int size = strlen(FFMPEG) + 2 * strlen(DASH_I) + strlen(coverArt) + strlen(name) + strlen(OPTIONS) + strlen(output);
 	char* addArtCommand = malloc(size + 1);
-	if(addArtCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(addArtCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	//creates the command to move art to metadata
 	snprintf(addArtCommand, size + 1, "%s%s%s%s%s%s%s", FFMPEG, DASH_I, name, DASH_I, coverArt, OPTIONS, output);
 	puts(addArtCommand);
-	if(system(addArtCommand) > 0) printError(ART_ERROR_CODE, ART_ERROR_MSG);
+	if(system(addArtCommand) > 0) printError(EXIT_FAILURE, ART_ERROR_MSG);
 	free(addArtCommand);
 	moveFile(output, name);
 	free(output);

@@ -15,18 +15,6 @@
 #define MP3_FAIL_MSG "\nERROR MVP3: Error in moving audio file to desired directory"
 #define SKIP_VALID_MSG "\nERROR INVD: Error in user skipping selecting a music directory"
 
-//error code defines
-#define DOWNLOAD_FAIL_CODE 2
-#define TEMP_FILE_FAIL_CODE 3
-#define FILE_FAIL_CODE 4
-#define DIR_FAIL_CODE 5
-#define DOWNLOAD_READ_CODE 6
-#define DOWNLOAD_CREATE_CODE 7
-#define CONVERT_FAIL_CODE 8
-#define MP4_FAIL_CODE 9
-#define MP3_FAIL_CODE 10
-#define SKIP_VALID_CODE 11
-
 //some constant defines
 #define YT_URL_BUFFER 44 //this is from the beginning of the URL to the end of the ID parameter
 #define YT_ID_SIZE 11
@@ -68,8 +56,10 @@ Node_t* getDirectories(int);
 //depending on the mode it will ask the user from a certain directory
 //4 is for looking at the mp4 directory
 //3 is for looking at the mp3 directory
-//2 is for looking at a CoverArt directory
 char* getDests(int, const char*);
+
+//Just like the method above, but without a skip option
+char* getDestsNoSkip(int mode, const char* prompt);
 
 //converts the passes video file into a .mp3 with ffmpeg
 //and return the newly created .mp3 file

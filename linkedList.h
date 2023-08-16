@@ -8,9 +8,6 @@
 
 #define FAILED_LMALLOC_MSG "\nError MEM: Allocation of memory failed for linked list"
 #define FAILED_GET_MSG "\nUse of getElement in linked list went out of bounds"
-//begins with 76 since 'L' = 76 in ASCII
-#define FAILED_LMALLOC_CODE 761
-#define FAILED_GET_CODE 762
 
 //this file is to simplify greatly the return of file names
 typedef struct Node{

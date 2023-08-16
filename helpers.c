@@ -1,4 +1,6 @@
 #include "helpers.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 //printing an Error is more dynamic and more compact
 //this also means there is no table to shift
@@ -61,20 +63,20 @@ int unkownFileRead(FILE* stream, char** dest){
 	int length = 0;
 
 	*dest = realloc(*dest, reallocSize);
-	if(*dest == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(*dest == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	for(data = fgetc(stream); length < MAX_READ && data != '\n' && data != EOF; data = fgetc(stream)){
 		*(*dest + length++) = data;
 		if(length == reallocSize){
 			reallocSize += 25;
 			if((*dest = realloc(*dest, reallocSize)) == NULL)
-				printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+				printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 		}
 	}
 
 	//if the length is zero free the memory to avoid leaks
 	switch(length){
-		case 0: free(*dest); break;
+		case 0: free(*dest); *dest = NULL; break;
 		default: *(*dest + length) = '\0'; break;
 	}
 
@@ -82,31 +84,11 @@ int unkownFileRead(FILE* stream, char** dest){
 }
 
 //checks if file exists
-int checkIfExists(const char* check, char mode){
-	const char FIND [] = "find ";
-	const char FILE_OPTIONS [] = " -maxdepth 1 -type f";
-	const char DIR_OPTIONS [] = " -maxdepth 1 -type d";
-	char* findCommand = NULL;
-	int length = 0;
-	switch(mode){
-		case 'f':
-			length = strlen(FIND) + strlen(check) + strlen(FILE_OPTIONS);
-			findCommand = malloc(length + 1);
-			if(findCommand == NULL) printError(FAILED_MALLOC_CODE,FAILED_MALLOC_MSG);
-			snprintf(findCommand, length + 1, "%s%s%s", FIND, check, FILE_OPTIONS);
-		break;
-		case 'd':
-			length = strlen(FIND) + strlen(check) + strlen(DIR_OPTIONS);
-			findCommand = malloc(length + 1);
-			if(findCommand == NULL) printError(FAILED_MALLOC_CODE,FAILED_MALLOC_MSG);
-			snprintf(findCommand, length + 1, "%s%s%s", FIND, check, DIR_OPTIONS);
-		break;
-		default: printf(PNT_RED"Passed in an invalid mode for finding"PNT_RESET);break;
-	}
-	puts(findCommand);
-	int result = system(findCommand);
-	free(findCommand);
-	return result == 0;
+int checkIfExists(const char* check){
+	if(access(check, F_OK) == -1)
+		return 0;
+	else
+		return 1;
 }
 
 //surrounds a string in quotes
@@ -129,7 +111,7 @@ char* surroundInQuotes(const char* surround){
 	//+2 for quotes
 	length += 2;
 	char* newString = malloc(length + 1);
-	if(newString == NULL) printError(FAILED_MALLOC_CODE,FAILED_MALLOC_MSG);
+	if(newString == NULL) printError(EXIT_FAILURE,FAILED_MALLOC_MSG);
 	newString[0] = '\"';
 	i = 0;
 	int p = 1;
@@ -156,16 +138,16 @@ void grepIntoFile(const char* text){
 	if(text[0] == '-'){
 		int length = strlen(GREP_PT1) + strlen(text) + strlen(GREP_PT2) + 1;
 		grepCommand = malloc(length + 1);
-		if(grepCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+		if(grepCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 		snprintf(grepCommand, length + 1, "%s\\%s%s", GREP_PT1, text, GREP_PT2);
 	}else{
 		int length = strlen(GREP_PT1) + strlen(text) + strlen(GREP_PT2);
 		grepCommand = malloc(length + 1);
-		if(grepCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+		if(grepCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 		snprintf(grepCommand, length + 1, "%s%s%s", GREP_PT1, text, GREP_PT2);
 	}
 
 	printf(PNT_GREEN "%s\n" PNT_RESET, grepCommand);
-	if(system(grepCommand) != 0) printError(FAILED_GREP_CODE, FAILED_GREP_MSG);
+	if(system(grepCommand) != 0) printError(EXIT_FAILURE, FAILED_GREP_MSG);
 	free(grepCommand);
 }

@@ -14,15 +14,11 @@
 #define FAILED_GREP_MSG "\nERROR SGNF: Error in trying to grep passed text into a file"
 
 
-#define FAILED_MALLOC_CODE 1
-#define FAILED_GREP_CODE 12
-
 #define BUFFER_SIZE 101
 #define LARGER_BUFFER_SIZE 201
 #define YOUTUBE_URL "https://www.youtube.com/watch?v="
 
-//printing an Error is more dynamic and more compact
-//this also means there is no table of errors
+//prints an error and terminates execution returning the exit code provided
 void printError(int code, const char* message);
 
 //helper method to get input and clears stdin
@@ -38,10 +34,8 @@ int exactFileInput(FILE* stream, char* dest, int buffer);
 //returns the length of the amount read
 int unkownFileRead(FILE* stream, char** dest);
 
-//checks via find if the passed in directory path or file exists
-//the second parameter is to specify to find a file or directory
-//pass in 'f' for files and 'd' for directories
-int checkIfExists(const char*, char);
+//checks if the passed in directory or file exists
+int checkIfExists(const char*);
 
 //surrounds the passed in text with quotes
 //so something like-> this is a test message

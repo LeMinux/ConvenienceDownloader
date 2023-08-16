@@ -1,5 +1,6 @@
 #include "cMusicDownload.h"
 #include "helpers.h"
+#include <stdlib.h>
 #include <string.h>
 
 //asks user for a youtube URL
@@ -13,7 +14,7 @@ char* getURL(void){
 	}while(strlen(buffer) == 0);
 	//dynamic memory since this will be passed around
 	char* youtubeURL = malloc(sizeof(buffer));
-	if(youtubeURL == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(youtubeURL == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	snprintf(youtubeURL, sizeof(buffer), "%s", buffer);
 	return youtubeURL;
@@ -41,15 +42,15 @@ void downloadURL(const char* youtubeURL, int mode){
 				" --convert-thumbnails jpg "
 				" -R 4 ";
 		break;
-		default: puts(PNT_RED"Unkown mode passed for downloading URL"PNT_RESET); exit(1); break;
+		default: puts(PNT_RED"Client passed an unkown mode for downloading URL"PNT_RESET); exit(1); break;
 	}
 
 	int length = strlen(youtubeDL) + strlen(youtubeURL);
 	char* downloadCommand = malloc(length + 1);
-	if(downloadCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(downloadCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 	snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
 	printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
-	if(system(downloadCommand) > 0) printError(DOWNLOAD_FAIL_CODE, DOWNLOAD_FAIL_MSG);
+	if(system(downloadCommand) > 0) printError(EXIT_FAILURE, DOWNLOAD_FAIL_MSG);
 	free(downloadCommand);
 }
 
@@ -61,32 +62,21 @@ void downloadURL(const char* youtubeURL, int mode){
  */
 char* getID(const char* youtubeURL){
 	char* id = malloc(YT_ID_SIZE + 1);
-	if(id == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(id == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 	snprintf(id, YT_ID_SIZE + 1, "%s", strstr(youtubeURL, "?v=") + 3);
 	return id;
 }
 
 //obtains the songName with grep and using a temp file
+//avoid using this when trying to also get cover art
 char* getSongName(const char* id){
 	grepIntoFile(id);
 	//getting name
 	FILE* nameFile = fopen("GrepTemp.txt", "r");
-	if(nameFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
+	if(nameFile == NULL) printError(EXIT_FAILURE, TEMP_FILE_FAIL_MSG);
+	char* songName = NULL;
+	unkownFileRead(nameFile, &songName);
 
-	//ftell() was not working for text files
-	//size will include the iteration to get to EOF
-	int size = 0;
-	int data = '\0';
-	while((data = fgetc(nameFile)) != EOF){
-		++size;
-	}
-	fseek(nameFile, SEEK_SET, 0);
-
-	char* songName = malloc(size);
-	if(songName == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
-
-	exactFileInput(nameFile, songName, size);
-	
 	fclose(nameFile);
 	printf(PNT_GREEN "Converting and moving %s\n" PNT_RESET, songName);
 	system("rm GrepTemp.txt");
@@ -104,7 +94,7 @@ char* getSongName(const char* id){
 	int extension = strrchr(songName, '.') - songName;
 	int length = extension + strlen(MP3_EXTENSTION);
 	char* fileMP3 = malloc(length + 1);
-	if(fileMP3 == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(fileMP3 == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	//uses a regular expression to limit size
 	snprintf(fileMP3, length + 1, "%.*s.mp3", extension, songName);
@@ -112,13 +102,13 @@ char* getSongName(const char* id){
 	//converting
 	length = strlen(songName) + strlen(fileMP3) + strlen(FFMPEG);
 	char* convertCommand = malloc(length + 3);
-	if(convertCommand == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(convertCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	//+1 for the space in the command +1 since snprintf includes nul in buffer
 	snprintf(convertCommand, length + 3, "%s%s %s", FFMPEG, songName, fileMP3);
 	printf(PNT_GREEN "%s\n" PNT_RESET, convertCommand);
 
-	if(system(convertCommand) > 0) printError(CONVERT_FAIL_CODE, CONVERT_FAIL_MSG);
+	if(system(convertCommand) > 0) printError(EXIT_FAILURE, CONVERT_FAIL_MSG);
 	free(convertCommand);
 	return fileMP3;
  }
@@ -162,13 +152,13 @@ Node_t* getDirectories(int mode){
 	int data = '\0';
 	int length = 0;
 	FILE* fileWithDir = fopen(WHERE_SEND_FILES, "r");
-	if(fileWithDir == NULL) printError(DOWNLOAD_READ_CODE, DOWNLOAD_READ_MSG);
+	if(fileWithDir == NULL) printError(EXIT_FAILURE, DOWNLOAD_READ_MSG);
 
 	//get the file pointer in position depending on the mode
 	switch(mode){
 		case 4: while(fgetc(fileWithDir) != '4' || fgetc(fileWithDir) != '>');break;
 		case 3: while(fgetc(fileWithDir) != '3' || fgetc(fileWithDir) != '>'); break;
-		default: printError(DOWNLOAD_READ_CODE,DOWNLOAD_READ_MSG); break;
+		default: printError(EXIT_FAILURE,DOWNLOAD_READ_MSG); break;
 	}
 
 	//reads the line in the file
@@ -178,7 +168,7 @@ Node_t* getDirectories(int mode){
 		downloadDir[length++] = data;
 		char* temp = NULL;
 		if((temp = realloc(downloadDir, length + 1)) == NULL)
-			printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+			printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 		else
 			downloadDir = temp;
 	}
@@ -193,20 +183,20 @@ Node_t* getDirectories(int mode){
 
 	if(system(findCommand) != 0){
 		printf(PNT_RED"Could not find directory file %s\n"PNT_RESET, downloadDir);
-		printError(DIR_FAIL_CODE, DIR_FAIL_MSG);
+		printError(EXIT_FAILURE, DIR_FAIL_MSG);
 	}
 	free(findCommand);
 	free(downloadDir);
 	
 	FILE* tempFile = fopen("dirs.txt", "r");
-	if(tempFile == NULL) printError(TEMP_FILE_FAIL_CODE, TEMP_FILE_FAIL_MSG);
+	if(tempFile == NULL) printError(EXIT_FAILURE, TEMP_FILE_FAIL_MSG);
 
 	//variables for creating list
 	data = '\0';
 	length = 0;
 	Node_t* list = NULL;
 	char* readingLine = malloc(25);
-	if(readingLine == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(readingLine == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	//reads what directories are available
 	while((data = fgetc(tempFile)) != EOF){
@@ -216,7 +206,7 @@ Node_t* getDirectories(int mode){
 				//resets readingLine
 				free(readingLine);
 				readingLine = malloc(25);
-				if(readingLine == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+				if(readingLine == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 				length = 0;
 			break;
 			default:
@@ -224,7 +214,7 @@ Node_t* getDirectories(int mode){
 				readingLine[length++] = data;
 				char* temp = NULL;
 				if((temp = realloc(readingLine, length + 1)) == NULL)
-					printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+					printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 				else
 					readingLine = temp;
 
@@ -248,7 +238,7 @@ char* getDests(int mode, const char* prompt){
 	Node_t* listOfDirs = getDirectories(mode);
 
 	char* input = malloc(101);
-	if(input == NULL) printError(FAILED_MALLOC_CODE, FAILED_MALLOC_MSG);
+	if(input == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	while(found == -1){
 		do{
@@ -257,10 +247,47 @@ char* getDests(int mode, const char* prompt){
 			exactUserInput(input, 101);
 		}while(strlen(input) == 0);
 
-		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0)
+		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
 			exit(0);
+		}else if(strcmp(input, "skip") == 0 || strcmp(input, "Skip") == 0){
+			returnDir = malloc(5);
+			snprintf(returnDir, 5, "%s","SKIP");
+			found = 1;
+		}else if((found = containsElement(listOfDirs, input)) != -1){
+			returnDir = getElement(listOfDirs, found);
+			found = 1;
+		}else{
+			printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
+			memset(input, '\0', strlen(input));
+		}
+	}
 
-		if((found = containsElement(listOfDirs, input)) != -1){
+	free(input);
+	deleteList(&listOfDirs);
+	return returnDir;
+}
+
+//gets from the user what directory they want to download into
+//overloaded method that doesn't have the skip option to avoid hidden bugs
+char* getDestsNoSkip(int mode, const char* prompt){
+	//asks user for desired directory
+	int found = -1;
+	char* returnDir = NULL;
+	Node_t* listOfDirs = getDirectories(mode);
+
+	char* input = malloc(101);
+	if(input == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+
+	while(found == -1){
+		do{
+			printList(listOfDirs);
+			printf("%s", prompt);
+			exactUserInput(input, 101);
+		}while(strlen(input) == 0);
+
+		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
+			exit(0);
+		}else if((found = containsElement(listOfDirs, input)) != -1){
 			returnDir = getElement(listOfDirs, found);
 			found = 1;
 		}else{

@@ -1,14 +1,15 @@
 #include "linkedList.h"
+#include <stdlib.h>
 
 void addToList(Node_t** head, const char* string){
 	Node_t* newNode = malloc(sizeof(Node_t));
 	if(newNode == NULL)
-		printError(FAILED_LMALLOC_CODE, FAILED_LMALLOC_MSG);
+		printError(EXIT_FAILURE, FAILED_LMALLOC_MSG);
 
 	newNode->next = *head;
 	newNode->string = malloc(strlen(string) + 1);
 	if(newNode->string == NULL)
-		printError(FAILED_LMALLOC_CODE, FAILED_LMALLOC_MSG);
+		printError(EXIT_FAILURE, FAILED_LMALLOC_MSG);
 
 	snprintf(newNode->string, strlen(string) + 1,"%s",string);
 	*head = newNode;
@@ -50,7 +51,7 @@ int containsElement(Node_t* head, const char* compareTo){
 
 char* getElement(Node_t* head, int get){
 	if(get < 0)
-		printError(FAILED_GET_CODE, FAILED_GET_MSG);
+		printError(EXIT_FAILURE, FAILED_GET_MSG);
 
 	int index = 0;
 	char* returnString = NULL;
@@ -64,7 +65,7 @@ char* getElement(Node_t* head, int get){
 	}
 
 	//if it could not find at an index it was out of bound of the length
-	printError(FAILED_GET_CODE, FAILED_GET_MSG);	
+	printError(EXIT_FAILURE, FAILED_GET_MSG);
 	//just to keep compiler happy
 	return NULL;
 }
