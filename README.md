@@ -37,7 +37,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
   
   -```./download.out -f listOfURLsANDMP3.txt -ca coverArt.jpg``` downloads all urls and adds coverArt.jpg to .mp3 and sends them to the specified mp4 and mp3 directories
 
-  -```./download.out -f listOfURLsANDMP3.txt``` youtube urls will have their video downloaded as well as their thumbnail to add to its .mp3 file. Specifying .mp3 files though will have no affect since the default is to have no cover art.
+  -```./download.out -f listOfURLsANDMP3.txt -ca NO-ART``` youtube urls will have their video downloaded as well as their thumbnail to add to its .mp3 file. Specifying .mp3 files though will simply move them.
   
   -```./download.out -ca coverArt.png``` Adds the cover art for each downloaded video you specify. This will prompt for placement each time, but it will not ask to change the cover art (at least not yet).
 
