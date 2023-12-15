@@ -5,7 +5,7 @@
 //printing an Error is more dynamic and more compact
 //this also means there is no table to shift
 void printError(int code, const char* message){
-	printf(PNT_RED"%s\n"PNT_RESET,message);
+	fprintf(stderr, PNT_RED"%s\n"PNT_RESET,message);
 	exit(code);
 }
 
@@ -19,7 +19,7 @@ void exactUserInput(char* input, int buffer){
 			*input = getchar();
 		break;
 		default:
-			while(index < buffer - 1 && (data = getchar()) != '\n')
+			while(index < buffer - 1 && (data = getchar()) != '\n' && data != EOF)
 				*(input + index++) = data;
 
 			*(input + index) = '\0';
@@ -56,7 +56,7 @@ int exactFileInput(FILE* stream, char* dest, int buffer){
 	return index;
 }
 
-int unkownFileRead(FILE* stream, char** dest){
+int unknownInput(FILE* stream, char** dest){
 	int MAX_READ = 4095;
 	int reallocSize = 50;
 	int data = '\0';

@@ -35,4 +35,6 @@ int containsElement(Node_t*, const char*);
 //This will return a newly malloced string to prevent aliasing
 char* getElement(Node_t*, int);
 
+int getLength(Node_t*);
+
 #endif

@@ -1,5 +1,8 @@
 #include "cMusicDownload.h"
 #include "helpers.h"
+#include "linkedList.h"
+#include <bits/posix1_lim.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -75,7 +78,7 @@ char* getSongName(const char* id){
 	FILE* nameFile = fopen("GrepTemp.txt", "r");
 	if(nameFile == NULL) printError(EXIT_FAILURE, TEMP_FILE_FAIL_MSG);
 	char* songName = NULL;
-	unkownFileRead(nameFile, &songName);
+	unknownInput(nameFile, &songName);
 
 	fclose(nameFile);
 	printf(PNT_GREEN "Converting and moving %s\n" PNT_RESET, songName);
@@ -141,101 +144,67 @@ int repeat(void){
 	return 0;
 }
 
-Node_t* getDirectories(int mode){
-	/*
-	const char LS [] = "ls -d ";
-	const char TO_DIRS [] = "* > dirs.txt";
-	*/
-	const char FIND [] = "find ";
-	const char OPTIONS [] = " -maxdepth 1 -type d";
-	const char TO_DIRS [] = " > dirs.txt";
-	int data = '\0';
-	int length = 0;
-	FILE* fileWithDir = fopen(WHERE_SEND_FILES, "r");
-	if(fileWithDir == NULL) printError(EXIT_FAILURE, DOWNLOAD_READ_MSG);
+void getSubdirectories(const char* basePath, Node_t** list){
+	addToList(list, basePath);
+	struct dirent* direntp = NULL;
+	DIR* dirp = NULL;
+	size_t pathLength;
 
-	//get the file pointer in position depending on the mode
-	switch(mode){
-		case 4: while(fgetc(fileWithDir) != '4' || fgetc(fileWithDir) != '>');break;
-		case 3: while(fgetc(fileWithDir) != '3' || fgetc(fileWithDir) != '>'); break;
-		default: printError(EXIT_FAILURE,DOWNLOAD_READ_MSG); break;
-	}
+	/* Check input parameters. */
+	if (basePath == NULL) return;
 
-	//reads the line in the file
-	//reallocs until it has read the full line for more efficiency
-	char* downloadDir = malloc(length + 1);
-	while((data = fgetc(fileWithDir)) != EOF && data != '\n'){
-		downloadDir[length++] = data;
-		char* temp = NULL;
-		if((temp = realloc(downloadDir, length + 1)) == NULL)
-			printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
-		else
-			downloadDir = temp;
-	}
-	fclose(fileWithDir);
-	downloadDir[length] = '\0';
+	pathLength = strlen(basePath);
 
-	//length = strlen(LS) + strlen(TO_DIRS);
-	length += strlen(FIND) + strlen(OPTIONS) + strlen(TO_DIRS);
-	char* findCommand = malloc(length + 1);
-	//snprintf(findCommand, length + 1, "%s%s%s", LS, downloadDir, TO_DIRS);
-	snprintf(findCommand, length + 1, "%s%s%s%s", FIND, downloadDir, OPTIONS, TO_DIRS);
+	if (pathLength  == 0 || pathLength > _POSIX_PATH_MAX)
+		return;
 
-	if(system(findCommand) != 0){
-		printf(PNT_RED"Could not find directory file %s\n"PNT_RESET, downloadDir);
-		printError(EXIT_FAILURE, DIR_FAIL_MSG);
-	}
-	free(findCommand);
-	free(downloadDir);
-	
-	FILE* tempFile = fopen("dirs.txt", "r");
-	if(tempFile == NULL) printError(EXIT_FAILURE, TEMP_FILE_FAIL_MSG);
+	/* Open directory */
+	dirp = opendir(basePath);
+	if (dirp == NULL) return;
 
-	//variables for creating list
-	data = '\0';
-	length = 0;
-	Node_t* list = NULL;
-	char* readingLine = malloc(25);
-	if(readingLine == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+	while ((direntp = readdir(dirp)) != NULL){
+		/* For every directory entry... */
+		struct stat fstat;
+		char fullPath [_POSIX_PATH_MAX + 1];
 
-	//reads what directories are available
-	while((data = fgetc(tempFile)) != EOF){
-		switch(data){
-			case '\n':
-				addToList(&list, readingLine);
-				//resets readingLine
-				free(readingLine);
-				readingLine = malloc(25);
-				if(readingLine == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
-				length = 0;
-			break;
-			default:
-				//adjust buffer size if needed
-				readingLine[length++] = data;
-				char* temp = NULL;
-				if((temp = realloc(readingLine, length + 1)) == NULL)
-					printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
-				else
-					readingLine = temp;
+		/* Calculate full name, check we are in file length limts */
+		if ((pathLength + strlen(direntp->d_name) + 1) > _POSIX_PATH_MAX){
+			//fprintf(stderr, "concatonating %s and %s is larger than max limit of %d", basePath, direntp->d_name, _POSIX_PATH_MAX);
+			//printError(EXIT_FAILURE, "Directory name is too large");
+			continue;
+		}else{
+			if (*(fullPath + pathLength - 1) != '/')
+				snprintf(fullPath, pathLength + strlen(direntp->d_name) + 2, "%s/%s", basePath, direntp->d_name);
+			else
+				snprintf(fullPath, pathLength + strlen(direntp->d_name) + 1, "%s%s", basePath, direntp->d_name);
+		}
 
-				readingLine[length] = '\0';
-			break;
+		/* Ignore special directories. */
+		if ((strcmp(direntp->d_name, ".") == 0) ||
+			(strcmp(direntp->d_name, "..") == 0))
+			continue;
+
+		/* Print only if it is really directory. */
+		if (stat(fullPath, &fstat) < 0)
+			continue;
+
+		if (S_ISDIR(fstat.st_mode)){
+			getSubdirectories(fullPath, list);
 		}
 	}
 
-	free(readingLine);
-	fclose(tempFile);
-	system("rm dirs.txt");
-	return list;
+    /* Finalize resources. */
+    closedir(dirp);
 }
 
 //gets from the user what directory they want to download into
 //with the help of getDirectories
-char* getDests(int mode, const char* prompt){
+char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 	//asks user for desired directory
 	int found = -1;
 	char* returnDir = NULL;
-	Node_t* listOfDirs = getDirectories(mode);
+	Node_t* listOfDirs = NULL;
+	getSubdirectories(baseDir, &listOfDirs);
 
 	char* input = malloc(101);
 	if(input == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
@@ -269,11 +238,12 @@ char* getDests(int mode, const char* prompt){
 
 //gets from the user what directory they want to download into
 //overloaded method that doesn't have the skip option to avoid hidden bugs
-char* getDestsNoSkip(int mode, const char* prompt){
+char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 	//asks user for desired directory
 	int found = -1;
 	char* returnDir = NULL;
-	Node_t* listOfDirs = getDirectories(mode);
+	Node_t* listOfDirs = NULL;
+	getSubdirectories(baseDir, &listOfDirs);
 
 	char* input = malloc(101);
 	if(input == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);

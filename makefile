@@ -1,30 +1,25 @@
 # makefile for music downloader
 
-CFILES:= musicDriver.c cMusicDownload.c linkedList.c helpers.c writeArt.c
+CFILES:=musicDriver.c cMusicDownload.c linkedList.c helpers.c writeArt.c
+DIR:=Destinations
 
-test-run: test-compile
+all:
+	gcc $(CFILES) -o testing.out
+	if [ ! -d "$(DIR)" ]; then \
+		mkdir -p "$(DIR)"; \
+	fi
+
+test:
+	gcc -Wall -o test.out $(CFILES)
 	./test.out
-true-run: true-compile
-	./download.out
-debug-run: debug-compile
+
+leaks:
+	gcc -g -Wall -fsanitize=address -fsanitize-recover=address -o debug.out $(CFILES)
 	ASAN_OPTIONS=symbolize=1 ./debug.out
-debug-gdb-run: debug-gdb
+
+debug:
+	gcc -g -Wall -fsanitize=address -fsanitize-recover=address -o debug.out $(CFILES)
 	gdb gdb.out
 
-test-compile:
-	gcc -Wall -o test.out $(CFILES)
-debug-compile:
-	gcc -g -Wall -fsanitize=address -fsanitize-recover=address -o debug.out $(CFILES)
-debug-gdb:
-	gcc -g -Wall -o gdb.out $(CFILES)
-true-compile:
-	gcc -Wall -o download.out $(CFILES)
-
-test-clean:
-	rm test.out
-true-clean:
-	rm download.out
-debug-clean:
-	rm debug.out
-clean-all:
+clean:
 	rm *.out

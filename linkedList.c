@@ -64,8 +64,14 @@ char* getElement(Node_t* head, int get){
 		head = head->next;
 	}
 
-	//if it could not find at an index it was out of bound of the length
-	printError(EXIT_FAILURE, FAILED_GET_MSG);
-	//just to keep compiler happy
 	return NULL;
+}
+
+int getLength(Node_t* head){
+	int length = 0;
+	while(head != NULL){
+		++length;
+		head = head->next;
+	}
+	return length;
 }

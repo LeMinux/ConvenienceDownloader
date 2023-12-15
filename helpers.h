@@ -18,6 +18,10 @@
 #define LARGER_BUFFER_SIZE 201
 #define YOUTUBE_URL "https://www.youtube.com/watch?v="
 
+#define DES "Destinations/"
+#define DES_MP3 "Destinations/audioDest.txt"
+#define DES_MP4 "Destinations/videoDest.txt"
+
 //prints an error and terminates execution returning the exit code provided
 void printError(int code, const char* message);
 
@@ -32,7 +36,7 @@ int exactFileInput(FILE* stream, char* dest, int buffer);
 
 //helper method to read a line in a file of an unkown length
 //returns the length of the amount read
-int unkownFileRead(FILE* stream, char** dest);
+int unknownInput(FILE* stream, char** dest);
 
 //checks if the passed in directory or file exists
 int checkIfExists(const char*);
