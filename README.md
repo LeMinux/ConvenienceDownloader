@@ -10,7 +10,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading. The user is also prompted each time per URL where to send MP4 and MP3 files. This will also download the youtube thumbnail and place it as a cover art.
   - -l
   
-    List available directories to send files to specified in DownloadTo.txt. This will list for both MP4 and MP3.
+    List available directories as specified by the given parent directory in Destinations. This will list for both MP4 and MP3.
     
     During execution of the program the same list of available directories will be specified also.
   - -f
@@ -19,10 +19,10 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     Separate the list by newlines of youtube URLs or .mp3 files (**You must provide the -ca flag if you want to use mp3 files**)
   - -w4
   
-    Used to specify where to download MP4(video) files. This can be used to change where to send videos.
+    Used to specify the parent directory on where to download MP4(video) files. Ex: Dir/ -> Dir/<subdirs> -> Dir/<subdirs>/<subdirs>/.../ This can be used to change where to send videos.
   - -w3
   
-    Used to specify where to send MP3(audio) files. This can be used to change where to send audios.
+    Used to specify the parent directory on where to send MP3(audio) files. This can be used to change where to send audios.
   - -ca
   
     Used to write cover art to MP3 files. 
