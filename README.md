@@ -19,7 +19,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     Separate the list by newlines of youtube URLs or .mp3 files (**You must provide the -ca flag if you want to use mp3 files**)
   - -w4
   
-    Used to specify the parent directory on where to download MP4(video) files. Ex: Dir/ -> Dir/<subdirs> -> Dir/<subdirs>/<subdirs>/.../ This can be used to change where to send videos.
+    Used to specify the parent directory on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../ This can be used to change where to send videos.
   - -w3
   
     Used to specify the parent directory on where to send MP3(audio) files. This can be used to change where to send audios.
