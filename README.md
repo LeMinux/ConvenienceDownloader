@@ -49,4 +49,4 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
   ## Features
   - You are able to skip downloading videos or audios, but depending on what you choose you can only opt out of certain ones. For example if you choose to add cover art you can not skip downloading audio files since the purpose of this flag is to add cover art to them, but you can skip downloading videos.
   - Now can choose directories that are deeper than one in. For now you will have to type the entire path.
-  - You can use relative paths as long as you execute within the directory the executable is in. Ex: ../Music/Bangers instead of /home/<user>/Music/Bangers.
+  - You can use relative paths as long as you execute within the directory the executable is in. Ex: ../Music/Bangers instead of /home/User/Music/Bangers.
