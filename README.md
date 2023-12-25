@@ -2,7 +2,7 @@
 C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and more beneficial to download from youtube. First it downloads the video into the current directory then converts to .mp3 for later transfering and moves the .mp4 into the specified directory.
 
 ## Initialization
-  - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./testing.out (will change that) will then ask for you to specify where to send videos and audios.
+  - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./download.out or make run will then ask for you to specify where to send videos and audios per iteration.
 
 ## Usage
   - default
