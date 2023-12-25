@@ -1,11 +1,11 @@
 #include "writeArt.h"
 #include "helpers.h"
-#include "cMusicDownload.h"
-#include <stdlib.h>
+#include "userInput.h"
+#include "fileOps.h"
 
 void writeCovers(FILE* songNames, const char* coverArt){
 	char originalName [LARGER_BUFFER_SIZE] = "";
-	while(exactFileInput(songNames, originalName, LARGER_BUFFER_SIZE) != 0){
+	while(exactInput(songNames, originalName, LARGER_BUFFER_SIZE) != 0){
 			char* name = surroundInQuotes(originalName);
 		if(!checkIfExists(name)){
 			printf(PNT_RED"can't find %s via its path\n"PNT_RESET, originalName);
@@ -64,4 +64,12 @@ void writeCover(const char* songName, const char* coverArt){
 	moveFile(output, name);
 	free(output);
 	free(name);
+}
+
+void removeCoverArt(const char* artName){
+	char* removeArt = malloc(3 + strlen(artName) + 1);
+	snprintf(removeArt, 3 + strlen(artName) + 1, "%s%s", "rm ", artName);
+	system(removeArt);
+	free(removeArt);
+	removeArt = NULL;
 }

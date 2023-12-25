@@ -1,17 +1,16 @@
 # makefile for music downloader
 
-CFILES:=musicDriver.c cMusicDownload.c linkedList.c helpers.c writeArt.c
+CFILES:=musicDriver.c userInput.c linkedList.c helpers.c writeArt.c fileOps.c
 DIR:=Destinations
 
 all:
-	gcc $(CFILES) -o testing.out
+	gcc $(CFILES) -o download.out
 	if [ ! -d "$(DIR)" ]; then \
 		mkdir -p "$(DIR)"; \
 	fi
 
-test:
-	gcc -Wall -o test.out $(CFILES)
-	./test.out
+run:
+	./download.out
 
 leaks:
 	gcc -g -Wall -fsanitize=address -fsanitize-recover=address -o debug.out $(CFILES)

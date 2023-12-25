@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "helpers.h"
-
 #define ART_ERROR_MSG "Error in adding cover art to .mp3 file"
 #define MV_TEMP_MSG "Error in overwriting original file to place cover art"
 #define MP3_LIST_MSG "Error in opening MP3 list given. File does not exist"
@@ -25,5 +23,7 @@ void writeCovers(FILE*, const char*);
 //writes to one song the specified cover art
 //this needs the songName as an mp3
 void writeCover(const char*, const char*);
+
+void removeCoverArt(const char* artName);
 
 #endif
