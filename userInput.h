@@ -1,3 +1,6 @@
+#ifndef USERINPUT_H
+#define USERINPUT_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,3 +43,5 @@ int exactInput(FILE* stream, char* dest, int buffer);
 //helper method to read a line in a file of an unknown length
 //returns the length of the amount read
 int unknownInput(FILE* stream, char** dest);
+
+#endif
