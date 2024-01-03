@@ -36,6 +36,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
 - --keep-art
 
     Use this option if you want to keep the cover art downloaded. By default cover arts will not be kept, so use this to keep them.
+    Note that you can not keep cover arts and specify a cover art to use since these conflict with each other.
     
     ## Example Usage
   
