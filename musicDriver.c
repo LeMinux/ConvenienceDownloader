@@ -9,23 +9,30 @@
  * See if you can bring down the many free and malloc calls.
  * Maybe separate functions out into more specific header files
  * When converting to mp3 set bitrate to 256K
+ * check if the define statements are in their correct header file
+ * Add error checking for if finding the file fails
+ * Destinations for cover arts
+ * Replace the commands with stat (things like ls and find)
 */
 
 /*TODO
- * check if the define statements are in their correct header file
  * Change how downloadMode is set in the getModeFromSelection function
- * Add error checking for if finding the file fails
- * Destinations for cover arts?
  * Fix how typing the dests is. Is it really necessary to type the entire path?
- * Replace the commands with stat (things like ls and find)
- * For file execution think about adding a way to change destinations mid-way. (maybe like !3>../Bangers/Extreme)
+ * For file execution think about adding a way to change destinations mid-way.
+ *	(!3>../Bangers/Extreme)
+ *	(!4>../Bangers/Extreme)
+ *	(!c>../Bangers/Extreme)
+ * For file execution if errors occur try to log what URLS or paths were ignored
+ * Add cover art related things such as keeping or discarding them
  * Adding NULL protection in writeCover()?
+ * mv command or rename function?
 */
 
 /*CONTINUOUS
  * Use program :P
 */
 
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -60,9 +67,6 @@
 
 #define ID_BUFFER 12
 
-//in dirent.h the max is 256 including nul terminator
-#define MAX_FILE_NAME 255
-
 //this struct is here so that function pointers can be used for moving files
 //this helps generalize the code a little, which does make it less efficient,
 //but it makes changes much easier
@@ -78,6 +82,7 @@ typedef struct MovePackage{
 //these act as the base path. This way opening the destination files only happens once
 char* MP4_BASE_DIR;
 char* MP3_BASE_DIR;
+char* COVER_BASE_DIR;
 
 void __attribute__((constructor)) initPaths (){
 	if(!checkIfExists(DES)){
@@ -85,6 +90,7 @@ void __attribute__((constructor)) initPaths (){
 	}
 
 	if(!checkIfExists(DES_MP4)){
+	//fprintf(writeTo, "%s", string);
 		printf(PNT_RED"Destinations for videos have not been initalized.\n"PNT_RESET);
 		int valid = 0;
 		char* buffer = NULL;
@@ -128,8 +134,31 @@ void __attribute__((constructor)) initPaths (){
 		}
 	}
 
+	if(!checkIfExists(DES_COVER)){
+		printf(PNT_RED"Where to get covers has not been initalized.\n"PNT_RESET);
+		int valid = 0;
+		char* buffer = NULL;
+		while(!valid){
+			printf("Please type the path to where you extract your cover art files-> ");
+			unknownInput(stdin, &buffer);
+			if(strlen(buffer) == 0){
+				puts(PNT_RED"Enter something."PNT_RESET);
+			}else if(!checkIfExists(buffer)){
+				puts(PNT_RED"The path specified does not exist"PNT_RESET);
+			}else if(access(buffer, W_OK) == -1){
+				puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
+			}else{
+				valid = 1;
+				writeDest(buffer, 5);
+			}
+			free(buffer);
+			buffer = NULL;
+		}
+	}
+
 	FILE* mp4Dest = NULL;
 	FILE* mp3Dest = NULL;
+	FILE* coverDest = NULL;
 
 	mp4Dest = fopen(DES_MP4, "r");
 	if(mp4Dest == NULL) printError(EXIT_FAILURE, "Failed to open video destination file");
@@ -137,11 +166,17 @@ void __attribute__((constructor)) initPaths (){
 	mp3Dest = fopen(DES_MP3, "r");
 	if(mp3Dest == NULL) printError(EXIT_FAILURE, "Failed to open audio destination file");
 
+	coverDest = fopen(DES_COVER, "r");
+	if(coverDest == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
+
+
 	unknownInput(mp4Dest, &MP4_BASE_DIR);
 	unknownInput(mp3Dest, &MP3_BASE_DIR);
+	unknownInput(coverDest, &COVER_BASE_DIR);
 
 	fclose(mp4Dest);
 	fclose(mp3Dest);
+	fclose(coverDest);
 }
 
 //mode specifies audio or video
@@ -150,7 +185,6 @@ char* askUserForPath(int mode, int allowSkipping){
 	const char* baseDir = NULL;
 	const char* prompt = NULL;
 	char* (*askFunction)(const char*, const char*) = NULL;
-	char* destination = NULL;
 
 	switch(mode){
 		case MP3_MODE:
@@ -187,32 +221,38 @@ char* askUserForPath(int mode, int allowSkipping){
 void convertFirstMoveBoth(MovePackage* movingInfo){
 	char videoFileName [MAX_FILE_NAME + 1] = "";
 	char audioFileName [MAX_FILE_NAME + 1] = "";
-	char jpgFileName [MAX_FILE_NAME + 1] = "";
+
+	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
+	if(strcmp(videoFileName, "") == 0)
+		printError(EXIT_FAILURE, "Could not find video file after downloading");
+
+	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
+	if(strcmp(audioFileName, "") == 0)
+		printError(EXIT_FAILURE, "Could not find audio file after downloading");
+
+
 
 	if(movingInfo->hasCoverArt){
 		if(movingInfo->artName == NULL){
-			getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
+			char jpgFileName [MAX_FILE_NAME + 1] = "";
 			getFileNameByID(movingInfo->id, JPG_EXT, jpgFileName, MAX_FILE_NAME);
+			if(strcmp(jpgFileName, "") == 0)
+				printError(EXIT_FAILURE, "Could not find cover file after downloading");
+
 			convertToMp3(videoFileName);
-			getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
 
 			writeCover(audioFileName, jpgFileName);
 			removeCoverArt(jpgFileName);
 			moveFile(videoFileName, movingInfo->videoDest);
 			moveFile(audioFileName, movingInfo->audioDest);
 		}else{
-			getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
 			convertToMp3(videoFileName);
-			getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
-
 			writeCover(audioFileName, movingInfo->artName);
 			moveFile(videoFileName, movingInfo->videoDest);
 			moveFile(audioFileName, movingInfo->audioDest);
 		}
 	}else{
-		getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
 		convertToMp3(videoFileName);
-		getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
 		moveFile(videoFileName, movingInfo->videoDest);
 		moveFile(audioFileName, movingInfo->audioDest);
 	}
@@ -221,27 +261,34 @@ void convertFirstMoveBoth(MovePackage* movingInfo){
 void moveVideo (MovePackage* movingInfo){
 	char videoFileName [MAX_FILE_NAME + 1] = "";
 	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
+	if(strcmp(videoFileName, "") == 0)
+		printError(EXIT_FAILURE, "Could not find video file after downloading");
+
 	moveFile(videoFileName, movingInfo->videoDest);
 }
 
 void moveAudio(MovePackage* movingInfo){
 	char audioFileName [MAX_FILE_NAME + 1] = "";
-	char jpgFileName [MAX_FILE_NAME + 1] = "";
+
+	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
+	if(strcmp(audioFileName, "") == 0)
+		printError(EXIT_FAILURE, "Could not find audio file after downloading");
 
 	if(movingInfo->hasCoverArt){
 		if(movingInfo->artName == NULL){
-			getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
+			char jpgFileName [MAX_FILE_NAME + 1] = "";
 			getFileNameByID(movingInfo->id, JPG_EXT, jpgFileName, MAX_FILE_NAME);
+			if(strcmp(jpgFileName, "") == 0)
+				printError(EXIT_FAILURE, "Could not find cover file after downloading");
+
 			writeCover(audioFileName, jpgFileName);
 			removeCoverArt(jpgFileName);
 			moveFile(audioFileName, movingInfo->audioDest);
 		}else{
-			getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
 			writeCover(audioFileName, movingInfo->artName);
 			moveFile(audioFileName, movingInfo->audioDest);
 		}
 	}else{
-		getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
 		moveFile(audioFileName, movingInfo->audioDest);
 	}
 }
@@ -306,6 +353,7 @@ int main(int argc, char** argv){
 	int fileFlagIndex = 0;
 	int coverArtMode = DEFAULT_MODE;
 	int coverArtIndex = 0;
+	int keepArt = 0;
 
 	int c = 1;
 	for(; c < argc; ++c){
@@ -355,16 +403,6 @@ int main(int argc, char** argv){
 			exit(EXIT_SUCCESS);
 
 		}else if(strcmp("-ca", argv[c]) == 0){
-			/*
-			if(strcmp("NO-ART", argv[c + 1]) == 0){
-				coverArtMode = NO_DWNLD_COVER_ART;
-				coverArtIndex = c + 1;
-			}else{
-				if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
-				coverArtMode = NO_DWNLD_COVER_ART;
-				coverArtIndex = c + 1;
-			}
-			*/
 			if(strcmp("NO-ART", argv[c + 1]) != 0){
 				if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
 			}
@@ -372,11 +410,16 @@ int main(int argc, char** argv){
 			coverArtMode = NO_DWNLD_COVER_ART;
 			coverArtIndex = c + 1;
 			++c;
+		}else if(strcmp("--keep-art", argv[c]) == 0){
+			keepArt = 1;
 		}else{
 			fprintf(stderr, PNT_RED"Invalid argument %s\n"PNT_RESET, argv[c]);
 			exit(EXIT_FAILURE);
 		}
 	}//finished parsing arguments
+
+	if(keepArt && coverArtMode == NO_DWNLD_COVER_ART)
+		printError(EXIT_FAILURE, "Can not keep cover art and specify a cover art");
 
 	char* sendAudio = NULL;
 	char* sendVideo = NULL;
@@ -434,6 +477,7 @@ int main(int argc, char** argv){
 		do{
 			//execution for downloading
 			char* url = getURL();
+
 			//snprintf will rewrite the id string
 			snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(url, "?v=") + 3);
 

@@ -1,5 +1,4 @@
 #include "fileOps.h"
-#include <string.h>
 
 void writeDest(char* string, int mode){
 	FILE* writeTo = NULL;
@@ -12,6 +11,11 @@ void writeDest(char* string, int mode){
 			writeTo = fopen(DES_MP4, "w");
 			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to write videos to");
 		break;
+		case 5:
+			writeTo = fopen(DES_COVER, "w");
+			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to extract cover art from");
+
+		break;
 		default: printError(EXIT_FAILURE, "Client passed unknown mode for Destinations");
 		break;
 	}
@@ -21,7 +25,6 @@ void writeDest(char* string, int mode){
 	else
 		fprintf(writeTo, "%s/", string);
 
-	//fprintf(writeTo, "%s", string);
 	fclose(writeTo);
 }
 
@@ -45,13 +48,14 @@ void getFileNameByID(const char* id, const char* extension, char* outString, int
 	currentDirectory = opendir(".");
 	if (currentDirectory == NULL)printError(EXIT_FAILURE, "Failed to open currentDirectory)");
 
-	while((entry = readdir(currentDirectory)) != NULL){
+	int isFound = 0;
+	while((entry = readdir(currentDirectory)) != NULL && !isFound){
 		struct stat statEntry;
-		// Print the name of each file in the directory
 		if(stat(entry->d_name, &statEntry) == 0){
 			if(S_ISREG(statEntry.st_mode)){
 				if(strstr(entry->d_name, extension) && strstr(entry->d_name, id)){
 					memcpy(outString, entry->d_name, length);
+					isFound = 1;
 				}
 			}
 		}
@@ -138,6 +142,8 @@ void convertToMp3(const char* songName){
 	printf(PNT_GREEN "%s\n" PNT_RESET, convertCommand);
 
 	if(system(convertCommand) > 0) printError(EXIT_FAILURE, CONVERT_FAIL_MSG);
+
+	free(fileMP3);
 	free(convertCommand);
 }
 

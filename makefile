@@ -4,9 +4,13 @@ CFILES:=musicDriver.c userInput.c linkedList.c helpers.c writeArt.c fileOps.c
 DIR:=Destinations
 
 all:
-	gcc $(CFILES) -o download.out
-	if [ ! -d "$(DIR)" ]; then \
+	@gcc $(CFILES) -o download.out
+	@echo "Compiled okay"
+	@if [ ! -d "$(DIR)" ]; then \
 		mkdir -p "$(DIR)"; \
+		echo "Destinations directory has been made"; \
+	else \
+		echo "Destinations directory already exists"; \
 	fi
 
 run:

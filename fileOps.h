@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
+#include <string.h>
 
 #include "linkedList.h"
 #include "helpers.h"
@@ -13,6 +14,10 @@
 #define DES "Destinations/"
 #define DES_MP3 "Destinations/audioDest.txt"
 #define DES_MP4 "Destinations/videoDest.txt"
+#define DES_COVER "Destinations/coverDest.txt"
+
+//in dirent.h the max is 256 including nul terminator
+#define MAX_FILE_NAME 255
 
 void writeDest(char* string, int mode);
 void moveFile(const char* fileName, const char* destination);

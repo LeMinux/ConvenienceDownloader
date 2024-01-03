@@ -4,12 +4,12 @@
 void addToList(Node_t** head, const char* string){
 	Node_t* newNode = malloc(sizeof(Node_t));
 	if(newNode == NULL)
-		printError(EXIT_FAILURE, FAILED_LMALLOC_MSG);
+		printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	newNode->next = *head;
 	newNode->string = malloc(strlen(string) + 1);
 	if(newNode->string == NULL)
-		printError(EXIT_FAILURE, FAILED_LMALLOC_MSG);
+		printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	snprintf(newNode->string, strlen(string) + 1,"%s",string);
 	*head = newNode;

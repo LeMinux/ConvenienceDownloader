@@ -19,8 +19,10 @@
 #define SKIP_VALID_MSG "\nERROR INVD: Error in user skipping selecting a directory"
 
 //some constant defines
-#define YT_URL_BUFFER 44 //this is from the beginning of the URL to the end of the ID parameter
+#define YT_URL_BUFFER 44 //this is from the beginning of the URL to the end of the ID (33 + 11)
 #define YT_ID_SIZE 11
+
+#define CHUNK_READ 51
 
 char* getURL(void);
 
