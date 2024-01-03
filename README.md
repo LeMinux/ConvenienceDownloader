@@ -33,6 +33,9 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     that contains youtubeURLs and .mp3 file paths, and it will add the cover art to each entry.
     
     Passing in "NO-ART" will just download the .mp3 file with no cover art. MP3 files that already have cover arts will not be affected by this option.
+- --keep-art
+
+    Use this option if you want to keep the cover art downloaded. By default cover arts will not be kept, so use this to keep them.
     
     ## Example Usage
   
