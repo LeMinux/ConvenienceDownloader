@@ -13,6 +13,10 @@ all:
 		echo "Destinations directory already exists"; \
 	fi
 
+test:
+	@gcc $(CFILES) -o test.out
+	./test.out
+
 run:
 	./download.out
 

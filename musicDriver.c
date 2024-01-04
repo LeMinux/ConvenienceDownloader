@@ -13,17 +13,20 @@
  * Add error checking for if finding the file fails
  * Destinations for cover arts
  * Replace the commands with stat (things like ls and find)
+ * Change how downloadMode is set in the getModeFromSelection function
+ * Change the wantArt and coverArtMode before actual execution
 */
 
 /*TODO
- * Change how downloadMode is set in the getModeFromSelection function
- * Fix how typing the dests is. Is it really necessary to type the entire path?
+ * Fix bug that creates two // in getting sub dirs
  * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
  *	(!c>../Bangers/Extreme)
  * For file execution if errors occur try to log what URLS or paths were ignored
+ *	instead of just crashing the program which results in manual cleansing of the file
  * Add cover art related things such as keeping or discarding them
+ * Fix how typing the dests is. Is it really necessary to type the entire path?
  * Adding NULL protection in writeCover()?
  * mv command or rename function?
 */
@@ -77,6 +80,13 @@ typedef struct MovePackage{
 	int hasCoverArt;
 	char* artName;
 } MovePackage;
+
+//package for holding modes
+//this also makes it so gettingModeFromSelection doesn't need to worry about NULL
+typedef struct ModePackage{
+	int downloadMode;
+	int coverMode;
+} ModePackage;
 
 //global dynamic variables
 //these act as the base path. This way opening the destination files only happens once
@@ -223,11 +233,13 @@ void convertFirstMoveBoth(MovePackage* movingInfo){
 	char audioFileName [MAX_FILE_NAME + 1] = "";
 
 	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
-	if(strcmp(videoFileName, "") == 0)
+	if(strlen(videoFileName) == 0)
 		printError(EXIT_FAILURE, "Could not find video file after downloading");
 
+	convertToMp3(videoFileName);
+
 	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
-	if(strcmp(audioFileName, "") == 0)
+	if(strlen(audioFileName) == 0)
 		printError(EXIT_FAILURE, "Could not find audio file after downloading");
 
 
@@ -236,23 +248,19 @@ void convertFirstMoveBoth(MovePackage* movingInfo){
 		if(movingInfo->artName == NULL){
 			char jpgFileName [MAX_FILE_NAME + 1] = "";
 			getFileNameByID(movingInfo->id, JPG_EXT, jpgFileName, MAX_FILE_NAME);
-			if(strcmp(jpgFileName, "") == 0)
+			if(strlen(jpgFileName) == 0)
 				printError(EXIT_FAILURE, "Could not find cover file after downloading");
-
-			convertToMp3(videoFileName);
 
 			writeCover(audioFileName, jpgFileName);
 			removeCoverArt(jpgFileName);
 			moveFile(videoFileName, movingInfo->videoDest);
 			moveFile(audioFileName, movingInfo->audioDest);
 		}else{
-			convertToMp3(videoFileName);
 			writeCover(audioFileName, movingInfo->artName);
 			moveFile(videoFileName, movingInfo->videoDest);
 			moveFile(audioFileName, movingInfo->audioDest);
 		}
 	}else{
-		convertToMp3(videoFileName);
 		moveFile(videoFileName, movingInfo->videoDest);
 		moveFile(audioFileName, movingInfo->audioDest);
 	}
@@ -261,7 +269,7 @@ void convertFirstMoveBoth(MovePackage* movingInfo){
 void moveVideo (MovePackage* movingInfo){
 	char videoFileName [MAX_FILE_NAME + 1] = "";
 	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
-	if(strcmp(videoFileName, "") == 0)
+	if(strlen(videoFileName) == 0)
 		printError(EXIT_FAILURE, "Could not find video file after downloading");
 
 	moveFile(videoFileName, movingInfo->videoDest);
@@ -271,7 +279,7 @@ void moveAudio(MovePackage* movingInfo){
 	char audioFileName [MAX_FILE_NAME + 1] = "";
 
 	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
-	if(strcmp(audioFileName, "") == 0)
+	if(strlen(audioFileName) == 0)
 		printError(EXIT_FAILURE, "Could not find audio file after downloading");
 
 	if(movingInfo->hasCoverArt){
@@ -306,45 +314,32 @@ void moveAudio(MovePackage* movingInfo){
 //passing in negative one for the mode selection lets this method decide what it
 //would be according to default execution, but some cases require an override
 //so it is allowed to pass in NULL for the modes if that is already known
-void getModeFromSelection(const char* videoDest, const char* audioDest, int* downloadMode, int* artMode, void (**moveFunction)(MovePackage*)){
-	/*
-	if(downloadMode != NULL && *downloadMode == DEFAULT_MODE){
-		//if not skipping video
-		if(strcmp(videoDest, "SKIP") != 0){
-			*downloadMode = MP4_MODE;
-			moveFunction = moveVideo;
-		}else{
-			*downloadMode = MP3_MODE;
-			moveFunction = moveAudio;
-		}
-	}
-	*/
+void getModeFromSelection(const char* videoDest, const char* audioDest, ModePackage* modes, void (**moveFunction)(MovePackage*)){
 
-	if(artMode != NULL && *artMode == DEFAULT_MODE){
-		//if not skipping audio
-		if(strcmp(audioDest, "SKIP") != 0){
-			*artMode = DWNLD_COVER_ART;
-		}else{
-			*artMode = NO_DWNLD_COVER_ART;
-		}
+	if(modes->coverMode == DEFAULT_MODE){
+		//if skipping audio
+		if(strcmp(audioDest, "SKIP") == 0)
+			modes->coverMode = NO_DWNLD_COVER_ART;
+		else
+			modes->coverMode = DWNLD_COVER_ART;
 	}
 
-	if(strcmp(videoDest, "SKIP") != 0 && strcmp(audioDest, "SKIP") != 0){
+	//this is basically going to always be default mode
+	//just here for future implementations
+	if(modes->downloadMode == DEFAULT_MODE){
+		if(strcmp(videoDest, "SKIP") == 0)
+			modes->downloadMode = MP3_MODE;
+		else
+			modes->downloadMode = MP4_MODE;
+	}
+
+	if(strcmp(videoDest, "SKIP") != 0 && strcmp(audioDest, "SKIP") != 0)
 		*moveFunction = convertFirstMoveBoth;
-		if(downloadMode != NULL && *downloadMode == DEFAULT_MODE){
-			*downloadMode = MP4_MODE;
-		}
-	}else if(strcmp(videoDest, "SKIP") == 0){
+	else if(strcmp(videoDest, "SKIP") == 0)
 		*moveFunction = moveAudio;
-		if(downloadMode != NULL && *downloadMode == DEFAULT_MODE){
-			*downloadMode = MP3_MODE;
-		}
-	}else{
+	else
 		*moveFunction = moveVideo;
-		if(downloadMode != NULL && *downloadMode == DEFAULT_MODE){
-			*downloadMode = MP4_MODE;
-		}
-	}
+
 }
 
 int main(int argc, char** argv){
@@ -426,18 +421,11 @@ int main(int argc, char** argv){
 	void (*moveFunction)(MovePackage*) = NULL;
 	char id [ID_BUFFER] = "";
 	MovePackage movementInfo;
+	ModePackage modeInfo = {DEFAULT_MODE, coverArtMode};
 	char* coverArt = NULL;
-	int wantsArt = DWNLD_COVER_ART;
 
-	//these checks might change, but these are here just to get the program
-	//working after all the refactoring
-
-	//set before officially getting a cover art to set the specified name
 	if(coverArtMode == NO_DWNLD_COVER_ART && strcmp(argv[coverArtIndex], "NO-ART") != 0)
 		coverArt = argv[coverArtIndex];
-
-	if(coverArtMode == NO_DWNLD_COVER_ART && strcmp(argv[coverArtIndex], "NO-ART") == 0)
-		wantsArt = NO_DWNLD_COVER_ART;
 
 	//obtain where to send files
 	//depending on the flags only certain paths can be skipped
@@ -463,13 +451,8 @@ int main(int argc, char** argv){
 	if(sendAudio == NULL) printError(EXIT_FAILURE, SKIP_VALID_MSG);
 	if(sendVideo == NULL) printError(EXIT_FAILURE, SKIP_VALID_MSG);
 
-
-	int downloadMode = DEFAULT_MODE;
-	//variable that holds the original value to maintain correct output
-	int trueCoverMode = coverArtMode;
-
-	getModeFromSelection(sendVideo, sendAudio, &downloadMode, &coverArtMode, &moveFunction);
-	movementInfo = (MovePackage){id, sendAudio, sendVideo, wantsArt, coverArt};
+	getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
+	movementInfo = (MovePackage){id, sendAudio, sendVideo, modeInfo.coverMode, coverArt};
 
 	//default and cover art mode
 	if(!fileMode){
@@ -481,7 +464,7 @@ int main(int argc, char** argv){
 			//snprintf will rewrite the id string
 			snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(url, "?v=") + 3);
 
-			downloadFromURL(url, downloadMode, coverArtMode);
+			downloadFromURL(url, modeInfo.downloadMode, modeInfo.coverMode);
 			(*moveFunction)(&movementInfo);
 
 			free(sendVideo);
@@ -490,7 +473,7 @@ int main(int argc, char** argv){
 			sendVideo = NULL;
 
 			if((repeat = askToRepeat()) == 1){
-				if(trueCoverMode != DEFAULT_MODE){
+				if(coverArtMode != DEFAULT_MODE){
 					puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
 					sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
 					sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
@@ -513,12 +496,12 @@ int main(int argc, char** argv){
 				if(sendVideo == NULL) printError(EXIT_FAILURE, SKIP_VALID_MSG);
 
 				//reset the modes
-				downloadMode = DEFAULT_MODE;
-				coverArtMode = DEFAULT_MODE;
+				modeInfo.downloadMode = DEFAULT_MODE;
+				modeInfo.coverMode = coverArtMode;
 
 				//reset movementPackage
-				getModeFromSelection(sendVideo, sendAudio, &downloadMode, &coverArtMode, &moveFunction);
-				movementInfo = (MovePackage){id, sendAudio, sendVideo, coverArtMode, coverArt};
+				getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
+				movementInfo = (MovePackage){id, sendAudio, sendVideo, modeInfo.coverMode, coverArt};
 			}
 		}while(repeat);
 
@@ -529,14 +512,14 @@ int main(int argc, char** argv){
 
 		//normal file execution
 		//it's basically default execution with line parsing
-		if(trueCoverMode == DEFAULT_MODE){
+		if(coverArtMode == DEFAULT_MODE){
 			char urlBuffer [YT_URL_BUFFER] = "";
 
 			while(exactInput(inFile, urlBuffer, YT_URL_BUFFER) != 0){
 				snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(urlBuffer, "?v=") + 3);
 				//adding a sleep so it doesn't rapid fire youtube
 				sleep(1);
-				downloadFromURL(urlBuffer, downloadMode, coverArtMode);
+				downloadFromURL(urlBuffer, modeInfo.downloadMode, coverArtMode);
 				(*moveFunction)(&movementInfo);
 			}
 
@@ -556,7 +539,7 @@ int main(int argc, char** argv){
 
 					//adding a sleep so it doesn't rapid fire youtube
 					sleep(1);
-					downloadFromURL(shortenedURL, downloadMode, NO_DWNLD_COVER_ART);
+					downloadFromURL(shortenedURL, modeInfo.downloadMode, NO_DWNLD_COVER_ART);
 					(*moveFunction)(&movementInfo);
 				}else if(strstr(buffer, ".mp3") != NULL){
 					if(checkIfExists(buffer)){
