@@ -13,7 +13,7 @@ void writeDest(char* string, int mode){
 		break;
 		case 5:
 			writeTo = fopen(DES_COVER, "w");
-			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to extract cover art from");
+			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to write cover art to");
 
 		break;
 		default: printError(EXIT_FAILURE, "Client passed unknown mode for Destinations");
