@@ -29,6 +29,7 @@
  * Fix how typing the dests is. Is it really necessary to type the entire path?
  * Adding NULL protection in writeCover()?
  * mv command or rename function?
+ * perhaps have a way to add more metadata to mp3 files?
 */
 
 /*CONTINUOUS
@@ -90,9 +91,10 @@ typedef struct ModePackage{
 
 //global dynamic variables
 //these act as the base path. This way opening the destination files only happens once
-char* MP4_BASE_DIR;
-char* MP3_BASE_DIR;
-char* COVER_BASE_DIR;
+static char* MP4_BASE_DIR;
+static char* MP3_BASE_DIR;
+static char* COVER_BASE_DIR;
+static char* COVER_BASE_DIR;
 
 void __attribute__((constructor)) initPaths (){
 	if(!checkIfExists(DES)){
@@ -191,7 +193,7 @@ void __attribute__((constructor)) initPaths (){
 
 //mode specifies audio or video
 //for skipping, 0 is false and 1 is true
-char* askUserForPath(int mode, int allowSkipping){
+static char* askUserForPath(int mode, int allowSkipping){
 	const char* baseDir = NULL;
 	const char* prompt = NULL;
 	char* (*askFunction)(const char*, const char*) = NULL;
@@ -228,7 +230,7 @@ char* askUserForPath(int mode, int allowSkipping){
 }
 
 //helps keep the priniciple of downloading once
-void convertFirstMoveBoth(MovePackage* movingInfo){
+static void convertFirstMoveBoth(MovePackage* movingInfo){
 	char videoFileName [MAX_FILE_NAME + 1] = "";
 	char audioFileName [MAX_FILE_NAME + 1] = "";
 
@@ -275,7 +277,7 @@ void moveVideo (MovePackage* movingInfo){
 	moveFile(videoFileName, movingInfo->videoDest);
 }
 
-void moveAudio(MovePackage* movingInfo){
+static void moveAudio(MovePackage* movingInfo){
 	char audioFileName [MAX_FILE_NAME + 1] = "";
 
 	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
@@ -314,7 +316,7 @@ void moveAudio(MovePackage* movingInfo){
 //passing in negative one for the mode selection lets this method decide what it
 //would be according to default execution, but some cases require an override
 //so it is allowed to pass in NULL for the modes if that is already known
-void getModeFromSelection(const char* videoDest, const char* audioDest, ModePackage* modes, void (**moveFunction)(MovePackage*)){
+static void getModeFromSelection(const char* videoDest, const char* audioDest, ModePackage* modes, void (**moveFunction)(MovePackage*)){
 
 	if(modes->coverMode == DEFAULT_MODE){
 		//if skipping audio

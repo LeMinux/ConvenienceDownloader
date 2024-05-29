@@ -1,2 +1,8 @@
+*.o
+*.d
 *.out
 *.txt
+*.copy
+downloader
+debug
+Destinations/
