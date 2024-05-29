@@ -102,19 +102,19 @@ void __attribute__((constructor)) initPaths (){
 	}
 
 	if(!checkIfExists(DES_MP4)){
-	//fprintf(writeTo, "%s", string);
-		printf(PNT_RED"Destinations for videos have not been initalized.\n"PNT_RESET);
+	//(void)fprintf(writeTo, "%s", string);
+		(void)printf(PNT_RED"Destinations for videos have not been initalized.\n"PNT_RESET);
 		int valid = 0;
 		char* buffer = NULL;
 		while(!valid){
-			printf("Please type the path to where you want to send video files-> ");
+			(void)printf("Please type the path to where you want to send video files-> ");
 			unknownInput(stdin, &buffer);
 			if(strlen(buffer) == 0){
-				puts(PNT_RED"Enter something."PNT_RESET);
+				(void)puts(PNT_RED"Enter something."PNT_RESET);
 			}else if(!checkIfExists(buffer)){
-				puts(PNT_RED"The path specified does not exist."PNT_RESET);
+				(void)puts(PNT_RED"The path specified does not exist."PNT_RESET);
 			}else if(access(buffer, W_OK) == -1){
-				printf(PNT_RED"The path specified does not have writting permissions\n"PNT_RESET);
+				(void)printf(PNT_RED"The path specified does not have writting permissions\n"PNT_RESET);
 			}else{
 				valid = 1;
 				writeDest(buffer, 4);
@@ -125,18 +125,18 @@ void __attribute__((constructor)) initPaths (){
 	}
 
 	if(!checkIfExists(DES_MP3)){
-		printf(PNT_RED"Destinations for audios have not been initalized.\n"PNT_RESET);
+		(void)printf(PNT_RED"Destinations for audios have not been initalized.\n"PNT_RESET);
 		int valid = 0;
 		char* buffer = NULL;
 		while(!valid){
-			printf("Please type the path to where you want to send audio files-> ");
+			(void)printf("Please type the path to where you want to send audio files-> ");
 			unknownInput(stdin, &buffer);
 			if(strlen(buffer) == 0){
-				puts(PNT_RED"Enter something."PNT_RESET);
+				(void)puts(PNT_RED"Enter something."PNT_RESET);
 			}else if(!checkIfExists(buffer)){
-				puts(PNT_RED"The path specified does not exist"PNT_RESET);
+				(void)puts(PNT_RED"The path specified does not exist"PNT_RESET);
 			}else if(access(buffer, W_OK) == -1){
-				puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
+				(void)puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
 			}else{
 				valid = 1;
 				writeDest(buffer, 3);
@@ -147,18 +147,18 @@ void __attribute__((constructor)) initPaths (){
 	}
 
 	if(!checkIfExists(DES_COVER)){
-		printf(PNT_RED"Where to get covers has not been initalized.\n"PNT_RESET);
+		(void)printf(PNT_RED"Where to get covers has not been initalized.\n"PNT_RESET);
 		int valid = 0;
 		char* buffer = NULL;
 		while(!valid){
-			printf("Please type the path to where you extract your cover art files-> ");
+			(void)printf("Please type the path to where you extract your cover art files-> ");
 			unknownInput(stdin, &buffer);
 			if(strlen(buffer) == 0){
-				puts(PNT_RED"Enter something."PNT_RESET);
+				(void)puts(PNT_RED"Enter something."PNT_RESET);
 			}else if(!checkIfExists(buffer)){
-				puts(PNT_RED"The path specified does not exist"PNT_RESET);
+				(void)puts(PNT_RED"The path specified does not exist"PNT_RESET);
 			}else if(access(buffer, W_OK) == -1){
-				puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
+				(void)puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
 			}else{
 				valid = 1;
 				writeDest(buffer, 5);
@@ -355,13 +355,13 @@ int main(int argc, char** argv){
 	int c = 1;
 	for(; c < argc; ++c){
 		if(strcmp("-l", argv[c]) == 0){
-			puts("v List of availiable directories for MP4");
+			(void)puts("v List of availiable directories for MP4");
 			Node_t* listOfDirs = NULL;
 			getSubdirectories(MP4_BASE_DIR, &listOfDirs);
 			printList(listOfDirs);
 			deleteList(&listOfDirs);
 
-			puts("\nv List of availiable directories for MP3");
+			(void)puts("\nv List of availiable directories for MP3");
 
 			getSubdirectories(MP3_BASE_DIR, &listOfDirs);
 			printList(listOfDirs);
@@ -382,7 +382,7 @@ int main(int argc, char** argv){
 			if(access(argv[c], W_OK) == -1) printError(EXIT_FAILURE, NO_PERMISSION);
 
 			writeDest(argv[c], 4);
-			puts("Successfully written where to send video files");
+			(void)puts("Successfully written where to send video files");
 			exit(EXIT_SUCCESS);
 		}
 
@@ -395,7 +395,7 @@ int main(int argc, char** argv){
 			if(access(argv[c], W_OK) == -1) printError(EXIT_FAILURE, NO_PERMISSION);
 
 			writeDest(argv[c], 3);
-			puts("Successfully written where to send audio files");
+			(void)puts("Successfully written where to send audio files");
 			exit(EXIT_SUCCESS);
 
 		}else if(strcmp("-ca", argv[c]) == 0){
@@ -409,7 +409,7 @@ int main(int argc, char** argv){
 		}else if(strcmp("--keep-art", argv[c]) == 0){
 			keepArt = 1;
 		}else{
-			fprintf(stderr, PNT_RED"Invalid argument %s\n"PNT_RESET, argv[c]);
+			(void)fprintf(stderr, PNT_RED"Invalid argument %s\n"PNT_RESET, argv[c]);
 			exit(EXIT_FAILURE);
 		}
 	}//finished parsing arguments
@@ -431,7 +431,7 @@ int main(int argc, char** argv){
 	//obtain where to send files
 	//depending on the flags only certain paths can be skipped
 	if(coverArtMode != DEFAULT_MODE){
-		puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
+		(void)puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
 		sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
 		sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
 	}else{
@@ -441,7 +441,7 @@ int main(int argc, char** argv){
 			sendAudio = askUserForPath(MP3_MODE, ALLOW_SKIPS);
 
 			if((strcmp(sendAudio, "SKIP") == 0 && strcmp(sendVideo, "SKIP") == 0)){
-				puts(PNT_RED"Both destinations can not be skipped!"PNT_RESET);
+				(void)puts(PNT_RED"Both destinations can not be skipped!"PNT_RESET);
 			}else{
 				valid = 1;
 			}
@@ -475,7 +475,7 @@ int main(int argc, char** argv){
 
 			if((repeat = askToRepeat()) == 1){
 				if(coverArtMode != DEFAULT_MODE){
-					puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
+					(void)puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
 					sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
 					sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
 				}else{
@@ -485,7 +485,7 @@ int main(int argc, char** argv){
 						sendAudio = askUserForPath(MP3_MODE, ALLOW_SKIPS);
 
 						if((strcmp(sendAudio, "SKIP") == 0 && strcmp(sendVideo, "SKIP") == 0)){
-							puts(PNT_RED"Both destinations can not be skipped!"PNT_RESET);
+							(void)puts(PNT_RED"Both destinations can not be skipped!"PNT_RESET);
 						}else{
 							valid = 1;
 						}
@@ -552,10 +552,10 @@ int main(int argc, char** argv){
 							moveFile(buffer, sendAudio);
 						}
 					}else{
-						printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
+						(void)printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
 					}
 				}else{
-					printf(PNT_RED"Line obtained is not a youtube URL or .MP3-> %s\n"PNT_RESET, buffer);
+					(void)printf(PNT_RED"Line obtained is not a youtube URL or .MP3-> %s\n"PNT_RESET, buffer);
 				}
 				free(buffer);
 				buffer = NULL;
