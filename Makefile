@@ -12,6 +12,7 @@ C_FILES :=$(foreach dir, $(CODE_DIR),$(wildcard $(dir)/*.c))
 O_FILES :=$(patsubst %.c, %.o, $(C_FILES))
 DEP_FILES :=$(patsubst %.c, %.d, $(C_FILES))
 
+#name of directory where destinations will be stored
 DIR :=./Destinations/
 
 #default
