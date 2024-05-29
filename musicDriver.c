@@ -268,7 +268,7 @@ static void convertFirstMoveBoth(MovePackage* movingInfo){
 	}
 }
 
-void moveVideo (MovePackage* movingInfo){
+static void moveVideo (MovePackage* movingInfo){
 	char videoFileName [MAX_FILE_NAME + 1] = "";
 	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
 	if(strlen(videoFileName) == 0)
@@ -358,7 +358,6 @@ int main(int argc, char** argv){
 			puts("v List of availiable directories for MP4");
 			Node_t* listOfDirs = NULL;
 			getSubdirectories(MP4_BASE_DIR, &listOfDirs);
-
 			printList(listOfDirs);
 			deleteList(&listOfDirs);
 
