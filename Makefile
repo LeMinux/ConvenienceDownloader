@@ -20,14 +20,14 @@ all: $(BINARY)
 #create an executable with the name downloader with passed in dependencies
 $(BINARY): $(O_FILES)
 	$(CC) $(C_FLAGS) -o $@ $^
-
-#implicitly specify how to turn c files into object files
-%.o : %.c
-	$(CC) -c $(C_FLAGS) $< -o $@
 	@ if [ ! -d "$(DIR)" ]; then \
 		mkdir -p "$(DIR)"; \
 	fi
 	@chmod 700 $(DIR);
+
+#implicitly specify how to turn c files into object files
+%.o : %.c
+	$(CC) -c $(C_FLAGS) $< -o $@
 
 #runs binary
 run:
