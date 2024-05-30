@@ -46,4 +46,9 @@ int exactInput(FILE* stream, char* dest, int buffer);
 //returns the length of the amount read
 int unknownInput(FILE* stream, char** dest);
 
+//helper method to flush the stream to the next line.
+//This does not use fflush because it is meant for output streams not input,
+//and only flushes the buffer associated with that stream.
+//this should be used after user input is taken
+int clearLine(FILE*);
 #endif

@@ -27,4 +27,5 @@ void printError(int code, const char* message);
 //turns into "this is a test message"
 //this is useful for simplifying adding escape characters
 char* surroundInQuotes(const char* string);
+
 #endif
