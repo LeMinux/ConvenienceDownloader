@@ -459,8 +459,9 @@ int main(int argc, char** argv){
 	if(!fileMode){
 		int repeat = 0;
 		do{
+			char url [YT_URL_BUFFER] = "";
 			//execution for downloading
-			char* url = getURL();
+			getURL(url);
 
 			//snprintf will rewrite the id string
 			snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(url, "?v=") + 3);
