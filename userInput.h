@@ -24,7 +24,10 @@
 
 #define CHUNK_READ 51
 
-char* getURL(void);
+//gets the URL from the user
+//the parameter is an array of YT_URL_BUFFER size since
+//the only required part needed is the base URL and the video ID parameter
+int getURL(char [YT_URL_BUFFER]);
 
 //downloads a song given the URL for it
 //0 is false for downloading thumbnails
@@ -48,7 +51,8 @@ int unknownInput(FILE* stream, char** dest);
 
 //helper method to flush the stream to the next line.
 //This does not use fflush because it is meant for output streams not input,
-//and only flushes the buffer associated with that stream.
 //this should be used after user input is taken
+//To avoid having to press enter twice consider where the new line character
+//is when parsing the input
 int clearLine(FILE*);
 #endif

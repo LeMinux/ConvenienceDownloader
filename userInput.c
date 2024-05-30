@@ -2,6 +2,22 @@
 #include "helpers.h"
 #include "linkedList.h"
 #include "fileOps.h"
+#include <stdio.h>
+
+int clearLine(FILE* stream){
+	puts("Clearing the line");
+	//this way is more portable
+	int data = '\0';
+	while ((data = getc(stream)) != '\n' && data != EOF) { }
+
+	if(ferror(stream) != 0){
+		fputs("Encountered a stream error while clearing the buffer", stderr);
+		return -1;
+	}
+
+	puts("Done clearing the line");
+	return 0;
+}
 
 //method for obtaining input from file streams
 //returns how many characters read for any error checking needed
@@ -16,7 +32,7 @@ int exactInput(FILE* stream, char* dest, int length){
 			while(index < length - 1 && (data = fgetc(stream)) != EOF && data != '\n')
 				*(dest + index++) = data;
 
-			*(dest + index) = '\0';
+			 *(dest + index) = '\0';
 		break;
      }
 
@@ -63,32 +79,28 @@ int unknownInput(FILE* stream, char** dest){
 	return inputLength;
 }
 
-
 //asks user for a youtube URL
-char* getURL(void){
-	//strictly gets the portion that only contains the ID
-	char buffer [YT_URL_BUFFER];
-	int valid = 0;
+int getURL(char ret [YT_URL_BUFFER]){
 	do{
-		memset(buffer, '\0', YT_URL_BUFFER);
 		printf("Enter the youtube URL that you want to download -> ");
-		exactInput(stdin, buffer, YT_URL_BUFFER);
+		//fgets is nul terminating so, clearing ret is not necessary
+		//for each invalid attempt
+		if(fgets(ret, YT_URL_BUFFER, stdin) == NULL) return -1;
+		printf("input leng: %ld\n", strlen(ret));
 
-		if(strlen(buffer) == 0)
-			continue;
-		else if(strstr(buffer, YOUTUBE_URL) == NULL)
-			puts(PNT_RED"This is not a youtubeURL!"PNT_RESET);
-		else
-			valid = 1;
-
-	}while(!valid);
-	//dynamic memory since this will be passed around
-	char* youtubeURL = malloc(sizeof(buffer));
-	if(youtubeURL == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
-
-	snprintf(youtubeURL, sizeof(buffer), "%s", buffer);
-	return youtubeURL;
+		//input may be 43 characters but last could be \n
+		if(strchr(ret, '\n') != NULL){
+			printf(PNT_RED"URL is too short! It should look like %s[11 chars]\n"PNT_RESET, YOUTUBE_URL);
+		}else{
+			clearLine(stdin);
+			if(strstr(ret, YOUTUBE_URL) == NULL)
+				puts(PNT_RED"This is not a youtubeURL!"PNT_RESET);
+			else
+				return 0;
+		}
+	}while(1);
 }
+
 
 //different modes are specified depending on what is desired
 //preferably this should only be called once per URL to minimize network traffic.
@@ -154,7 +166,8 @@ int askToRepeat(void){
 	char yesNo = '\0';
 	do{
 		printf("Do you want to download again? Y/N: ");
-		exactInput(stdin, &yesNo, 1);
+		yesNo = fgetc(stdin);
+		if(yesNo != '\n') clearLine(stdin);
 		switch(yesNo){
 			case 'y': case 'Y': return 1; break;
 			case 'n': case 'N': return 0; break;
@@ -166,6 +179,7 @@ int askToRepeat(void){
 	return 0;
 }
 
+//CHANGE TO NOT USE EXACTINPUT
 //gets from the user what directory they want to download into
 //with the help of getDirectories
 char* getUserChoiceForDir(const char* baseDir, const char* prompt){
@@ -183,6 +197,8 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 			printList(listOfDirs);
 			printf("%s", prompt);
 			exactInput(stdin, input, 101);
+			//fgets(input, 101, stdin);
+			//clearLine(stdin);
 		}while(strlen(input) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
@@ -205,6 +221,7 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 	return returnDir;
 }
 
+//CHANGE TO NOT USE EXACTINPUT
 //gets from the user what directory they want to download into
 //overloaded method that doesn't have the skip option to avoid hidden bugs
 char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
@@ -222,6 +239,9 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 			printList(listOfDirs);
 			printf("%s", prompt);
 			exactInput(stdin, input, 101);
+			//fgets(input, 101, stdin);
+			//clearLine(stdin);
+
 		}while(strlen(input) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
