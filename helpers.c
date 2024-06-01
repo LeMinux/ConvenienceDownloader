@@ -1,5 +1,4 @@
-#include "helpers.h"
-#include <stdio.h>
+#include "./includes/helpers.h"
 
 //printing an Error is more dynamic and more compact
 //this also means there is no table to shift

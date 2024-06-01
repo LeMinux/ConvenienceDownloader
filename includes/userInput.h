@@ -11,8 +11,7 @@
 #include "helpers.h"
 #include "linkedList.h"
 #include "fileOps.h"
-#include <stdio.h>
-#include "./includes/globals.h"
+#include "globals.h"
 
 //error message defines
 #define DOWNLOAD_FAIL_MSG "\nError DWNF: Failed to download with provided URL"

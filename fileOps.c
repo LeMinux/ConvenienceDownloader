@@ -1,4 +1,4 @@
-#include "fileOps.h"
+#include "./includes/fileOps.h"
 
 void writeDest(char* string, int mode){
 	FILE* writeTo = NULL;

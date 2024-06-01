@@ -1,5 +1,4 @@
-#include "linkedList.h"
-#include <stdlib.h>
+#include "./includes/linkedList.h"
 
 void addToList(Node_t** head, const char* string){
 	Node_t* newNode = malloc(sizeof(Node_t));
