@@ -29,30 +29,57 @@
 //the only required part needed is the base URL and the video ID parameter
 int getURL(char [YT_URL_BUFFER]);
 
-//downloads a song given the URL for it
-//0 is false for downloading thumbnails
-//1 is true for downloading thumnbails
+/*
+*	downloads a song given the URL for it
+*	different modes are specified depending on what is desired
+*	preferably this should only be called once per URL to minimize network traffic.
+*
+*	youtubeURL: the youtubeURL given
+*	mode: 3 to specify to download audio 4 to specify to download video
+*	downloadCoverArt: 0 to for not downloading thumbnails and 1 to download thumbnails
+*/
 void downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
 
+/*
+ * asks the user if they would like to continue downloading
+ */
 int askToRepeat(void);
+
 
 char* getUserChoiceForDir(const char* baseDir, const char* prompt);
 
 char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
 
-//method for obtaining input from file streams
-//returns how many characters read for any error checking needed
-//this excludes the count for the nul byte
+/*
+*	method for obtaining input from file streams where input size is known
+*	returns how many characters read for any error checking needed
+*	this excludes the count for the nul byte
+*	Uses fgets so it is gaurenteed to be nul terminating
+*
+*	stream: file stream which can include stdin*
+*	dest: destination string and should not be NULL
+*		NULL is not checked since if you are calling this you already can check yourself
+*	buffer: size of input expected. This should account for the nul byte
+*/
 int exactInput(FILE* stream, char* dest, int buffer);
 
-//helper method to read a line in a file of an unknown length
-//returns the length of the amount read
+/*
+*	helper method to read a line in a file of an unknown length
+*	returns the length of the amount read
+*
+*	stream: File stream to take input from
+*	dest: address to string which can be NULL
+*/
 int unknownInput(FILE* stream, char** dest);
 
-//helper method to flush the stream to the next line.
-//This does not use fflush because it is meant for output streams not input,
-//this should be used after user input is taken
-//To avoid having to press enter twice consider where the new line character
-//is when parsing the input
-int clearLine(FILE*);
+/*
+*	 helper method to flush the stream to the next line.
+*	 This does not use fflush because it is meant for output streams not input,
+*	 this should be used after user input is taken
+*	 To avoid having to press enter twice consider where the new line character
+*	 is when parsing the input
+*
+*	stream: file stream to take input from
+*/
+int clearLine(FILE* stream);
 #endif

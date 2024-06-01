@@ -6,7 +6,7 @@
 #define GREEN   "\033[32m"
 #define CYAN    "\033[36m"
 #define NO_ERROR 0
-#define HAD_ERROR 1
+#define HAD_ERROR -1
 
 #define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET, stderr))
 

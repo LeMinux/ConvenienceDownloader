@@ -3,22 +3,28 @@
 #include "linkedList.h"
 #include "fileOps.h"
 #include <stdio.h>
+#include "./includes/globals.h"
 
 int clearLine(FILE* stream){
-	puts("Clearing the line");
 	//this way is more portable
 	int data = '\0';
 	while ((data = getc(stream)) != '\n' && data != EOF) { }
 
 	if(ferror(stream) != 0){
 		fputs("Encountered a stream error while clearing the buffer", stderr);
-		return -1;
+		return HAD_ERROR;
 	}
 
-	puts("Done clearing the line");
-	return 0;
+	return NO_ERROR;
 }
 
+int exactInput(FILE* stream, char* dest, int length){
+	if(fgets(dest, length, stdin) == NULL) return HAD_ERROR;
+	if(strchr(dest, '\n') == NULL) clearLine(stdin);
+	return strnlen(dest, length);
+}
+
+/*
 //method for obtaining input from file streams
 //returns how many characters read for any error checking needed
 int exactInput(FILE* stream, char* dest, int length){
@@ -42,6 +48,7 @@ int exactInput(FILE* stream, char* dest, int length){
 
 	return index;
 }
+*/
 
 //TODO add a check for if dest in NULL
 int unknownInput(FILE* stream, char** dest){
@@ -80,17 +87,17 @@ int unknownInput(FILE* stream, char** dest){
 	return inputLength;
 }
 
-//asks user for a youtube URL
 int getURL(char ret [YT_URL_BUFFER]){
 	do{
 		printf("Enter the youtube URL that you want to download -> ");
+
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
+		exactInput(stdin, ret, YT_URL_BUFFER);
 		if(fgets(ret, YT_URL_BUFFER, stdin) == NULL){
-
-			return -1;
+			PRINT_ERROR("Encountered a file stream error getting the URL");
+			return HAD_ERROR;
 		}
-		printf("input leng: %ld\n", strlen(ret));
 
 		//input may be 43 characters but last could be \n
 		if(strchr(ret, '\n') != NULL){
@@ -100,20 +107,17 @@ int getURL(char ret [YT_URL_BUFFER]){
 			if(strstr(ret, YOUTUBE_URL) == NULL)
 				puts(PNT_RED"This is not a youtubeURL!"PNT_RESET);
 			else
-				return 0;
+				return NO_ERROR;
 		}
 	}while(1);
 }
 
-
-//different modes are specified depending on what is desired
-//preferably this should only be called once per URL to minimize network traffic.
 void downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	//--restrict-filenames makes it so escape characters don't need to be added
 	//-f bestvideo to force as .mp4
 	//--write-thumbnail to get thumnail
 	//--convert-thumbnail since the default is webp
-	//--audio-quality 256K for a 256K bitrate and better quality audio
+	//--audio-quality 256K for a 256K bitrate and better quality audio and save a little on space
 	//--audio-format to specify as mp3
 	//-R to specify 4 retries
 	const char* youtubeDL = NULL;
@@ -177,13 +181,12 @@ int askToRepeat(void){
 			case 'n': case 'N': return 0; break;
 			default: puts("~~Invalid input~~"); break;
 		}
-	}while(1==1);
+	}while(1);
 
 	//incase of some wack error
 	return 0;
 }
 
-//CHANGE TO NOT USE EXACTINPUT
 //gets from the user what directory they want to download into
 //with the help of getDirectories
 char* getUserChoiceForDir(const char* baseDir, const char* prompt){
@@ -201,8 +204,6 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 			printList(listOfDirs);
 			printf("%s", prompt);
 			exactInput(stdin, input, 101);
-			//fgets(input, 101, stdin);
-			//clearLine(stdin);
 		}while(strlen(input) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
@@ -225,7 +226,6 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 	return returnDir;
 }
 
-//CHANGE TO NOT USE EXACTINPUT
 //gets from the user what directory they want to download into
 //overloaded method that doesn't have the skip option to avoid hidden bugs
 char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
