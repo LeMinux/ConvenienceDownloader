@@ -1,5 +1,14 @@
 #include "userInput.h"
 
+/*
+*	 helper method to flush the stream to the next line.
+*	 This does not use fflush because it is meant for output streams not input,
+*	 this should be used after user input is taken
+*	 To avoid having to press enter twice consider where the new line character
+*	 is when parsing the input
+*
+*	stream: file stream to take input from
+*/
 static void clearLine(FILE* stream){
 	//this way is more portable
 	int data = '\0';
@@ -229,7 +238,7 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 			found = 1;
 		}else{
 			(void)printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
-			memset(input, '\0', strlen(input));
+			memset(input, '\0', 101);
 		}
 	}
 
@@ -266,7 +275,7 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 			found = 1;
 		}else{
 			(void)printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
-			(void)memset(input, '\0', strlen(input));
+			(void)memset(input, '\0', 101);
 		}
 	}
 

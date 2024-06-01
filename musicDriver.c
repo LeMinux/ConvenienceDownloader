@@ -18,6 +18,8 @@
 */
 
 /*TODO
+ *
+ * !!!!!Change main to handle errors in the case downloadFromURL fails
  * Fix bug that creates two // in getting sub dirs
  * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
@@ -41,6 +43,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "includes/globals.h"
 #include "userInput.h"
 #include "helpers.h"
 #include "linkedList.h"
@@ -460,7 +463,7 @@ int main(int argc, char** argv){
 	if(!fileMode){
 		int repeat = 0;
 		do{
-			char url [YT_URL_BUFFER] = "";
+			char url [YT_URL_INPUT_SIZE] = "";
 			//execution for downloading
 			getURL(url);
 
@@ -516,9 +519,9 @@ int main(int argc, char** argv){
 		//normal file execution
 		//it's basically default execution with line parsing
 		if(coverArtMode == DEFAULT_MODE){
-			char urlBuffer [YT_URL_BUFFER] = "";
+			char urlBuffer [YT_URL_INPUT_SIZE] = "";
 
-			while(exactInput(inFile, urlBuffer, YT_URL_BUFFER) != 0){
+			while(exactInput(inFile, urlBuffer, YT_URL_INPUT_SIZE) != 0){
 				snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(urlBuffer, "?v=") + 3);
 				//adding a sleep so it doesn't rapid fire youtube
 				sleep(1);
@@ -531,12 +534,12 @@ int main(int argc, char** argv){
 			char* buffer = NULL;
 			while(unknownInput(inFile, &buffer) != 0){
 				if(strstr(buffer, YOUTUBE_URL) != NULL){
-					char shortenedURL [YT_URL_BUFFER] = "";
+					char shortenedURL [YT_URL_INPUT_SIZE] = "";
 
 					//snprintf was complaining about truncation and
 					//I didn't want compliation warnings
-					strncpy(shortenedURL, buffer, YT_URL_BUFFER);
-					shortenedURL[YT_URL_BUFFER - 1] = '\0';
+					strncpy(shortenedURL, buffer, YT_URL_INPUT_SIZE);
+					shortenedURL[YT_URL_INPUT_SIZE - 1] = '\0';
 
 					snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(shortenedURL, "?v=") + 3);
 

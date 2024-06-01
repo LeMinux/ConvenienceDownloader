@@ -66,7 +66,7 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
 *		NULL is not checked since if you are calling this you already can check yourself
 *	buffer: size of input expected. This should account for the nul byte
 *
-*	return: success or failure on success returns how much was read
+*	return: returns how much was read excluding nul byte
 */
 int exactInput(FILE* stream, char* dest, int buffer);
 
@@ -77,21 +77,8 @@ int exactInput(FILE* stream, char* dest, int buffer);
 *	stream: File stream to take input from
 *	dest: address to string which can be NULL
 *
-*	return: success or failure on success returns how much was read
+*	return: returns how much was read excluding nul byte
 */
 int unknownInput(FILE* stream, char** dest);
-
-/*
-*	 helper method to flush the stream to the next line.
-*	 This does not use fflush because it is meant for output streams not input,
-*	 this should be used after user input is taken
-*	 To avoid having to press enter twice consider where the new line character
-*	 is when parsing the input
-*
-*	stream: file stream to take input from
-*
-*	return: success or failure
-*/
-static void clearLine(FILE* stream);
 
 #endif
