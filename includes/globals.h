@@ -8,6 +8,9 @@
 #define NO_ERROR 0
 #define HAD_ERROR -1
 
-#define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET, stderr))
+#define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET"\n", stderr))
+
+#define YT_URL_INPUT_SIZE 44 //this is from the beginning of the URL to the end of the ID (32 + 11 + 1)
+#define YT_ID_SIZE 11
 
 #endif

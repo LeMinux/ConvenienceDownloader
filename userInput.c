@@ -1,31 +1,24 @@
 #include "userInput.h"
-#include "helpers.h"
-#include "linkedList.h"
-#include "fileOps.h"
-#include <stdio.h>
-#include "./includes/globals.h"
 
-int clearLine(FILE* stream){
+static void clearLine(FILE* stream){
 	//this way is more portable
 	int data = '\0';
 	while ((data = getc(stream)) != '\n' && data != EOF) { }
 
 	if(ferror(stream) != 0){
-		PRINT_ERROR("Encountered a stream error while clearing the buffer");
-		return HAD_ERROR;
+		PRINT_ERROR("Encountered a stream error while clearing the file/stream");
+		exit(EXIT_FAILURE);
 	}
-
-	return NO_ERROR;
 }
 
 int exactInput(FILE* stream, char* dest, int length){
 	if(fgets(dest, length, stream) == NULL){
-		PRINT_ERROR("Encountered a stream error while reading the buffer");
-		return HAD_ERROR;
+		PRINT_ERROR("Encountered a stream error while reading the file/stream");
+		exit(EXIT_FAILURE);
 	}
-	if(strchr(dest, '\n') == NULL){
-		if(clearLine(stdin) != NO_ERROR) return HAD_ERROR;
-	}
+
+	//clear to next line or end if \n is not detected
+	if(strchr(dest, '\n') == NULL) clearLine(stream);
 
 	return strnlen(dest, length);
 }
@@ -65,8 +58,10 @@ int unknownInput(FILE* stream, char** dest){
 
 	while(!isEndLine){
 		if(fgets(buffer, CHUNK_READ, stream) == NULL){
-			if(ferror(stream)) printError(EXIT_FAILURE, "File stream error has occured");
-
+			if(ferror(stream)){
+				PRINT_ERROR("File stream error has occured while reading unknown input");
+				exit(EXIT_FAILURE);
+			}
 			isEndLine = 1;
 		}else{
 			bufferLength = strlen(buffer);
@@ -81,10 +76,13 @@ int unknownInput(FILE* stream, char** dest){
 				}
 
 				*dest = realloc(*dest, inputLength + bufferLength + 1);
-				if(*dest == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+				if(*dest == NULL){
+					PRINT_ERROR(FAILED_MALLOC_MSG);
+					exit(EXIT_FAILURE);
+				}
 
 				//snprintf would also overwrite all of *dest each time and fgets nul terminates
-				strcpy((*dest)+inputLength, buffer);
+				(void)strcpy((*dest)+inputLength, buffer);
 				inputLength += bufferLength;
 			}
 		}
@@ -93,28 +91,24 @@ int unknownInput(FILE* stream, char** dest){
 	return inputLength;
 }
 
-int getURL(char ret [YT_URL_BUFFER]){
+void getURL(char ret [YT_URL_INPUT_SIZE]){
 	do{
-		printf("Enter the youtube URL that you want to download -> ");
+		(void)printf("Enter the youtube URL that you want to download -> ");
 
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
-		if(exactInput(stdin, ret, YT_URL_BUFFER) == HAD_ERROR) return HAD_ERROR;
-
-		//input may be 43 characters but last could be \n
-		if(strchr(ret, '\n') != NULL){
-			printf(PNT_RED"URL is too short! It should look like %s[11 chars]\n"PNT_RESET, YOUTUBE_URL);
-		}else{
-			clearLine(stdin);
-			if(strstr(ret, YOUTUBE_URL) == NULL)
+		//input may be 43 characters but last character could be \n
+		if(exactInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1 && strchr(ret, '\n') != NULL){
+			(void)printf(PNT_RED"URL is too short! It should look like %s[11 chars]\n"PNT_RESET, YOUTUBE_URL);
+		}else if(strstr(ret, YOUTUBE_URL) == NULL){
 				puts(PNT_RED"This is not a youtubeURL!"PNT_RESET);
-			else
-				return NO_ERROR;
+		}else{
+			return;
 		}
 	}while(1);
 }
 
-void downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
+int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	//--restrict-filenames makes it so escape characters don't need to be added
 	//-f bestvideo to force as .mp4
 	//--write-thumbnail to get thumnail
@@ -158,16 +152,26 @@ void downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 					" -R 4 ";
 			}
 		break;
-		default: puts(PNT_RED"Client passed an unknown mode for downloading URL"PNT_RESET); exit(1); break;
+		default: PRINT_ERROR("Client passed an unknown mode for downloading URL"); return HAD_ERROR; break;
 	}
 
-	int length = strlen(youtubeDL) + strlen(youtubeURL);
-	char* downloadCommand = malloc(length + 1);
-	if(downloadCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
-	snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
-	printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
-	if(system(downloadCommand) > 0) printError(EXIT_FAILURE, DOWNLOAD_FAIL_MSG);
+	//nul byte count is included in YT_URL_INPUT_SIZE
+	int length = strlen(youtubeDL) + YT_URL_INPUT_SIZE;
+	char* downloadCommand = malloc(length);
+	if(downloadCommand == NULL){
+		PRINT_ERROR(FAILED_MALLOC_MSG);
+		exit(EXIT_FAILURE);
+	}
+	(void)snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
+	(void)printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
+	if(system(downloadCommand) > 0){
+		PRINT_ERROR(DOWNLOAD_FAIL_MSG);
+		free(downloadCommand);
+		return HAD_ERROR;
+	}
+
 	free(downloadCommand);
+	return NO_ERROR;
 }
 
 
@@ -175,9 +179,10 @@ void downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 int askToRepeat(void){
 	char yesNo = '\0';
 	do{
-		printf("Do you want to download again? Y/N: ");
+		(void)printf("Do you want to download again? Y/N: ");
 		yesNo = fgetc(stdin);
 		if(yesNo != '\n') clearLine(stdin);
+
 		switch(yesNo){
 			case 'y': case 'Y': return 1; break;
 			case 'n': case 'N': return 0; break;
@@ -185,8 +190,8 @@ int askToRepeat(void){
 		}
 	}while(1);
 
-	//incase of some wack error
-	return 0;
+	//incase of some wack error plus compiler was complaining
+	return HAD_ERROR;
 }
 
 //gets from the user what directory they want to download into
@@ -199,12 +204,15 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 	getSubdirectories(baseDir, &listOfDirs);
 
 	char* input = malloc(101);
-	if(input == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+	if(input == NULL){
+		PRINT_ERROR(FAILED_MALLOC_MSG);
+		exit(EXIT_FAILURE);
+	}
 
 	while(found == -1){
 		do{
 			printList(listOfDirs);
-			printf("%s", prompt);
+			(void)printf("%s", prompt);
 			exactInput(stdin, input, 101);
 		}while(strlen(input) == 0);
 
@@ -212,13 +220,13 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 			exit(0);
 		}else if(strcmp(input, "skip") == 0 || strcmp(input, "Skip") == 0){
 			returnDir = malloc(5);
-			snprintf(returnDir, 5, "%s","SKIP");
+			(void)snprintf(returnDir, 5, "%s","SKIP");
 			found = 1;
 		}else if((found = containsElement(listOfDirs, input)) != -1){
 			returnDir = getElement(listOfDirs, found);
 			found = 1;
 		}else{
-			printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
+			(void)printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
 			memset(input, '\0', strlen(input));
 		}
 	}
@@ -238,15 +246,16 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 	getSubdirectories(baseDir, &listOfDirs);
 
 	char* input = malloc(101);
-	if(input == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+	if(input == NULL){
+		PRINT_ERROR(FAILED_MALLOC_MSG);
+		exit(EXIT_FAILURE);
+	}
 
 	while(found == -1){
 		do{
 			printList(listOfDirs);
-			printf("%s", prompt);
+			(void)printf("%s", prompt);
 			exactInput(stdin, input, 101);
-			//fgets(input, 101, stdin);
-			//clearLine(stdin);
 
 		}while(strlen(input) == 0);
 
@@ -256,8 +265,8 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 			returnDir = getElement(listOfDirs, found);
 			found = 1;
 		}else{
-			printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
-			memset(input, '\0', strlen(input));
+			(void)printf(PNT_RED"\nCould not find the directory %s. Remember case matters.\n"PNT_RESET, input);
+			(void)memset(input, '\0', strlen(input));
 		}
 	}
 
