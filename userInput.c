@@ -43,6 +43,7 @@ int exactInput(FILE* stream, char* dest, int length){
 	return index;
 }
 
+//TODO add a check for if dest in NULL
 int unknownInput(FILE* stream, char** dest){
 	char buffer[CHUNK_READ] = "";
 	size_t inputLength = 0;
@@ -85,7 +86,10 @@ int getURL(char ret [YT_URL_BUFFER]){
 		printf("Enter the youtube URL that you want to download -> ");
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
-		if(fgets(ret, YT_URL_BUFFER, stdin) == NULL) return -1;
+		if(fgets(ret, YT_URL_BUFFER, stdin) == NULL){
+
+			return -1;
+		}
 		printf("input leng: %ld\n", strlen(ret));
 
 		//input may be 43 characters but last could be \n
