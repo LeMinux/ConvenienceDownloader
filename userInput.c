@@ -17,10 +17,15 @@ int exactInput(FILE* stream, char* dest, int length){
 		exit(EXIT_FAILURE);
 	}
 
-	//clear to next line or end if \n is not detected
-	if(strchr(dest, '\n') == NULL) clearLine(stream);
-
-	return strnlen(dest, length);
+	char* newLinePos = strchr(dest, '\n');
+	if(newLinePos == NULL){
+		clearLine(stream);
+		return length - 1;
+	}else{
+		*newLinePos = '\0';
+		//returns the length in a constant time since the end is already known
+		return (int)(newLinePos - dest);
+	}
 }
 
 /*
@@ -49,7 +54,6 @@ int exactInput(FILE* stream, char* dest, int length){
 }
 */
 
-//TODO add a check for if dest in NULL
 int unknownInput(FILE* stream, char** dest){
 	char buffer[CHUNK_READ] = "";
 	size_t inputLength = 0;
@@ -97,8 +101,7 @@ void getURL(char ret [YT_URL_INPUT_SIZE]){
 
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
-		//input may be 43 characters but last character could be \n
-		if(exactInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1 && strchr(ret, '\n') != NULL){
+		if(exactInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1){
 			(void)printf(PNT_RED"URL is too short! It should look like %s[11 chars]\n"PNT_RESET, YOUTUBE_URL);
 		}else if(strstr(ret, YOUTUBE_URL) == NULL){
 				puts(PNT_RED"This is not a youtubeURL!"PNT_RESET);
@@ -213,8 +216,7 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 		do{
 			printList(listOfDirs);
 			(void)printf("%s", prompt);
-			exactInput(stdin, input, 101);
-		}while(strlen(input) == 0);
+		}while(exactInput(stdin, input, 101) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
 			exit(0);
@@ -255,9 +257,7 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 		do{
 			printList(listOfDirs);
 			(void)printf("%s", prompt);
-			exactInput(stdin, input, 101);
-
-		}while(strlen(input) == 0);
+		}while(exactInput(stdin, input, 101) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
 			exit(0);
