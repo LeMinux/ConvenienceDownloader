@@ -11,7 +11,7 @@ int clearLine(FILE* stream){
 	while ((data = getc(stream)) != '\n' && data != EOF) { }
 
 	if(ferror(stream) != 0){
-		fputs("Encountered a stream error while clearing the buffer", stderr);
+		PRINT_ERROR("Encountered a stream error while clearing the buffer");
 		return HAD_ERROR;
 	}
 
@@ -19,8 +19,14 @@ int clearLine(FILE* stream){
 }
 
 int exactInput(FILE* stream, char* dest, int length){
-	if(fgets(dest, length, stdin) == NULL) return HAD_ERROR;
-	if(strchr(dest, '\n') == NULL) clearLine(stdin);
+	if(fgets(dest, length, stream) == NULL){
+		PRINT_ERROR("Encountered a stream error while reading the buffer");
+		return HAD_ERROR;
+	}
+	if(strchr(dest, '\n') == NULL){
+		if(clearLine(stdin) != NO_ERROR) return HAD_ERROR;
+	}
+
 	return strnlen(dest, length);
 }
 
@@ -93,11 +99,7 @@ int getURL(char ret [YT_URL_BUFFER]){
 
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
-		exactInput(stdin, ret, YT_URL_BUFFER);
-		if(fgets(ret, YT_URL_BUFFER, stdin) == NULL){
-			PRINT_ERROR("Encountered a file stream error getting the URL");
-			return HAD_ERROR;
-		}
+		if(exactInput(stdin, ret, YT_URL_BUFFER) == HAD_ERROR) return HAD_ERROR;
 
 		//input may be 43 characters but last could be \n
 		if(strchr(ret, '\n') != NULL){
