@@ -15,18 +15,18 @@
  * Replace the commands with stat (things like ls and find)
  * Change how downloadMode is set in the getModeFromSelection function
  * Change the wantArt and coverArtMode before actual execution
+ * !!!!!Change main to handle errors in the case downloadFromURL fails
+ * * For file execution if errors occur try to log what URLS or paths were ignored
+ *	instead of just crashing the program which results in manual cleansing of the file
 */
 
 /*TODO
  *
- * !!!!!Change main to handle errors in the case downloadFromURL fails
  * Fix bug that creates two // in getting sub dirs
  * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
  *	(!c>../Bangers/Extreme)
- * For file execution if errors occur try to log what URLS or paths were ignored
- *	instead of just crashing the program which results in manual cleansing of the file
  * Add cover art related things such as keeping or discarding them
  * Fix how typing the dests is. Is it really necessary to type the entire path?
  * Adding NULL protection in writeCover()?
@@ -537,8 +537,8 @@ int main(int argc, char** argv){
 				if(downloadFromURL(urlBuffer, modeInfo.downloadMode, coverArtMode) == NO_ERROR){
 					(*moveFunction)(&movementInfo);
 				}else{
-					printf("Adding URL %s to log file", urlBuffer);
-					fprintf(logFile ,"Failed to download from url: %s", urlBuffer);
+					(void)printf("Adding URL %s to log file\n", urlBuffer);
+					(void)fprintf(logFile ,"Failed to download from url: %s\n", urlBuffer);
 				}
 			}
 
@@ -572,6 +572,7 @@ int main(int argc, char** argv){
 						}
 					}else{
 						(void)printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
+						(void)fprintf(logFile, "Failed to find file path: %s\n", buffer);
 					}
 				}else{
 					(void)printf(PNT_RED"Line obtained is not a youtube URL or .MP3-> %s\n"PNT_RESET, buffer);
