@@ -43,12 +43,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "includes/globals.h"
-#include "userInput.h"
-#include "helpers.h"
-#include "linkedList.h"
-#include "writeArt.h"
-#include "fileOps.h"
+#include "./includes/globals.h"
+#include "./includes/userInput.h"
+#include "./includes/helpers.h"
+#include "./includes/linkedList.h"
+#include "./includes/writeArt.h"
+#include "./includes/fileOps.h"
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -470,8 +470,9 @@ int main(int argc, char** argv){
 			//snprintf will rewrite the id string
 			snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(url, "?v=") + 3);
 
-			downloadFromURL(url, modeInfo.downloadMode, modeInfo.coverMode);
-			(*moveFunction)(&movementInfo);
+			if(downloadFromURL(url, modeInfo.downloadMode, modeInfo.coverMode) == NO_ERROR){
+				(*moveFunction)(&movementInfo);
+			}
 
 			free(sendVideo);
 			free(sendAudio);
@@ -514,7 +515,15 @@ int main(int argc, char** argv){
 	//file execution
 	}else{
 		FILE* inFile = fopen(argv[fileFlagIndex], "r");
-		if(inFile == NULL) printError(EXIT_FAILURE, FILE_FAIL_MSG);
+		FILE* logFile = fopen("FailedDownloads.txt", "w");
+		if(inFile == NULL){
+			PRINT_ERROR("Failed to open file given for file downloading");
+			exit(EXIT_FAILURE);
+		}
+		if(logFile == NULL){
+			PRINT_ERROR("Failed to create log file for logging errors");
+			exit(EXIT_FAILURE);
+		}
 
 		//normal file execution
 		//it's basically default execution with line parsing
@@ -525,8 +534,12 @@ int main(int argc, char** argv){
 				snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(urlBuffer, "?v=") + 3);
 				//adding a sleep so it doesn't rapid fire youtube
 				sleep(1);
-				downloadFromURL(urlBuffer, modeInfo.downloadMode, coverArtMode);
-				(*moveFunction)(&movementInfo);
+				if(downloadFromURL(urlBuffer, modeInfo.downloadMode, coverArtMode) == NO_ERROR){
+					(*moveFunction)(&movementInfo);
+				}else{
+					printf("Adding URL %s to log file", urlBuffer);
+					fprintf(logFile ,"Failed to download from url: %s", urlBuffer);
+				}
 			}
 
 		//file mode and cover art mode
@@ -545,8 +558,9 @@ int main(int argc, char** argv){
 
 					//adding a sleep so it doesn't rapid fire youtube
 					sleep(1);
-					downloadFromURL(shortenedURL, modeInfo.downloadMode, NO_DWNLD_COVER_ART);
-					(*moveFunction)(&movementInfo);
+					if(downloadFromURL(shortenedURL, modeInfo.downloadMode, NO_DWNLD_COVER_ART) == NO_ERROR){
+						(*moveFunction)(&movementInfo);
+					}
 				}else if(strstr(buffer, ".mp3") != NULL){
 					if(checkIfExists(buffer)){
 						//change this later
@@ -566,6 +580,8 @@ int main(int argc, char** argv){
 				buffer = NULL;
 			}
 		}
+		fclose(inFile);
+		fclose(logFile);
 
 		free(sendVideo);
 		free(sendAudio);
