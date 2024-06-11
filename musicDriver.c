@@ -28,11 +28,11 @@
  *	(!4>../Bangers/Extreme)
  *	(!c>../Bangers/Extreme)
  * Add cover art related things such as keeping or discarding them
- * Fix how typing the dests is. Is it really necessary to type the entire path?
  * Adding NULL protection in writeCover()?
  * mv command or rename function?
  * perhaps have a way to add more metadata to mp3 files?
- * perhaps replace the linked list with an array. This would making it a lost easier if the user inputs a number to select
+ * Fix how typing the dests is. Is it really necessary to type the entire path?
+ *	perhaps replace the linked list with an array. This would making it a lost easier if the user inputs a number to select
 */
 
 /*CONTINUOUS
