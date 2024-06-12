@@ -1,4 +1,4 @@
-#include "./includes/pathsMap.h"
+#include "./includes/pathMap.h"
 
 //credit to this post https://stackoverflow.com/questions/1723002/how-to-list-all-subdirectories-in-a-given-directory-in-c#1723583
 static void getSubdirectories(Map_t* map, const char* basePath){
