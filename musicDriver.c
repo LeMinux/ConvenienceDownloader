@@ -39,10 +39,6 @@
  * Use program :P
 */
 
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "./includes/globals.h"
 #include "./includes/userInput.h"
 #include "./includes/helpers.h"
@@ -50,7 +46,6 @@
 #include "./includes/writeArt.h"
 #include "./includes/fileOps.h"
 #include "./includes/pathMap.h"
-#include "includes/pathMap.h"
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -78,7 +73,7 @@
 #define DEST_AMOUNT 3
 #define MP4_INDEX 0
 #define MP3_INDEX 1
-#define COVER_INDEX
+#define COVER_INDEX 2
 
 #define ID_BUFFER 12
 
@@ -105,10 +100,6 @@ typedef struct ModePackage{
 static char* MP4_BASE_DIR = NULL;
 static char* MP3_BASE_DIR = NULL;
 //static char* COVER_BASE_DIR = NULL;
-//static Map_t* audioMapsArray = NULL;
-//static Map_t* videoMapsArray = NULL;
-//static Map_t* coverMapsArray = NULL;
-//static Map_t** directoriesMapArray = NULL;
 static MapArray_t* destMaps = NULL;
 
 void __attribute__((constructor)) initPaths (){
@@ -137,74 +128,6 @@ void __attribute__((constructor)) initPaths (){
 		exit(EXIT_FAILURE);
 	}
 
-	/*
-	if(!checkIfExists(DES_MP4)){
-		(void)printf(PNT_RED"Destinations for videos have not been initalized.\n"PNT_RESET);
-		int valid = 0;
-		char* buffer = NULL;
-		while(!valid){
-			(void)printf("Please type the path to where you want to send video files-> ");
-			unknownInput(stdin, &buffer);
-			if(strlen(buffer) == 0){
-				(void)puts(PNT_RED"Enter something."PNT_RESET);
-			}else if(!checkIfExists(buffer)){
-				(void)puts(PNT_RED"The path specified does not exist."PNT_RESET);
-			}else if(access(buffer, W_OK) == -1){
-				(void)printf(PNT_RED"The path specified does not have writting permissions\n"PNT_RESET);
-			}else{
-				valid = 1;
-				writeDest(buffer, 4);
-			}
-			free(buffer);
-			buffer = NULL;
-		}
-	}
-
-	if(!checkIfExists(DES_MP3)){
-		(void)printf(PNT_RED"Destinations for audios have not been initalized.\n"PNT_RESET);
-		int valid = 0;
-		char* buffer = NULL;
-		while(!valid){
-			(void)printf("Please type the path to where you want to send audio files-> ");
-			unknownInput(stdin, &buffer);
-			if(strlen(buffer) == 0){
-				(void)puts(PNT_RED"Enter something."PNT_RESET);
-			}else if(!checkIfExists(buffer)){
-				(void)puts(PNT_RED"The path specified does not exist"PNT_RESET);
-			}else if(access(buffer, W_OK) == -1){
-				(void)puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
-			}else{
-				valid = 1;
-				writeDest(buffer, 3);
-			}
-			free(buffer);
-			buffer = NULL;
-		}
-	}
-
-	if(!checkIfExists(DES_COVER)){
-		(void)printf(PNT_RED"Where to get covers has not been initalized.\n"PNT_RESET);
-		int valid = 0;
-		char* buffer = NULL;
-		while(!valid){
-			(void)printf("Please type the path to where you extract your cover art files-> ");
-			unknownInput(stdin, &buffer);
-			if(strlen(buffer) == 0){
-				(void)puts(PNT_RED"Enter something."PNT_RESET);
-			}else if(!checkIfExists(buffer)){
-				(void)puts(PNT_RED"The path specified does not exist"PNT_RESET);
-			}else if(access(buffer, W_OK) == -1){
-				(void)puts(PNT_RED"The path specified does not have writting permissions"PNT_RESET);
-			}else{
-				valid = 1;
-				writeDest(buffer, 5);
-			}
-			free(buffer);
-			buffer = NULL;
-		}
-	}
-	*/
-
 	FILE* destFiles [] = {NULL, NULL, NULL};
 	destFiles[0] = fopen(DES_MP4, "r");
 	destFiles[1] = fopen(DES_MP3, "r");
@@ -214,28 +137,36 @@ void __attribute__((constructor)) initPaths (){
 	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Failed to open audio destination file");
 	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
 
-	//directoriesMapArray = malloc(sizeof(Map_t*) * DEST_AMOUNT);
 	destMaps = malloc(sizeof(*destMaps) * DEST_AMOUNT);
 	if(destMaps == NULL){
 		PRINT_ERROR(FAILED_MALLOC_MSG);
 		exit(EXIT_FAILURE);
 	}
 
+	//build a map per each directory entry in the destination files
 	char* buffer = NULL;
 	int index = 0;
 	for(; index < DEST_AMOUNT; ++index){
+		int dirCount = 0;
 		while(unknownInput(destFiles[index], &buffer) != 0){
-			destMaps[index].mapArray = realloc(destMaps[index].mapArray, sizeof(Map_t) * destMaps[index].length + 1);
+			destMaps[index].mapArray = realloc(destMaps[index].mapArray, sizeof(Map_t) * dirCount + 1);
 			if(destMaps[index].mapArray == NULL){
 				PRINT_ERROR(FAILED_MALLOC_MSG);
 				exit(EXIT_FAILURE);
 			}
-			destMaps[index].mapArray = obtainPathMap(buffer);
-			printPathMap(destMaps[index].mapArray);
-			++destMaps[index].length;
+
+			destMaps[index].mapArray[dirCount] = *(obtainPathMap(buffer));
+			++dirCount;
 		}
+		destMaps[index].length = dirCount;
 		fclose(destFiles[index]);
 	}
+	printMapArray(&destMaps[MP4_INDEX]);
+	printMapArray(&destMaps[MP3_INDEX]);
+	printMapArray(&destMaps[COVER_INDEX]);
+
+	puts("Exiting");
+	exit(EXIT_SUCCESS);
 }
 
 //mode specifies audio or video

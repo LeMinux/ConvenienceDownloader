@@ -100,6 +100,19 @@ void freePathMap(Map_t* pathMap){
 	free(pathMap);
 	pathMap = NULL;
 }
+//destMaps[0].mapArray->map[0]
+void printMapArray(MapArray_t* arrayOfMaps){
+	int offset = 0;
+	int m = 0;
+	for(; m < arrayOfMaps->length; ++m){
+		Map_t* map = arrayOfMaps->mapArray;
+		int p = 0;
+		for(; p < map->length; ++p){
+			printf("%d> %s\n", p + 1 + offset, map->map[p]);
+		}
+		offset += map->length;
+	}
+}
 
 void printPathMap(Map_t* pathMap){
 	int p = 0;
