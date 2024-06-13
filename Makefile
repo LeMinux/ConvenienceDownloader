@@ -42,6 +42,9 @@ leak: $(C_FILES)
 debug: $(C_FILES)
 	$(CC) -g $(C_FLAGS) -o $@ $^
 
+test: $(O_FILES)
+	$(CC) $(C_FLAGS) -o $@ $^
+
 #remove all object files, dependency files, and binary
 clean:
 	rm -rf $(BINARY) $(O_FILES) $(DEP_FILES)
