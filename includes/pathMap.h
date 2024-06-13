@@ -20,6 +20,11 @@ typedef struct Map{
 	char** map;
 }Map_t;
 
+typedef struct MapArray{
+	unsigned int length;
+	Map_t* mapArray;
+}MapArray_t;
+
 //
 Map_t* obtainPathMap(const char*);
 void freePathMap(Map_t*);

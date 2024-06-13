@@ -108,7 +108,8 @@ static char* MP3_BASE_DIR = NULL;
 //static Map_t* audioMapsArray = NULL;
 //static Map_t* videoMapsArray = NULL;
 //static Map_t* coverMapsArray = NULL;
-static Map_t** directoriesMapArray = NULL;
+//static Map_t** directoriesMapArray = NULL;
+static MapArray_t* destMaps = NULL;
 
 void __attribute__((constructor)) initPaths (){
 	if(!checkIfExists(DES)){
@@ -204,9 +205,6 @@ void __attribute__((constructor)) initPaths (){
 	}
 	*/
 
-	//FILE* mp4Dest = NULL;
-	//FILE* mp3Dest = NULL;
-	//FILE* coverDest = NULL;
 	FILE* destFiles [] = {NULL, NULL, NULL};
 	destFiles[0] = fopen(DES_MP4, "r");
 	destFiles[1] = fopen(DES_MP3, "r");
@@ -216,46 +214,28 @@ void __attribute__((constructor)) initPaths (){
 	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Failed to open audio destination file");
 	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
 
-	directoriesMapArray = malloc(sizeof(Map_t*) * DEST_AMOUNT);
-	if(directoriesMapArray == NULL){
+	//directoriesMapArray = malloc(sizeof(Map_t*) * DEST_AMOUNT);
+	destMaps = malloc(sizeof(*destMaps) * DEST_AMOUNT);
+	if(destMaps == NULL){
 		PRINT_ERROR(FAILED_MALLOC_MSG);
 		exit(EXIT_FAILURE);
 	}
 
-
-	/*
-	mp4Dest = fopen(DES_MP4, "r");
-	if(mp4Dest == NULL) printError(EXIT_FAILURE, "Failed to open video destination file");
-
-	mp3Dest = fopen(DES_MP3, "r");
-	if(mp3Dest == NULL) printError(EXIT_FAILURE, "Failed to open audio destination file");
-
-	coverDest = fopen(DES_COVER, "r");
-	if(coverDest == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
-	*/
-
 	char* buffer = NULL;
 	int index = 0;
 	for(; index < DEST_AMOUNT; ++index){
-		int dirCount = 0;
 		while(unknownInput(destFiles[index], &buffer) != 0){
-			directoriesMapArray[index] = realloc(directoriesMapArray[index], sizeof(Map_t) * dirCount + 1);
-			if(directoriesMapArray[index] == NULL){
+			destMaps[index].mapArray = realloc(destMaps[index].mapArray, sizeof(Map_t) * destMaps[index].length + 1);
+			if(destMaps[index].mapArray == NULL){
 				PRINT_ERROR(FAILED_MALLOC_MSG);
 				exit(EXIT_FAILURE);
 			}
-			 directoriesMapArray[index][dirCount] = *(obtainPathMap(buffer));
-			printPathMap(&directoriesMapArray[index][dirCount]);
-			++dirCount;
+			destMaps[index].mapArray = obtainPathMap(buffer);
+			printPathMap(destMaps[index].mapArray);
+			++destMaps[index].length;
 		}
 		fclose(destFiles[index]);
 	}
-
-	//unknownInput(mp4Dest, &MP4_BASE_DIR);
-	//unknownInput(mp3Dest, &MP3_BASE_DIR);
-	//unknownInput(coverDest, &COVER_BASE_DIR);
-	puts("Exiting");
-	exit(EXIT_SUCCESS);
 }
 
 //mode specifies audio or video

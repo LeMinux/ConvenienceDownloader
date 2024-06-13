@@ -34,10 +34,11 @@ $(BINARY): $(O_FILES)
 run:
 	./$(BINARY)
 
-#compile with debuging information
+#compile with debuging information and address sanitization
 leak: $(C_FILES)
 	$(CC) $(C_FLAGS) $(DEBUG_FLAGS) -o $@ $^
 
+#compile for gdb debugging
 debug: $(C_FILES)
 	$(CC) -g $(C_FLAGS) -o $@ $^
 
