@@ -35,8 +35,11 @@ run:
 	./$(BINARY)
 
 #compile with debuging information
-debug: $(O_FILES)
+leak: $(C_FILES)
 	$(CC) $(C_FLAGS) $(DEBUG_FLAGS) -o $@ $^
+
+debug: $(C_FILES)
+	$(CC) -g $(C_FLAGS) -o $@ $^
 
 #remove all object files, dependency files, and binary
 clean:

@@ -16,13 +16,13 @@
  * Change how downloadMode is set in the getModeFromSelection function
  * Change the wantArt and coverArtMode before actual execution
  * !!!!!Change main to handle errors in the case downloadFromURL fails
- * * For file execution if errors occur try to log what URLS or paths were ignored
+ * For file execution if errors occur try to log what URLS or paths were ignored
  *	instead of just crashing the program which results in manual cleansing of the file
+ * Fix bug that creates two // in getting sub dirs
 */
 
 /*TODO
- *
- * Fix bug that creates two // in getting sub dirs
+ * Have a wayto specify multiple destinations
  * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
@@ -32,7 +32,7 @@
  * mv command or rename function?
  * perhaps have a way to add more metadata to mp3 files?
  * Fix how typing the dests is. Is it really necessary to type the entire path?
- *	perhaps replace the linked list with an array. This would making it a lost easier if the user inputs a number to select
+ *	perhaps replace the linked list with an array. This would making it a lot easier if the user inputs a number to select
 */
 
 /*CONTINUOUS
@@ -49,6 +49,8 @@
 #include "./includes/linkedList.h"
 #include "./includes/writeArt.h"
 #include "./includes/fileOps.h"
+#include "./includes/pathMap.h"
+#include "includes/pathMap.h"
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -73,6 +75,11 @@
 #define MP4_EXT ".mp4"
 #define JPG_EXT ".jpg"
 
+#define DEST_AMOUNT 3
+#define MP4_INDEX 0
+#define MP3_INDEX 1
+#define COVER_INDEX
+
 #define ID_BUFFER 12
 
 //this struct is here so that function pointers can be used for moving files
@@ -95,18 +102,42 @@ typedef struct ModePackage{
 
 //global dynamic variables
 //these act as the base path. This way opening the destination files only happens once
-static char* MP4_BASE_DIR;
-static char* MP3_BASE_DIR;
-static char* COVER_BASE_DIR;
-static char* COVER_BASE_DIR;
+static char* MP4_BASE_DIR = NULL;
+static char* MP3_BASE_DIR = NULL;
+//static char* COVER_BASE_DIR = NULL;
+//static Map_t* audioMapsArray = NULL;
+//static Map_t* videoMapsArray = NULL;
+//static Map_t* coverMapsArray = NULL;
+static Map_t** directoriesMapArray = NULL;
 
 void __attribute__((constructor)) initPaths (){
 	if(!checkIfExists(DES)){
-		printError(EXIT_FAILURE, "Destinations directory is not present. Please run the makefile with \"make\"");
+		PRINT_ERROR("Destinations directory is not present. Please run the makefile with \"make\"");
+		exit(EXIT_FAILURE);
+	}
+	int valid = 1;
+	if(!checkIfExists(DES_MP4)){
+		PRINT_ERROR("Destinations for videos have not been initalized.\n Please use the -w4 flag to specify them");
+		valid = 0;
 	}
 
+	if(!checkIfExists(DES_MP3)){
+		PRINT_ERROR("Destinations for audio have not been initalized.\n Please use the -w3 flag to specify them");
+		valid = 0;
+	}
+
+	if(!checkIfExists(DES_COVER)){
+		PRINT_ERROR("Destinations for covers have not been initalized.\n Please use the -wc flag to specify them");
+		valid = 0;
+	}
+
+	if(!valid){
+		PRINT_ERROR("Use the corresponding flags to fix the problem");
+		exit(EXIT_FAILURE);
+	}
+
+	/*
 	if(!checkIfExists(DES_MP4)){
-	//(void)fprintf(writeTo, "%s", string);
 		(void)printf(PNT_RED"Destinations for videos have not been initalized.\n"PNT_RESET);
 		int valid = 0;
 		char* buffer = NULL;
@@ -171,11 +202,28 @@ void __attribute__((constructor)) initPaths (){
 			buffer = NULL;
 		}
 	}
+	*/
 
-	FILE* mp4Dest = NULL;
-	FILE* mp3Dest = NULL;
-	FILE* coverDest = NULL;
+	//FILE* mp4Dest = NULL;
+	//FILE* mp3Dest = NULL;
+	//FILE* coverDest = NULL;
+	FILE* destFiles [] = {NULL, NULL, NULL};
+	destFiles[0] = fopen(DES_MP4, "r");
+	destFiles[1] = fopen(DES_MP3, "r");
+	destFiles[2] = fopen(DES_COVER, "r");
 
+	if(destFiles[0] == NULL) printError(EXIT_FAILURE, "Failed to open video destination file");
+	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Failed to open audio destination file");
+	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
+
+	directoriesMapArray = malloc(sizeof(Map_t*) * DEST_AMOUNT);
+	if(directoriesMapArray == NULL){
+		PRINT_ERROR(FAILED_MALLOC_MSG);
+		exit(EXIT_FAILURE);
+	}
+
+
+	/*
 	mp4Dest = fopen(DES_MP4, "r");
 	if(mp4Dest == NULL) printError(EXIT_FAILURE, "Failed to open video destination file");
 
@@ -184,15 +232,30 @@ void __attribute__((constructor)) initPaths (){
 
 	coverDest = fopen(DES_COVER, "r");
 	if(coverDest == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
+	*/
 
+	char* buffer = NULL;
+	int index = 0;
+	for(; index < DEST_AMOUNT; ++index){
+		int dirCount = 0;
+		while(unknownInput(destFiles[index], &buffer) != 0){
+			directoriesMapArray[index] = realloc(directoriesMapArray[index], sizeof(Map_t) * dirCount + 1);
+			if(directoriesMapArray[index] == NULL){
+				PRINT_ERROR(FAILED_MALLOC_MSG);
+				exit(EXIT_FAILURE);
+			}
+			 directoriesMapArray[index][dirCount] = *(obtainPathMap(buffer));
+			printPathMap(&directoriesMapArray[index][dirCount]);
+			++dirCount;
+		}
+		fclose(destFiles[index]);
+	}
 
-	unknownInput(mp4Dest, &MP4_BASE_DIR);
-	unknownInput(mp3Dest, &MP3_BASE_DIR);
-	unknownInput(coverDest, &COVER_BASE_DIR);
-
-	fclose(mp4Dest);
-	fclose(mp3Dest);
-	fclose(coverDest);
+	//unknownInput(mp4Dest, &MP4_BASE_DIR);
+	//unknownInput(mp3Dest, &MP3_BASE_DIR);
+	//unknownInput(coverDest, &COVER_BASE_DIR);
+	puts("Exiting");
+	exit(EXIT_SUCCESS);
 }
 
 //mode specifies audio or video

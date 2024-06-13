@@ -75,9 +75,9 @@ static void getSubdirectories(Map_t* map, const char* basePath){
 	(void)closedir(dirp);
 }
 
-static void sortMap(Map_t map){
+//static void sortMap(Map_t map){
 
-}
+//}
 
 Map_t* obtainPathMap(const char* initialDirPath){
 	if(initialDirPath == NULL) return NULL;
