@@ -124,7 +124,7 @@ void __attribute__((constructor)) initPaths (){
 	}
 
 	if(!valid){
-		PRINT_ERROR("Use the corresponding flags to fix the problem");
+		PRINT_ERROR("Use the corresponding flags to add the directories");
 		exit(EXIT_FAILURE);
 	}
 
@@ -161,12 +161,6 @@ void __attribute__((constructor)) initPaths (){
 		destMaps[index].length = dirCount;
 		fclose(destFiles[index]);
 	}
-	printMapArray(&destMaps[MP4_INDEX]);
-	printMapArray(&destMaps[MP3_INDEX]);
-	printMapArray(&destMaps[COVER_INDEX]);
-
-	puts("Exiting");
-	exit(EXIT_SUCCESS);
 }
 
 //mode specifies audio or video

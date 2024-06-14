@@ -22,7 +22,7 @@
 void writeDest(char* string, int mode);
 void moveFile(const char* fileName, const char* destination);
 void getFileNameByID(const char* id, const char* extension, char* outString, int length);
-void getSubdirectories(const char* basePath, Node_t** list);
+//void getSubdirectories(const char* basePath, Node_t** list);
 void convertToMp3(const char* songName);
 
 int checkIfExists(const char*);

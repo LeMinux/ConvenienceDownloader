@@ -65,13 +65,14 @@ void getFileNameByID(const char* id, const char* extension, char* outString, int
 	closedir(currentDirectory);
 }
 
+/*
 void getSubdirectories(const char* basePath, Node_t** list){
 	addToList(list, basePath);
 	struct dirent* direntp = NULL;
 	DIR* dirp = NULL;
 	size_t pathLength;
 
-	/* Check input parameters. */
+	//Check input parameters.
 	if (basePath == NULL) return;
 
 	pathLength = strlen(basePath);
@@ -79,16 +80,16 @@ void getSubdirectories(const char* basePath, Node_t** list){
 	if (pathLength  == 0 || pathLength > _POSIX_PATH_MAX)
 		return;
 
-	/* Open directory */
+	//Open directory
 	dirp = opendir(basePath);
 	if (dirp == NULL) return;
 
 	while ((direntp = readdir(dirp)) != NULL){
-		/* For every directory entry... */
+		//For every directory entry...
 		struct stat fstat;
 		char fullPath [_POSIX_PATH_MAX + 1];
 
-		/* Calculate full name, check we are in file length limts */
+		//Calculate full name, check we are in file length limts
 		if ((pathLength + strlen(direntp->d_name) + 1) > _POSIX_PATH_MAX){
 			continue;
 		}else{
@@ -98,12 +99,12 @@ void getSubdirectories(const char* basePath, Node_t** list){
 				snprintf(fullPath, pathLength + strlen(direntp->d_name) + 1, "%s%s", basePath, direntp->d_name);
 		}
 
-		/* Ignore special directories. */
+		//Ignore special directories
 		if ((strcmp(direntp->d_name, ".") == 0) ||
 			(strcmp(direntp->d_name, "..") == 0))
 			continue;
 
-		/* Print only if it is really directory. */
+		//Print only if it is really directory.
 		if (stat(fullPath, &fstat) < 0)
 			continue;
 
@@ -112,9 +113,10 @@ void getSubdirectories(const char* basePath, Node_t** list){
 		}
 	}
 
-    /* Finalize resources. */
+    //Finalize resources
     closedir(dirp);
 }
+*/
 
 //converts a file into an mp3 via ffmpeg
 //this returns the newly created mp3 file

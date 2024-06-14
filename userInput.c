@@ -206,6 +206,7 @@ int askToRepeat(void){
 	return HAD_ERROR;
 }
 
+/*
 //gets from the user what directory they want to download into
 //with the help of getDirectories
 char* getUserChoiceForDir(const char* baseDir, const char* prompt){
@@ -283,3 +284,4 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 	deleteList(&listOfDirs);
 	return returnDir;
 }
+*/

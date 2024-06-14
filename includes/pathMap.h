@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/dir.h>
 #include <string.h>
+#include <errno.h>
 
 #define NO_SLASH 0
 #define ADD_SLASH 1
@@ -31,6 +32,8 @@ typedef struct MapArray{
 }MapArray_t;
 
 Map_t* obtainPathMap(const char*);
+char* getSelectionWithSkip(MapArray_t*, const char*);
+char* getSelectionNoSkip(MapArray_t*, const char*);
 void freePathMap(Map_t*);
 void printPathMap(Map_t*);
 void printMapArray(MapArray_t*);
