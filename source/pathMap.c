@@ -1,5 +1,5 @@
-#include "./includes/pathMap.h"
-#include "./includes/userInput.h"
+#include "../includes/pathMap.h"
+#include <ctype.h>
 
 //credit to this post https://stackoverflow.com/questions/1723002/how-to-list-all-subdirectories-in-a-given-directory-in-c#1723583
 static void getSubdirectories(Map_t* map, const char* basePath){
@@ -76,8 +76,7 @@ static void getSubdirectories(Map_t* map, const char* basePath){
 	(void)closedir(dirp);
 }
 
-//TEST THE SELECTION FUNCTIONS
-char* getSelectionNoSkip(MapArray_t* mapsOfSubDirs, const char* prompt){
+char* getSelection(MapArray_t* mapsOfSubDirs, const char* prompt, int isSkipping){
 	int maxInput = 0;
 	int c = 0;
 	for(; c < mapsOfSubDirs->length; ++c)
@@ -90,56 +89,37 @@ char* getSelectionNoSkip(MapArray_t* mapsOfSubDirs, const char* prompt){
 	char* endInput = NULL;
 	int valid = 0;
 	int selection = 0;
+
+	printMapArray(mapsOfSubDirs);
 	do{
 		puts(prompt);
 		exactInput(stdin, buffer, 5);
 		selection = strtol(buffer, &endInput, 0);
-		if((*endInput == '\0' || endInput != buffer) && errno == ERANGE){
-			if(selection < maxInput && selection > 0) valid = 1;
+		//check if it converted the whole thing
+		if((*endInput == '\0') && errno != ERANGE){
+			if(selection <= maxInput && selection > 0)
+				valid = 1;
+			else
+				printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
+		//could be a string
+		}else{
+			int l = 0;
+			for(; l < 4; ++l) buffer[l] = tolower(buffer[l]);
+			if(isSkipping && strcmp(buffer, "skip") == 0)
+				return "SKIP";
+			else if(strcmp(buffer, "exit") == 0)
+				return "EXIT";
+			else
+				printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
+
 		}
 	}while(!valid);
 
 	c = 0;
-	while(selection > mapsOfSubDirs->mapArray[c].length && c > 0){
+	while(selection > mapsOfSubDirs->mapArray[c].length){
 		selection -= mapsOfSubDirs->mapArray[c].length;
 		++c;
 	}
-
-	if(c < 0) return NULL;
-	return mapsOfSubDirs->mapArray[c].map[selection - 1];
-}
-
-char* getSelectionWithSkip(MapArray_t* mapsOfSubDirs, const char* prompt){
-	int maxInput = 0;
-	int c = 0;
-	for(; c < mapsOfSubDirs->length; ++c)
-		maxInput += mapsOfSubDirs->mapArray[c].length;
-
-	//will accept 4 digits
-	//of course there is always the possibility of someone having
-	//9999 + 1 directories from just one mapArray
-	char buffer [5] = "";
-	char* endInput = NULL;
-	int valid = 0;
-	int selection = 0;
-	do{
-		puts(prompt);
-		exactInput(stdin, buffer, 5);
-		selection = strtol(buffer, &endInput, 0);
-		if((*endInput == '\0' || endInput != buffer) && errno == ERANGE){
-			if(selection < maxInput && selection > 0) valid = 1;
-		}else if(strcmp(buffer, "SKIP") == 0){
-			return "SKIP";
-		}
-	}while(!valid);
-
-	c = 0;
-	while(selection > mapsOfSubDirs->mapArray[c].length && c > 0){
-		selection -= mapsOfSubDirs->mapArray[c].length;
-		++c;
-	}
-
-	if(c < 0) return NULL;
 	return mapsOfSubDirs->mapArray[c].map[selection - 1];
 }
 
@@ -155,8 +135,6 @@ Map_t* obtainPathMap(const char* initialDirPath){
 	return retMap;
 }
 
-
-
 void freePathMap(Map_t* pathMap){
 	int f = 0;
 	for(; f < pathMap->length; ++f){
@@ -167,7 +145,6 @@ void freePathMap(Map_t* pathMap){
 	pathMap = NULL;
 }
 
-//CHECK OVER THIS
 void printMapArray(MapArray_t* arrayOfMaps){
 	int offset = 0;
 	int m = 0;

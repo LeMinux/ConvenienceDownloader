@@ -1,7 +1,7 @@
 #note the dot after the period. This is to specify the current directory
 BINARY:=downloader
-CODE_DIR:=.
-INC_DIR:=. ./includes/
+CODE_DIR:=./source/
+INC_DIR:=./includes/
 
 CC :=gcc
 DEP_FLAGS :=-MP -MD
@@ -51,3 +51,5 @@ clean:
 
 #include the dependency files
 -include $(DEP_FILES)
+
+

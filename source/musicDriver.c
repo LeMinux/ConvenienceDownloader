@@ -39,13 +39,13 @@
  * Use program :P
 */
 
-#include "./includes/globals.h"
-#include "./includes/userInput.h"
-#include "./includes/helpers.h"
-#include "./includes/linkedList.h"
-#include "./includes/writeArt.h"
-#include "./includes/fileOps.h"
-#include "./includes/pathMap.h"
+#include "../includes/globals.h"
+#include "../includes/userInput.h"
+#include "../includes/helpers.h"
+#include "../includes/linkedList.h"
+#include "../includes/writeArt.h"
+#include "../includes/fileOps.h"
+#include "../includes/pathMap.h"
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -161,6 +161,10 @@ void __attribute__((constructor)) initPaths (){
 		destMaps[index].length = dirCount;
 		fclose(destFiles[index]);
 	}
+
+	printf("%s\n" ,getSelection(&destMaps[MP4_INDEX], USER_MP4_PROMPT, 1));
+	printf("%s\n", getSelection(&destMaps[MP3_INDEX], USER_MP3_PROMPT_NO_SKIP, 0));
+	exit(EXIT_SUCCESS);
 }
 
 //mode specifies audio or video
@@ -175,10 +179,10 @@ static char* askUserForPath(int mode, int allowSkipping){
 			baseDir = MP3_BASE_DIR;
 			if(allowSkipping){
 				prompt = USER_MP3_PROMPT;
-				askFunction = getUserChoiceForDir;
+				//askFunction = getUserChoiceForDir;
 			}else{
 				prompt = USER_MP3_PROMPT_NO_SKIP;
-				askFunction = getUserChoiceForDirNoSkip;
+				//askFunction = getUserChoiceForDirNoSkip;
 			}
 		break;
 
@@ -186,10 +190,10 @@ static char* askUserForPath(int mode, int allowSkipping){
 			baseDir = MP4_BASE_DIR;
 			if(allowSkipping){
 				prompt = USER_MP4_PROMPT;
-				askFunction = getUserChoiceForDir;
+				//askFunction = getUserChoiceForDir;
 			}else{
 				prompt = USER_MP4_PROMPT_NO_SKIP;
-				askFunction = getUserChoiceForDirNoSkip;
+				//askFunction = getUserChoiceForDirNoSkip;
 			}
 		break;
 
@@ -329,13 +333,13 @@ int main(int argc, char** argv){
 		if(strcmp("-l", argv[c]) == 0){
 			(void)puts("v List of availiable directories for MP4");
 			Node_t* listOfDirs = NULL;
-			getSubdirectories(MP4_BASE_DIR, &listOfDirs);
+			//getSubdirectories(MP4_BASE_DIR, &listOfDirs);
 			printList(listOfDirs);
 			deleteList(&listOfDirs);
 
 			(void)puts("\nv List of availiable directories for MP3");
 
-			getSubdirectories(MP3_BASE_DIR, &listOfDirs);
+			//getSubdirectories(MP3_BASE_DIR, &listOfDirs);
 			printList(listOfDirs);
 			deleteList(&listOfDirs);
 			exit(EXIT_SUCCESS);

@@ -1,7 +1,7 @@
-#include "./includes/writeArt.h"
-#include "./includes/helpers.h"
-#include "./includes/userInput.h"
-#include "./includes/fileOps.h"
+#include "../includes/writeArt.h"
+#include "../includes/helpers.h"
+#include "../includes/userInput.h"
+#include "../includes/fileOps.h"
 
 void writeCovers(FILE* songNames, const char* coverArt){
 	char originalName [LARGER_BUFFER_SIZE] = "";

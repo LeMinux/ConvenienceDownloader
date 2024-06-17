@@ -11,6 +11,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "./userInput.h"
+
 #define NO_SLASH 0
 #define ADD_SLASH 1
 
@@ -25,15 +27,17 @@ typedef struct Map{
 //a struct that holds an array of Map_t
 //the length specifies how many maps are in the array
 //This is used for when a user specifies multiple directories so each index
-//is a map of what subdirectories there are
+//is a map of what subdirectories there are.
+//You may consider this struct unecessary as the Map_t map could just have
+//every path in a gigantic array in the heap, but splitting the maps helps
+//to find available space on the heap instead of reallocing a 200 element string array
 typedef struct MapArray{
 	unsigned int length;
 	Map_t* mapArray;
 }MapArray_t;
 
 Map_t* obtainPathMap(const char*);
-char* getSelectionWithSkip(MapArray_t*, const char*);
-char* getSelectionNoSkip(MapArray_t*, const char*);
+char* getSelection(MapArray_t*, const char*, int);
 void freePathMap(Map_t*);
 void printPathMap(Map_t*);
 void printMapArray(MapArray_t*);
