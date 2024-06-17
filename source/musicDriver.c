@@ -24,7 +24,7 @@
 */
 
 /*TODO
- * Have a wayto specify multiple destinations
+ * Have a way to specify multiple destinations with -w4 -w3 and -wc
  * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
@@ -42,11 +42,9 @@
 #include "../includes/globals.h"
 #include "../includes/userInput.h"
 #include "../includes/helpers.h"
-#include "../includes/linkedList.h"
 #include "../includes/writeArt.h"
 #include "../includes/fileOps.h"
 #include "../includes/pathMap.h"
-#include <cstdlib>
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -318,17 +316,14 @@ int main(int argc, char** argv){
 	for(; c < argc; ++c){
 		if(strcmp("-l", argv[c]) == 0){
 			(void)puts("v List of availiable directories for MP4");
-			//Node_t* listOfDirs = NULL;
-			//getSubdirectories(MP4_BASE_DIR, &listOfDirs);
-			//printList(listOfDirs);
-			//deleteList(&listOfDirs);
+			printMapArray(&destMaps[MP4_INDEX]);
 
 			(void)puts("\nv List of availiable directories for MP3");
+			printMapArray(&destMaps[MP3_INDEX]);
 
-			//getSubdirectories(MP3_BASE_DIR, &listOfDirs);
-			//printList(listOfDirs);
-			//deleteList(&listOfDirs);
 			(void)puts("\nv List of availiable directories for Cover Arts");
+			printMapArray(&destMaps[COVER_INDEX]);
+
 			exit(EXIT_SUCCESS);
 		}else if(strcmp("-f", argv[c]) == 0){
 			if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
