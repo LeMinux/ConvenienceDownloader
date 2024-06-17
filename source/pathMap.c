@@ -92,15 +92,15 @@ char* getSelection(MapArray_t* mapsOfSubDirs, const char* prompt, int isSkipping
 
 	printMapArray(mapsOfSubDirs);
 	do{
-		puts(prompt);
-		exactInput(stdin, buffer, 5);
+		(void)puts(prompt);
+		(void)exactInput(stdin, buffer, 5);
 		selection = strtol(buffer, &endInput, 0);
 		//check if it converted the whole thing
 		if((*endInput == '\0') && errno != ERANGE){
 			if(selection <= maxInput && selection > 0)
 				valid = 1;
 			else
-				printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
+				(void)printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
 		//could be a string
 		}else{
 			int l = 0;
@@ -110,7 +110,7 @@ char* getSelection(MapArray_t* mapsOfSubDirs, const char* prompt, int isSkipping
 			else if(strcmp(buffer, "exit") == 0)
 				return "EXIT";
 			else
-				printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
+				(void)printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
 
 		}
 	}while(!valid);
@@ -152,7 +152,7 @@ void printMapArray(MapArray_t* arrayOfMaps){
 		Map_t map = arrayOfMaps->mapArray[m];
 		int p = 0;
 		for(; p < map.length; ++p){
-			printf("%d> %s\n", p + 1 + offset, map.map[p]);
+			(void)printf("%d> %s\n", p + 1 + offset, map.map[p]);
 		}
 		offset += map.length;
 	}
@@ -160,5 +160,5 @@ void printMapArray(MapArray_t* arrayOfMaps){
 
 void printPathMap(Map_t* pathMap){
 	int p = 0;
-	for(; p < pathMap->length; ++p) printf("%d> %s\n", p + 1, pathMap->map[p]);
+	for(; p < pathMap->length; ++p) (void)printf("%d> %s\n", p + 1, pathMap->map[p]);
 }

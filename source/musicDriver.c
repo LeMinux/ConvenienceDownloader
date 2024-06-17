@@ -19,6 +19,8 @@
  * For file execution if errors occur try to log what URLS or paths were ignored
  *	instead of just crashing the program which results in manual cleansing of the file
  * Fix bug that creates two // in getting sub dirs
+ * * Fix how typing the dests is. Is it really necessary to type the entire path?
+ *	perhaps replace the linked list with an array. This would making it a lot easier if the user inputs a number to select
 */
 
 /*TODO
@@ -31,8 +33,6 @@
  * Adding NULL protection in writeCover()?
  * mv command or rename function?
  * perhaps have a way to add more metadata to mp3 files?
- * Fix how typing the dests is. Is it really necessary to type the entire path?
- *	perhaps replace the linked list with an array. This would making it a lot easier if the user inputs a number to select
 */
 
 /*CONTINUOUS
@@ -46,6 +46,7 @@
 #include "../includes/writeArt.h"
 #include "../includes/fileOps.h"
 #include "../includes/pathMap.h"
+#include <cstdlib>
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -161,48 +162,33 @@ void __attribute__((constructor)) initPaths (){
 		destMaps[index].length = dirCount;
 		fclose(destFiles[index]);
 	}
-
-	printf("%s\n" ,getSelection(&destMaps[MP4_INDEX], USER_MP4_PROMPT, 1));
-	printf("%s\n", getSelection(&destMaps[MP3_INDEX], USER_MP3_PROMPT_NO_SKIP, 0));
-	exit(EXIT_SUCCESS);
 }
 
 //mode specifies audio or video
 //for skipping, 0 is false and 1 is true
 static char* askUserForPath(int mode, int allowSkipping){
-	const char* baseDir = NULL;
 	const char* prompt = NULL;
-	char* (*askFunction)(const char*, const char*) = NULL;
+	int index = 0;
 
 	switch(mode){
 		case MP3_MODE:
-			baseDir = MP3_BASE_DIR;
-			if(allowSkipping){
-				prompt = USER_MP3_PROMPT;
-				//askFunction = getUserChoiceForDir;
-			}else{
-				prompt = USER_MP3_PROMPT_NO_SKIP;
-				//askFunction = getUserChoiceForDirNoSkip;
-			}
+			index=MP3_INDEX;
+			if(allowSkipping) prompt = USER_MP3_PROMPT;
+			else prompt = USER_MP3_PROMPT_NO_SKIP;
 		break;
 
 		case MP4_MODE:
-			baseDir = MP4_BASE_DIR;
-			if(allowSkipping){
-				prompt = USER_MP4_PROMPT;
-				//askFunction = getUserChoiceForDir;
-			}else{
-				prompt = USER_MP4_PROMPT_NO_SKIP;
-				//askFunction = getUserChoiceForDirNoSkip;
-			}
+			index=MP4_INDEX;
+			if(allowSkipping) prompt = USER_MP4_PROMPT;
+			else prompt = USER_MP4_PROMPT_NO_SKIP;
 		break;
 
 		default:
-			printError(EXIT_FAILURE, "Client passed invalid mode for getting path");
+			PRINT_ERROR("Client passed invalid mode for getting path");
+			exit(EXIT_FAILURE);
 		break;
     }
-
-	return (*askFunction)(baseDir, prompt);
+	return getSelection(&destMaps[index], prompt, allowSkipping);
 }
 
 //helps keep the priniciple of downloading once
@@ -332,16 +318,17 @@ int main(int argc, char** argv){
 	for(; c < argc; ++c){
 		if(strcmp("-l", argv[c]) == 0){
 			(void)puts("v List of availiable directories for MP4");
-			Node_t* listOfDirs = NULL;
+			//Node_t* listOfDirs = NULL;
 			//getSubdirectories(MP4_BASE_DIR, &listOfDirs);
-			printList(listOfDirs);
-			deleteList(&listOfDirs);
+			//printList(listOfDirs);
+			//deleteList(&listOfDirs);
 
 			(void)puts("\nv List of availiable directories for MP3");
 
 			//getSubdirectories(MP3_BASE_DIR, &listOfDirs);
-			printList(listOfDirs);
-			deleteList(&listOfDirs);
+			//printList(listOfDirs);
+			//deleteList(&listOfDirs);
+			(void)puts("\nv List of availiable directories for Cover Arts");
 			exit(EXIT_SUCCESS);
 		}else if(strcmp("-f", argv[c]) == 0){
 			if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
