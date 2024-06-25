@@ -1,5 +1,4 @@
 #include "../includes/pathMap.h"
-#include <ctype.h>
 
 //credit to this post https://stackoverflow.com/questions/1723002/how-to-list-all-subdirectories-in-a-given-directory-in-c#1723583
 static void getSubdirectories(Map_t* map, const char* basePath){
@@ -108,7 +107,7 @@ char* getSelection(MapArray_t* mapsOfSubDirs, const char* prompt, int isSkipping
 			if(isSkipping && strcmp(buffer, "skip") == 0)
 				return "SKIP";
 			else if(strcmp(buffer, "exit") == 0)
-				return "EXIT";
+				exit(EXIT_SUCCESS);
 			else
 				(void)printf(PNT_RED"Invalid input! Enter a number between 1 and %d\n"PNT_RESET, maxInput);
 

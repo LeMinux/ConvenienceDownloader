@@ -1,33 +1,5 @@
 #include "../includes/fileOps.h"
 
-void writeDest(char* string, int mode){
-	FILE* writeTo = NULL;
-	switch(mode){
-		case 3:
-			writeTo = fopen(DES_MP3, "w");
-			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to write audios to");
-		break;
-		case 4:
-			writeTo = fopen(DES_MP4, "w");
-			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to write videos to");
-		break;
-		case 5:
-			writeTo = fopen(DES_COVER, "w");
-			if(writeTo == NULL) printError(EXIT_FAILURE, "Failed to create file saying where to write cover art to");
-
-		break;
-		default: printError(EXIT_FAILURE, "Client passed unknown mode for Destinations");
-		break;
-	}
-
-	if(string[strlen(string) - 1] == '/')
-		fprintf(writeTo, "%s", string);
-	else
-		fprintf(writeTo, "%s/", string);
-
-	fclose(writeTo);
-}
-
 void moveFile(const char* fileName, const char* destination){
 	const char MOVE [] = "mv ";
 	int length = strlen(fileName) + strlen(destination) + strlen(MOVE);
@@ -154,4 +126,33 @@ int checkIfExists(const char* check){
 		return 0;
 	else
 		return 1;
+}
+
+int validateDirPath(const char* path){
+	//path doesn't exist
+	struct stat checkStat;
+	if(stat(path, &checkStat) == -1){
+		fprintf(stderr, RED "Path \"%s\" does not exist\n" RESET, path);
+		return HAD_ERROR;
+	}
+
+	if(S_ISDIR(checkStat.st_mode) == NOT_A_DIR) {
+		fprintf(stderr, RED "Path \"%s\" is not a directory\n" RESET, path);
+		return HAD_ERROR;
+	}
+
+	//checks if the effective user id matches the directory
+	if(geteuid() != checkStat.st_uid){
+		fprintf(stderr, RED "The user does not own the directory \"%s\"\n" RESET, path);
+		return HAD_ERROR;
+	}
+
+	//S_I*USR only checks if user bits are set
+	//this does not check if the user owns it hence the check above
+	if((checkStat.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR)) != (S_IRUSR | S_IWUSR | S_IXUSR)) {
+		fprintf(stderr, RED "Directory \"%s\" needs read, write, and execution privledges" RESET, path);
+		return HAD_ERROR;
+	}
+
+	return NO_ERROR;
 }

@@ -10,6 +10,7 @@
 #include <sys/dir.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "./userInput.h"
 

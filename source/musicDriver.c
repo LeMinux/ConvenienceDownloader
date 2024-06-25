@@ -21,10 +21,10 @@
  * Fix bug that creates two // in getting sub dirs
  * * Fix how typing the dests is. Is it really necessary to type the entire path?
  *	perhaps replace the linked list with an array. This would making it a lot easier if the user inputs a number to select
+ * Have a way to specify multiple destinations with -w4 -w3 and -wc
 */
 
 /*TODO
- * Have a way to specify multiple destinations with -w4 -w3 and -wc
  * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
@@ -54,6 +54,11 @@
 #define USER_MP3_PROMPT "Where do you want to send the MP3? Type exit to leave or type skip to avoid sending files: "
 #define USER_MP3_PROMPT_NO_SKIP "Where do you want to send the MP3? Type exit to leave: "
 #define USER_MP4_PROMPT_NO_SKIP "Where do you want to send the MP4? Type exit to leave: "
+
+#define DES "./Destinations/"
+#define DES_MP4 "./Destinations/videoDest.txt"
+#define DES_MP3 "./Destinations/audioDest.txt"
+#define DES_COVER "./Destinations/coverDest.txt"
 
 #define ALLOW_SKIPS 1
 #define DISALLOW_SKIPS 0
@@ -96,8 +101,8 @@ typedef struct ModePackage{
 
 //global dynamic variables
 //these act as the base path. This way opening the destination files only happens once
-static char* MP4_BASE_DIR = NULL;
-static char* MP3_BASE_DIR = NULL;
+//static char* MP4_BASE_DIR = NULL;
+//static char* MP3_BASE_DIR = NULL;
 //static char* COVER_BASE_DIR = NULL;
 static MapArray_t* destMaps = NULL;
 
@@ -127,14 +132,15 @@ void __attribute__((constructor)) initPaths (){
 		exit(EXIT_FAILURE);
 	}
 
+	//making an array so that using a loop is easier
 	FILE* destFiles [] = {NULL, NULL, NULL};
 	destFiles[0] = fopen(DES_MP4, "r");
 	destFiles[1] = fopen(DES_MP3, "r");
 	destFiles[2] = fopen(DES_COVER, "r");
 
-	if(destFiles[0] == NULL) printError(EXIT_FAILURE, "Failed to open video destination file");
-	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Failed to open audio destination file");
-	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Failed to open cover destination file");
+	if(destFiles[0] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open video destination file");
+	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open audio destination file");
+	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open cover destination file");
 
 	destMaps = malloc(sizeof(*destMaps) * DEST_AMOUNT);
 	if(destMaps == NULL){
@@ -332,31 +338,65 @@ int main(int argc, char** argv){
 			fileFlagIndex = ++c;
 
 		//where to send mp4(video) files
-		}else if(strcmp("-w4", argv[c]) == 0){
+		}else if(strcmp("-w4", argv[c]) == 0 || strcmp("-w3", argv[c]) == 0 || strcmp("-wc", argv[c]) == 0){
+			if(argc == c + 1){
+				PRINT_ERROR("Did not give a list of paths");
+				exit(EXIT_FAILURE);
+			}
 
-			if(!checkIfExists(argv[++c])) printError(EXIT_FAILURE, DIR_FAIL_MSG);
+			FILE* destFile = NULL;
+			char* prompt = NULL;
 
-			//check if given writting privleges
-			if(access(argv[c], W_OK) == -1) printError(EXIT_FAILURE, NO_PERMISSION);
+			//clear file
+			switch(argv[c][2]){
+				case '4':
+					destFile = fopen(DES_MP4, "w");
+					prompt = GREEN "Successfully written where to send video files" RESET;
+				break;
+				case '3':
+					destFile = fopen(DES_MP3, "w");
+					prompt = GREEN "Successfully written where to send video files" RESET;
+				break;
+				case 'c':
+					destFile = fopen(DES_COVER, "w");
+					prompt = GREEN "Successfully written where to send cover arts" RESET;
+				break;
+				default: PRINT_ERROR("I dunno how this broke"); exit(EXIT_FAILURE);break;
+			}
 
-			writeDest(argv[c], 4);
-			(void)puts("Successfully written where to send video files");
-			exit(EXIT_SUCCESS);
-		}
+			if(destFile == NULL){
+				PRINT_ERROR("Could not open destination file for writing");
+				exit(EXIT_FAILURE);
+			}
 
-		//where to send mp3(audio) files
-		else if(strcmp("-w3", argv[c]) == 0){
+			int canWrite = 1;
+			int index = ++c;
 
-			if(!checkIfExists(argv[++c])) printError(EXIT_FAILURE, DIR_FAIL_MSG);
+			//it would be more efficient to write as it goes, but
+			//having partial completion isn't as user friendly
+			for(; index < argc; ++index){
+				if(validateDirPath(argv[index]) == HAD_ERROR) canWrite = 0;
+			}
 
-			//check if given writting privleges
-			if(access(argv[c], W_OK) == -1) printError(EXIT_FAILURE, NO_PERMISSION);
-
-			writeDest(argv[c], 3);
-			(void)puts("Successfully written where to send audio files");
-			exit(EXIT_SUCCESS);
-
+			if(canWrite){
+				for(; c < argc; ++c){
+					if(argv[c][strlen(argv[c]) - 1] == '/')
+						(void)fprintf(destFile, "%s\n", argv[c]);
+					else
+						(void)fprintf(destFile, "%s/\n", argv[c]);
+				}
+				(void)puts(prompt);
+				(void)fclose(destFile);
+				exit(EXIT_SUCCESS);
+			}else{
+				exit(EXIT_FAILURE);
+			}
 		}else if(strcmp("-ca", argv[c]) == 0){
+			if(argc == c + 1){
+				PRINT_ERROR("Did not give a valid flag or path");
+				exit(EXIT_FAILURE);
+			}
+
 			if(strcmp("NO-ART", argv[c + 1]) != 0){
 				if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
 			}
@@ -367,7 +407,7 @@ int main(int argc, char** argv){
 		}else if(strcmp("--keep-art", argv[c]) == 0){
 			keepArt = 1;
 		}else{
-			(void)fprintf(stderr, PNT_RED"Invalid argument %s\n"PNT_RESET, argv[c]);
+			printf(RED "Invalid argument: \"%s\"\n" RESET, argv[c]);
 			exit(EXIT_FAILURE);
 		}
 	}//finished parsing arguments
@@ -428,8 +468,6 @@ int main(int argc, char** argv){
 				(*moveFunction)(&movementInfo);
 			}
 
-			free(sendVideo);
-			free(sendAudio);
 			sendAudio = NULL;
 			sendVideo = NULL;
 
@@ -538,13 +576,12 @@ int main(int argc, char** argv){
 		fclose(inFile);
 		fclose(logFile);
 
-		free(sendVideo);
-		free(sendAudio);
 		sendAudio = NULL;
 		sendVideo = NULL;
 	}
 
-	free(MP3_BASE_DIR);
-	free(MP4_BASE_DIR);
+	//free(MP3_BASE_DIR);
+	//free(MP4_BASE_DIR);
+	//freeing destMaps would go here, but it's going to exit anyway
 	return 0;
 }
