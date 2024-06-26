@@ -14,14 +14,14 @@ static void clearLine(FILE* stream){
 	int data = '\0';
 	while ((data = getc(stream)) != '\n' && data != EOF) { }
 
-	if(ferror(stream) != 0){
+	if(ferror(stream)){
 		PRINT_ERROR("Encountered a stream error while clearing the file/stream");
 		exit(EXIT_FAILURE);
 	}
 }
 
 int exactInput(FILE* stream, char* dest, int length){
-	if(fgets(dest, length, stream) == NULL){
+	if(fgets(dest, length, stream) == NULL && ferror(stream)){
 		PRINT_ERROR("Encountered a stream error while reading the file/stream");
 		exit(EXIT_FAILURE);
 	}
