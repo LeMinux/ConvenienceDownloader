@@ -22,6 +22,7 @@
  * * Fix how typing the dests is. Is it really necessary to type the entire path?
  *	perhaps replace the linked list with an array. This would making it a lot easier if the user inputs a number to select
  * Have a way to specify multiple destinations with -w4 -w3 and -wc
+ * Add cover art related things such as keeping or discarding them
 */
 
 /*TODO
@@ -29,7 +30,6 @@
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
  *	(!c>../Bangers/Extreme)
- * Add cover art related things such as keeping or discarding them
  * Adding NULL protection in writeCover()?
  * mv command or rename function?
  * perhaps have a way to add more metadata to mp3 files?
@@ -88,6 +88,7 @@ typedef struct MovePackage{
 	char* id;
 	char* audioDest;
 	char* videoDest;
+	char* coverDest;
 	int hasCoverArt;
 	char* artName;
 } MovePackage;
@@ -101,9 +102,6 @@ typedef struct ModePackage{
 
 //global dynamic variables
 //these act as the base path. This way opening the destination files only happens once
-//static char* MP4_BASE_DIR = NULL;
-//static char* MP3_BASE_DIR = NULL;
-//static char* COVER_BASE_DIR = NULL;
 static MapArray_t* destMaps = NULL;
 
 void __attribute__((constructor)) initPaths (){
@@ -389,6 +387,7 @@ int main(int argc, char** argv){
 				(void)fclose(destFile);
 				exit(EXIT_SUCCESS);
 			}else{
+				PRINT_ERROR("Make sure all paths are valid directories");
 				exit(EXIT_FAILURE);
 			}
 		}else if(strcmp("-ca", argv[c]) == 0){
@@ -451,7 +450,7 @@ int main(int argc, char** argv){
 	if(sendVideo == NULL) printError(EXIT_FAILURE, SKIP_VALID_MSG);
 
 	getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
-	movementInfo = (MovePackage){id, sendAudio, sendVideo, modeInfo.coverMode, coverArt};
+	movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
 
 	//default and cover art mode
 	if(!fileMode){
@@ -500,7 +499,7 @@ int main(int argc, char** argv){
 
 				//reset movementPackage
 				getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
-				movementInfo = (MovePackage){id, sendAudio, sendVideo, modeInfo.coverMode, coverArt};
+				movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
 			}
 		}while(repeat);
 
@@ -516,12 +515,12 @@ int main(int argc, char** argv){
 			PRINT_ERROR("Failed to create log file for logging errors");
 			exit(EXIT_FAILURE);
 		}
+		int logsWritten = 0;
 
 		//normal file execution
 		//it's basically default execution with line parsing
 		if(coverArtMode == DEFAULT_MODE){
 			char urlBuffer [YT_URL_INPUT_SIZE] = "";
-
 			while(exactInput(inFile, urlBuffer, YT_URL_INPUT_SIZE) != 0){
 				snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(urlBuffer, "?v=") + 3);
 				//adding a sleep so it doesn't rapid fire youtube
@@ -531,6 +530,7 @@ int main(int argc, char** argv){
 				}else{
 					(void)printf("Adding URL %s to log file\n", urlBuffer);
 					(void)fprintf(logFile ,"Failed to download from url: %s\n", urlBuffer);
+					++logsWritten;
 				}
 			}
 
@@ -552,6 +552,10 @@ int main(int argc, char** argv){
 					sleep(1);
 					if(downloadFromURL(shortenedURL, modeInfo.downloadMode, NO_DWNLD_COVER_ART) == NO_ERROR){
 						(*moveFunction)(&movementInfo);
+					}else{
+						(void)printf("Adding URL %s to log file\n", shortenedURL);
+						(void)fprintf(logFile ,"Failed to download from url: %s\n", shortenedURL);
+						++logsWritten;
 					}
 				}else if(strstr(buffer, ".mp3") != NULL){
 					if(checkIfExists(buffer)){
@@ -565,9 +569,46 @@ int main(int argc, char** argv){
 					}else{
 						(void)printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
 						(void)fprintf(logFile, "Failed to find file path: %s\n", buffer);
+						++logsWritten;
+					}
+				//check if buffer has enough length for the tag
+				}else if(strnlen(buffer, 3) >= 3 && buffer[0] == '!' && buffer[2] == '>'){
+					char* newDest = NULL;
+					int offset = 0;
+					switch(buffer[1]){
+						case '4':
+							newDest = findPath(&destMaps[MP4_INDEX], buffer + 3);
+							offset = 1;
+						break;
+						case '3':
+							newDest = findPath(&destMaps[MP3_INDEX], buffer + 3);
+							offset = 2;
+						break;
+						case 'c': case 'C':
+							findPath(&destMaps[COVER_INDEX], buffer + 3);
+							offset = 3;
+						break;
+						default:
+							(void)printf(PNT_RED"Invalid tag to change destinations: %s\n"PNT_RESET, buffer);
+							(void)fprintf(logFile, "Invalid tag used (it should be ![4,3, or c]>: %s\n", buffer);
+							++logsWritten;
+							exit(EXIT_FAILURE);
+						break;
+					}
+
+					//pointer math to set the string address directly
+					//into the struct to avoid more conditionals
+					if(newDest != NULL && checkIfExists(buffer + 3)){
+						*((char**)(&movementInfo) + offset) = newDest;
+					}else{
+						(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations: %s\n"PNT_RESET, buffer);
+						(void)fprintf(logFile, "Path does not exist or can not be found from what is given in Destinations\nUse the -l flag to know what are availiable: %s\n", buffer);
+						++logsWritten;
 					}
 				}else{
-					(void)printf(PNT_RED"Line obtained is not a youtube URL or .MP3-> %s\n"PNT_RESET, buffer);
+					(void)printf(PNT_RED"Line obtained is not a youtube URL or .MP3: %s\n"PNT_RESET, buffer);
+					(void)fprintf(logFile, "String is not a youtube URL or mp3 path: %s\n", buffer);
+					++logsWritten;
 				}
 				free(buffer);
 				buffer = NULL;
@@ -575,13 +616,13 @@ int main(int argc, char** argv){
 		}
 		fclose(inFile);
 		fclose(logFile);
+		if(logsWritten == 0)system("rm FailedDownloads.txt");
+		else PRINT_ERROR("Failed to download some of the specified lines. Check FailedDownloads.txt to see which ones.");
 
 		sendAudio = NULL;
 		sendVideo = NULL;
 	}
 
-	//free(MP3_BASE_DIR);
-	//free(MP4_BASE_DIR);
 	//freeing destMaps would go here, but it's going to exit anyway
 	return 0;
 }

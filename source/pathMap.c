@@ -144,6 +144,19 @@ void freePathMap(Map_t* pathMap){
 	pathMap = NULL;
 }
 
+//simple linear search
+char* findPath(MapArray_t* arrayOfMaps, const char* path){
+	int m = 0;
+	for(; m < arrayOfMaps->length; ++m){
+		Map_t map = arrayOfMaps->mapArray[m];
+		int p = 0;
+		for(; p < map.length; ++p){
+			if(strcmp(map.map[p], path) == 0) return map.map[p];
+		}
+	}
+	return NULL;
+}
+
 void printMapArray(MapArray_t* arrayOfMaps){
 	int offset = 0;
 	int m = 0;
