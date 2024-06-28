@@ -585,7 +585,7 @@ int main(int argc, char** argv){
 							offset = 2;
 						break;
 						case 'c': case 'C':
-							findPath(&destMaps[COVER_INDEX], buffer + 3);
+							newDest = findPath(&destMaps[COVER_INDEX], buffer + 3);
 							offset = 3;
 						break;
 						default:
