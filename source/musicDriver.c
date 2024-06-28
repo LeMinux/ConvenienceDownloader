@@ -571,8 +571,8 @@ int main(int argc, char** argv){
 						(void)fprintf(logFile, "Failed to find file path: %s\n", buffer);
 						++logsWritten;
 					}
-				//check if buffer has enough length for the tag
-				}else if(strnlen(buffer, 3) >= 3 && buffer[0] == '!' && buffer[2] == '>'){
+				//check if buffer has a swap tag
+				}else if(strnlen(buffer, 3) == 3 && buffer[0] == '!' && buffer[2] == '>'){
 					char* newDest = NULL;
 					int offset = 0;
 					switch(buffer[1]){
@@ -589,21 +589,24 @@ int main(int argc, char** argv){
 							offset = 3;
 						break;
 						default:
-							(void)printf(PNT_RED"Invalid tag to change destinations: %s\n"PNT_RESET, buffer);
+							//exiting is done here to be more user friendly
+							//their intention is to move to a new place, but an error stops that
+							(void)printf(PNT_RED"Invalid tag to change destinations exiting program: %s\n"PNT_RESET, buffer);
 							(void)fprintf(logFile, "Invalid tag used (it should be ![4,3, or c]>: %s\n", buffer);
-							++logsWritten;
 							exit(EXIT_FAILURE);
 						break;
 					}
 
 					//pointer math to set the string address directly
 					//into the struct to avoid more conditionals
+					//exiting is done here to be more user friendly
+					//their intention is to move to a new place, but an error stops that
 					if(newDest != NULL && checkIfExists(buffer + 3)){
 						*((char**)(&movementInfo) + offset) = newDest;
 					}else{
-						(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations: %s\n"PNT_RESET, buffer);
+						(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations exiting program: %s\n"PNT_RESET, buffer);
 						(void)fprintf(logFile, "Path does not exist or can not be found from what is given in Destinations\nUse the -l flag to know what are availiable: %s\n", buffer);
-						++logsWritten;
+						exit(EXIT_FAILURE);
 					}
 				}else{
 					(void)printf(PNT_RED"Line obtained is not a youtube URL or .MP3: %s\n"PNT_RESET, buffer);
