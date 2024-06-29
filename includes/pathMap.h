@@ -39,6 +39,7 @@ typedef struct MapArray{
 
 Map_t* obtainPathMap(const char*);
 char* getSelection(MapArray_t*, const char*, int);
+char* findPath(MapArray_t*, const char*);
 void freePathMap(Map_t*);
 void printPathMap(Map_t*);
 void printMapArray(MapArray_t*);
