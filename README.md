@@ -16,7 +16,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     
   - -f 
 
-    This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.     Separate the list by newlines of youtube URLs or .mp3 files.
+    This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. Separate the list by newlines of youtube URLs, .mp3 file paths, and tags. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.
 
     These tags are
     -  ![3,4,c]> <new directory path that exists when you use the -l flag>
