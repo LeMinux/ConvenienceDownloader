@@ -22,15 +22,15 @@
  * * Fix how typing the dests is. Is it really necessary to type the entire path?
  *	perhaps replace the linked list with an array. This would making it a lot easier if the user inputs a number to select
  * Have a way to specify multiple destinations with -w4 -w3 and -wc
- * Add cover art related things such as keeping or discarding them
-*/
-
-/*TODO
- * For file execution think about adding a way to change destinations mid-way.
+ * * For file execution think about adding a way to change destinations mid-way.
  *	(!3>../Bangers/Extreme)
  *	(!4>../Bangers/Extreme)
  *	(!c>../Bangers/Extreme)
- *	Add checks for if the user tries to use a tag for a skipped Destination
+ *	Add checks for if the user tries to use a tag for a skipping Destination
+*/
+
+/*TODO
+ * Add cover art related things such as keeping or discarding them
  * Refactor the control flow in main for considering when to download arts and download modes
  * Adding NULL protection in writeCover()?
  * mv command or rename function?
@@ -84,6 +84,8 @@
 #define COVER_INDEX 2
 
 #define ID_BUFFER 12
+
+#define SLEEP_AMT 2
 
 //this struct is here so that function pointers can be used for moving files
 //this helps generalize the code a little, which does make it less efficient,
@@ -535,7 +537,7 @@ int main(int argc, char** argv){
 				snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(shortenedURL, "?v=") + 3);
 
 				//adding a sleep so it doesn't rapid fire youtube
-				sleep(1);
+				sleep(SLEEP_AMT);
 				if(downloadFromURL(shortenedURL, modeInfo.downloadMode, downloadBool) == NO_ERROR){
 					(*moveFunction)(&movementInfo);
 				}else{
@@ -602,8 +604,10 @@ int main(int argc, char** argv){
 				//their intention is to move to a new place, but an error stops that
 				if(newDest == SKIP || (newDest != NULL && checkIfExists(buffer + 3))){
 					*((char**)(&movementInfo) + offset) = newDest;
+					//set to choose download mode automatically
+					modeInfo.downloadMode = DEFAULT_MODE;
 					getModeFromSelection(movementInfo.videoDest, movementInfo.audioDest, &modeInfo, &moveFunction);
-					movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
+					movementInfo = (MovePackage){id, movementInfo.audioDest, movementInfo.videoDest, movementInfo.coverDest, modeInfo.coverMode, coverArt};
 				}else{
 					(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations exiting program: %s\n"PNT_RESET, buffer + 3);
 					(void)fprintf(logFile, "Path does not exist or can not be found from what is given in Destinations\nUse the -l flag to know what are availiable: %s\n", buffer + 3);
