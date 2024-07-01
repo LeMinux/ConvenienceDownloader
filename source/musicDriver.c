@@ -582,7 +582,7 @@ int main(int argc, char** argv){
 							case 'c': case 'C': offset = 3; break;
 							default:
 								(void)printf(PNT_RED"Invalid tag to skip a destination exiting program: %s\n"PNT_RESET, buffer);
-								(void)fprintf(logFile, "Invalid tag used it should be !s>[4, 3, or c]: %s\n", buffer);
+								(void)fprintf(logFile, "Invalid tag used it should be !s>[4,3,or c]: %s\n", buffer);
 								exit(EXIT_FAILURE);
 							break;
 						}
@@ -591,7 +591,7 @@ int main(int argc, char** argv){
 						//exiting is done here to be more user friendly
 						//their intention is to move to a new place, but an error stops that
 						(void)printf(PNT_RED"Invalid tag to change destinations exiting program: %s\n"PNT_RESET, buffer);
-						(void)fprintf(logFile, "Invalid tag used it should be ![4,3, or s]>: %s\n", buffer);
+						(void)fprintf(logFile, "Invalid tag used it should be ![4,3,c,or s]>: %s\n", buffer);
 						exit(EXIT_FAILURE);
 					break;
 				}
