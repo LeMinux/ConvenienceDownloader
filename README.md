@@ -16,13 +16,29 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     
   - -f 
 
-    This flag is useful in changing the behavior of program operation. This flag will only ask once where to send files. Use this flag when you want to bulk send your downloads into one directory.
-    Separate the list by newlines of youtube URLs or .mp3 files (**You must provide the -ca flag if you want to use mp3 files**)
+    This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.     Separate the list by newlines of youtube URLs or .mp3 files.
+
+    These tags are
+    -  ![3,4,c]> <new directory path that exists when you use the -l flag>
+        - 3 to change where to send audio
+        - 4 to change where to send video
+        - c to change where to send cover arts
+    -  !s> [3, 4, or c]
+        - 3 is to skip downloading audio
+        - 4 is to skip downloading video
+        - c is to skip cover arts
+
+      ```Ex: !3>Music/Wacky/```
+
+      ```Ex: !3>Music/Wacky```
+
+      ```Ex: !s>4```
 
     **The write to destination flags (-w4, -w3, -wc) specified below are for providing root directories for the program to scan through. You can specify multiple, but you can only use one of these flags at a time and must separate each root path with a space when using the command.**
     ```Ex: <executable> -w4 Music/Loud/ ../Funny/```
     NOT
     ```<executable> -w4 Music/Loud ../Funny/ -w3 Music/Smaller.```
+
   - -w4
 
     Used to specify the parent directory on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../
