@@ -311,6 +311,8 @@ static void getModeFromSelection(const char* videoDest, const char* audioDest, M
 }
 
 int main(int argc, char** argv){
+
+	char SKIP [] = "SKIP";
 	//modes for different execution
 	int fileMode = 0;
 	int fileFlagIndex = 0;
@@ -406,7 +408,7 @@ int main(int argc, char** argv){
 			}
 			coverArtIndex = c + 1;
 			++c;
-		}else if(strcmp("--keep-art", argv[c]) == 0){
+		}else if(strcmp("--KEEP-ART", argv[c]) == 0){
 			keepArt = 1;
 		}else{
 			printf(RED "Invalid argument: \"%s\"\n" RESET, argv[c]);
@@ -560,32 +562,48 @@ int main(int argc, char** argv){
 				char* newDest = NULL;
 				int offset = 0;
 				switch(buffer[1]){
-					case '4':
-						newDest = findPath(&destMaps[MP4_INDEX], buffer + 3);
-						offset = 2;
-					break;
 					case '3':
 						newDest = findPath(&destMaps[MP3_INDEX], buffer + 3);
 						offset = 1;
+					break;
+					case '4':
+						newDest = findPath(&destMaps[MP4_INDEX], buffer + 3);
+						offset = 2;
 					break;
 					case 'c': case 'C':
 						newDest = findPath(&destMaps[COVER_INDEX], buffer + 3);
 						offset = 3;
 					break;
+					case 's': case 'S':
+						newDest = SKIP;
+						switch(*(buffer + 3)){
+							case '3': offset = 1; break;
+							case '4': offset = 2; break;
+							case 'c': case 'C': offset = 3; break;
+							default:
+								(void)printf(PNT_RED"Invalid tag to skip a destination exiting program: %s\n"PNT_RESET, buffer);
+								(void)fprintf(logFile, "Invalid tag used (it should be !s>[4, 3, or c]: %s\n", buffer);
+								exit(EXIT_FAILURE);
+							break;
+						}
+					break;
 					default:
 						//exiting is done here to be more user friendly
 						//their intention is to move to a new place, but an error stops that
 						(void)printf(PNT_RED"Invalid tag to change destinations exiting program: %s\n"PNT_RESET, buffer);
-						(void)fprintf(logFile, "Invalid tag used (it should be ![4,3, or c]>: %s\n", buffer);
+						(void)fprintf(logFile, "Invalid tag used (it should be ![4,3, or or s]>: %s\n", buffer);
 						exit(EXIT_FAILURE);
 					break;
 				}
+				//reset mode
 				//pointer math to set the string address directly
 				//into the struct to avoid more conditionals
 				//exiting is done here to be more user friendly
 				//their intention is to move to a new place, but an error stops that
-				if(newDest != NULL && checkIfExists(buffer + 3)){
+				if(newDest == SKIP || (newDest != NULL && checkIfExists(buffer + 3))){
 					*((char**)(&movementInfo) + offset) = newDest;
+					getModeFromSelection(movementInfo.videoDest, movementInfo.audioDest, &modeInfo, &moveFunction);
+					movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
 				}else{
 					(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations exiting program: %s\n"PNT_RESET, buffer + 3);
 					(void)fprintf(logFile, "Path does not exist or can not be found from what is given in Destinations\nUse the -l flag to know what are availiable: %s\n", buffer + 3);
@@ -603,7 +621,7 @@ int main(int argc, char** argv){
 		fclose(logFile);
 		//This can still overflow if there are 4,294,967,295 + 1 non-exiting errors
 		if(logsWritten == 0)system("rm FailedDownloads.txt");
-		else PRINT_ERROR("Failed to download some of the specified lines. Check FailedDownloads.txt to see which ones.");
+		else PRINT_ERROR("Failed to download or move some of the specified lines. Check FailedDownloads.txt to see which ones.");
 
 		sendAudio = NULL;
 		sendVideo = NULL;
