@@ -41,15 +41,15 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
 
   - -w4
 
-    Used to specify the parent directory on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../
+    Used to specify the parent directory(s) on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../
     
   - -w3
 
-    Used to specify the parent directory on where to send MP3(audio) files.
+    Used to specify the parent directory(s) on where to send MP3(audio) files.
     
   - -wc  
 
-     Used to specify the parent directory on where to send cover arts
+     Used to specify the parent directory(s) on where to send cover arts
     
   - -ca
 
