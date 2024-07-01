@@ -1,4 +1,5 @@
 #include "../includes/pathMap.h"
+#include <bits/posix1_lim.h>
 
 //credit to this post https://stackoverflow.com/questions/1723002/how-to-list-all-subdirectories-in-a-given-directory-in-c#1723583
 static void getSubdirectories(Map_t* map, const char* basePath){
@@ -9,51 +10,23 @@ static void getSubdirectories(Map_t* map, const char* basePath){
 	DIR* dirp = NULL;
 	size_t pathLength = 0;
 	pathLength = strlen(basePath);
-	if(pathLength == 0 || pathLength > _POSIX_PATH_MAX) return;
+
+	//nul character is included in _POSIX_PATH_MAX
+	if(pathLength == 0 || pathLength + 1 > _POSIX_PATH_MAX) return;
+
+	char fullPath [_POSIX_PATH_MAX] = "";
+	//+1 for nul byte +1 for '/'
+	if(basePath[pathLength - 1] != '/' && pathLength + 2 < _POSIX_PATH_MAX){
+		++pathLength;
+		(void)strcpy(fullPath, basePath);
+		(void)strcat(fullPath, "/");
+	}else{
+		(void)strcpy(fullPath, basePath);
+	}
+	char* clearPoint = fullPath + pathLength;
 
 	dirp = opendir(basePath);
 	if(dirp == NULL) return;
-
-	while((direntp = readdir(dirp)) != NULL){
-		/* Ignore special directories. */
-		if((strcmp(direntp->d_name, ".") == 0) ||
-			(strcmp(direntp->d_name, "..") == 0))
-			continue;
-
-		char fullPath [_POSIX_PATH_MAX] = "";
-		size_t fullLength = pathLength + strlen(direntp->d_name);
-
-		//Calculate full name, check we are in file length limts
-		if(basePath[pathLength - 1] != '/'){
-			//+1 for nul byte +1 for '/'
-			if(fullLength + 2 > _POSIX_PATH_MAX){
-				(void)fprintf(stderr, "File path exceeds %d: %s/%s\n", _POSIX_PATH_MAX, basePath, direntp->d_name);
-				continue;
-			}
-			(void)strcpy(fullPath, basePath);
-			(void)strcat(fullPath, "/");
-			++fullLength;
-		}else{
-			//+1 for nul byte
-			if(fullLength + 1 > _POSIX_PATH_MAX){
-				(void)fprintf(stderr, "File path exceeds %d: %s%s\n", _POSIX_PATH_MAX, basePath, direntp->d_name);
-				continue;
-			}
-			(void)strcpy(fullPath, basePath);
-		}
-		(void)strcat(fullPath, direntp->d_name);
-		fullPath[fullLength] = '\0';
-
-		struct stat fstat = {0};
-		if(stat(fullPath, &fstat) < 0)
-			continue;
-
-		if(S_ISDIR(fstat.st_mode))
-			getSubdirectories(map, fullPath);
-	}//end while
-
-	//this does make the ordering reversed, but getting directories is
-	//not in order anyway
 
 	//increase size of header to point to another string
 	map->map = realloc(map->map, sizeof(*map->map) * (map->length + 1));
@@ -69,9 +42,38 @@ static void getSubdirectories(Map_t* map, const char* basePath){
 		PRINT_ERROR(FAILED_MALLOC_MSG);
 		exit(EXIT_FAILURE);
 	}
-	(void)strcpy(map->map[map->length], basePath);
+
+	(void)strcpy(map->map[map->length], fullPath);
 	map->map[map->length][pathLength] = '\0';
 	++map->length;
+
+	while((direntp = readdir(dirp)) != NULL){
+		//clears at the clear point to the end before beginning
+		memset(clearPoint, '\0', clearPoint - fullPath);
+		/* Ignore special directories. */
+		if((strcmp(direntp->d_name, ".") == 0) ||
+			(strcmp(direntp->d_name, "..") == 0))
+			continue;
+
+		size_t fullLength = pathLength + strlen(direntp->d_name);
+
+		//Calculate full name, check we are in file length limts
+		//+1 for nul byte
+		if(fullLength + 1 > _POSIX_PATH_MAX){
+			(void)fprintf(stderr, "File path exceeds %d: %s%s\n", _POSIX_PATH_MAX, basePath, direntp->d_name);
+			continue;
+		}
+		(void)strcat(fullPath, direntp->d_name);
+		fullPath[fullLength] = '\0';
+
+		struct stat fstat = {0};
+		if(stat(fullPath, &fstat) < 0)
+			continue;
+
+		if(S_ISDIR(fstat.st_mode))
+			getSubdirectories(map, fullPath);
+
+	}//end while
 	(void)closedir(dirp);
 }
 
@@ -146,12 +148,25 @@ void freePathMap(Map_t* pathMap){
 
 //simple linear search
 char* findPath(MapArray_t* arrayOfMaps, const char* path){
+	int length = strlen(path);
+	if(length > _POSIX_PATH_MAX) return NULL;
+
+	char adjustedPath [_POSIX_PATH_MAX] = "";
+	if(path[length - 1] == '/'){
+		strcpy(adjustedPath, path);
+		adjustedPath[length] = '\0';
+	}else{
+		strcpy(adjustedPath, path);
+		strcat(adjustedPath, "/");
+		adjustedPath[length + 2] = '\0';
+	}
+
 	int m = 0;
 	for(; m < arrayOfMaps->length; ++m){
 		Map_t map = arrayOfMaps->mapArray[m];
 		int p = 0;
 		for(; p < map.length; ++p){
-			if(strcmp(map.map[p], path) == 0) return map.map[p];
+			if(strcmp(map.map[p], adjustedPath) == 0) return map.map[p];
 		}
 	}
 	return NULL;

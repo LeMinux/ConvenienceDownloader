@@ -545,10 +545,10 @@ int main(int argc, char** argv){
 				if(checkIfExists(buffer)){
 					//change this later
 					if(coverArt == NULL){
-						moveFile(buffer, sendAudio);
+						moveFile(buffer, movementInfo.audioDest);
 					}else{
 						writeCover(buffer, coverArt);
-						moveFile(buffer, sendAudio);
+						moveFile(buffer, movementInfo.audioDest);
 					}
 				}else{
 					(void)printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
@@ -562,11 +562,11 @@ int main(int argc, char** argv){
 				switch(buffer[1]){
 					case '4':
 						newDest = findPath(&destMaps[MP4_INDEX], buffer + 3);
-						offset = 1;
+						offset = 2;
 					break;
 					case '3':
 						newDest = findPath(&destMaps[MP3_INDEX], buffer + 3);
-						offset = 2;
+						offset = 1;
 					break;
 					case 'c': case 'C':
 						newDest = findPath(&destMaps[COVER_INDEX], buffer + 3);
@@ -580,7 +580,6 @@ int main(int argc, char** argv){
 						exit(EXIT_FAILURE);
 					break;
 				}
-
 				//pointer math to set the string address directly
 				//into the struct to avoid more conditionals
 				//exiting is done here to be more user friendly
@@ -588,8 +587,8 @@ int main(int argc, char** argv){
 				if(newDest != NULL && checkIfExists(buffer + 3)){
 					*((char**)(&movementInfo) + offset) = newDest;
 				}else{
-					(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations exiting program: %s\n"PNT_RESET, buffer);
-					(void)fprintf(logFile, "Path does not exist or can not be found from what is given in Destinations\nUse the -l flag to know what are availiable: %s\n", buffer);
+					(void)printf(PNT_RED"Path specified does not exist or is not a path from Destinations exiting program: %s\n"PNT_RESET, buffer + 3);
+					(void)fprintf(logFile, "Path does not exist or can not be found from what is given in Destinations\nUse the -l flag to know what are availiable: %s\n", buffer + 3);
 					exit(EXIT_FAILURE);
 				}
 			}else{
