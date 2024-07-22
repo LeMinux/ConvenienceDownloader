@@ -47,6 +47,7 @@
 #include "../includes/writeArt.h"
 #include "../includes/fileOps.h"
 #include "../includes/pathMap.h"
+#include <strings.h>
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -146,7 +147,7 @@ void __attribute__((constructor)) initPaths (){
 	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open audio destination file");
 	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open cover destination file");
 
-	destMaps = malloc(sizeof(*destMaps) * DEST_AMOUNT);
+	destMaps = calloc(DEST_AMOUNT, sizeof(*destMaps));
 	if(destMaps == NULL){
 		PRINT_ERROR(FAILED_MALLOC_MSG);
 		exit(EXIT_FAILURE);
@@ -164,7 +165,11 @@ void __attribute__((constructor)) initPaths (){
 				exit(EXIT_FAILURE);
 			}
 
-			destMaps[index].mapArray[dirCount] = *(obtainPathMap(buffer));
+			//dereferencing the return since it returns a Map_t*
+			//destMaps[index].mapArray[dirCount] = *(obtainPathMap(buffer));
+
+			Map_t* newMapEntry = obtainPathMap(buffer);
+			destMaps[index].mapArray[dirCount] = *newMapEntry;
 			++dirCount;
 		}
 		destMaps[index].length = dirCount;
