@@ -1,7 +1,6 @@
 #ifndef USERINPUT_H
 #define USERINPUT_H
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
@@ -9,7 +8,6 @@
 #include <sys/stat.h>
 
 #include "helpers.h"
-#include "linkedList.h"
 #include "fileOps.h"
 #include "globals.h"
 

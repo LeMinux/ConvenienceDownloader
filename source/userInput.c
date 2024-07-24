@@ -37,32 +37,6 @@ int exactInput(FILE* stream, char* dest, int length){
 	}
 }
 
-/*
-//method for obtaining input from file streams
-//returns how many characters read for any error checking needed
-int exactInput(FILE* stream, char* dest, int length){
-	int index = 0;
-	int data = 0;
-	switch(length){
-		case 1:
-			*dest = fgetc(stream);
-		break;
-		default:
-			while(index < length - 1 && (data = fgetc(stream)) != EOF && data != '\n')
-				*(dest + index++) = data;
-
-			 *(dest + index) = '\0';
-		break;
-     }
-
-	//clears to next line
-	if(data != '\n' && data != EOF)
-		while((data = fgetc(stream)) != '\n' && data != EOF){}
-
-	return index;
-}
-*/
-
 int unknownInput(FILE* stream, char** dest){
 	char buffer[CHUNK_READ] = "";
 	size_t inputLength = 0;

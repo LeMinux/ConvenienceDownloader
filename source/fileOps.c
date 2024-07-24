@@ -1,6 +1,6 @@
 #include "../includes/fileOps.h"
 
-void moveFile(const char* fileName, const char* destination){
+int moveFile(const char* fileName, const char* destination){
 	const char MOVE [] = "mv ";
 	int length = strlen(fileName) + strlen(destination) + strlen(MOVE);
 	//+1 for space
@@ -9,6 +9,14 @@ void moveFile(const char* fileName, const char* destination){
 	printf("%s\n", moveCommand);
 	system(moveCommand);
 	free(moveCommand);
+
+	//file is still in the current directory if NO_ERROR occurs
+	if(checkIfExists(fileName) == NO_ERROR){
+		fprintf(stderr, PNT_RED "Failed to move file %s to the destination %s\n" PNT_RESET, fileName, destination);
+		return HAD_ERROR;
+	}else{
+		return NO_ERROR;
+	}
 }
 
 //note this will only search the current directory
@@ -18,7 +26,7 @@ void getFileNameByID(const char* id, const char* extension, char* outString, int
 	struct dirent *entry;
 
 	currentDirectory = opendir(".");
-	if (currentDirectory == NULL)printError(EXIT_FAILURE, "Failed to open currentDirectory)");
+	if (currentDirectory == NULL)printAndExit(EXIT_FAILURE, "Failed to open currentDirectory)");
 
 	int isFound = 0;
 	while((entry = readdir(currentDirectory)) != NULL && !isFound){
@@ -37,59 +45,6 @@ void getFileNameByID(const char* id, const char* extension, char* outString, int
 	closedir(currentDirectory);
 }
 
-/*
-void getSubdirectories(const char* basePath, Node_t** list){
-	addToList(list, basePath);
-	struct dirent* direntp = NULL;
-	DIR* dirp = NULL;
-	size_t pathLength;
-
-	//Check input parameters.
-	if (basePath == NULL) return;
-
-	pathLength = strlen(basePath);
-
-	if (pathLength  == 0 || pathLength > _POSIX_PATH_MAX)
-		return;
-
-	//Open directory
-	dirp = opendir(basePath);
-	if (dirp == NULL) return;
-
-	while ((direntp = readdir(dirp)) != NULL){
-		//For every directory entry...
-		struct stat fstat;
-		char fullPath [_POSIX_PATH_MAX + 1];
-
-		//Calculate full name, check we are in file length limts
-		if ((pathLength + strlen(direntp->d_name) + 1) > _POSIX_PATH_MAX){
-			continue;
-		}else{
-			if (*(fullPath + pathLength - 1) != '/')
-				snprintf(fullPath, pathLength + strlen(direntp->d_name) + 2, "%s/%s", basePath, direntp->d_name);
-			else
-				snprintf(fullPath, pathLength + strlen(direntp->d_name) + 1, "%s%s", basePath, direntp->d_name);
-		}
-
-		//Ignore special directories
-		if ((strcmp(direntp->d_name, ".") == 0) ||
-			(strcmp(direntp->d_name, "..") == 0))
-			continue;
-
-		//Print only if it is really directory.
-		if (stat(fullPath, &fstat) < 0)
-			continue;
-
-		if (S_ISDIR(fstat.st_mode)){
-			getSubdirectories(fullPath, list);
-		}
-	}
-
-    //Finalize resources
-    closedir(dirp);
-}
-*/
-
 //converts a file into an mp3 via ffmpeg
 //this returns the newly created mp3 file
 void convertToMp3(const char* songName){
@@ -100,22 +55,21 @@ void convertToMp3(const char* songName){
 	int extension = strrchr(songName, '.') - songName;
 	int length = extension + strlen(MP3_EXTENSTION);
 	char* fileMP3 = malloc(length + 1);
-	if(fileMP3 == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+	if(fileMP3 == NULL) printAndExit(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
-	//uses a regular expression to limit size
+	//uses format expression to limit size
 	snprintf(fileMP3, length + 1, "%.*s.mp3", extension, songName);
 
 	//converting
 	length = strlen(songName) + strlen(fileMP3) + strlen(FFMPEG) + strlen(BITRATE);
 	char* convertCommand = malloc(length + 3);
-	if(convertCommand == NULL) printError(EXIT_FAILURE, FAILED_MALLOC_MSG);
+	if(convertCommand == NULL) printAndExit(EXIT_FAILURE, FAILED_MALLOC_MSG);
 
 	//+2 for the space in the command +1 since snprintf includes nul in buffer
-	//and I dunno where the other +1 is from
 	snprintf(convertCommand, length + 1, "%s%s%s%s", FFMPEG, songName, BITRATE, fileMP3);
 	printf(PNT_GREEN "%s\n" PNT_RESET, convertCommand);
 
-	if(system(convertCommand) > 0) printError(EXIT_FAILURE, CONVERT_FAIL_MSG);
+	if(system(convertCommand) > 0) printAndExit(EXIT_FAILURE, CONVERT_FAIL_MSG);
 
 	free(fileMP3);
 	free(convertCommand);
@@ -123,9 +77,9 @@ void convertToMp3(const char* songName){
 
 int checkIfExists(const char* check){
 	if(access(check, F_OK) == -1)
-		return 0;
+		return HAD_ERROR;
 	else
-		return 1;
+		return NO_ERROR;
 }
 
 int validateDirPath(const char* path){

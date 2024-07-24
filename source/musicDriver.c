@@ -27,12 +27,16 @@
  *	(!4>../Bangers/Extreme)
  *	(!c>../Bangers/Extreme)
  *	Add checks for if the user tries to use a tag for a skipping Destination
+ * Decide over PRINT_ERROR + exit and printError() method
+ *	perhaps rename printError to something else or make a macro
+ * FIX: account for spaces in file names when getting from the selection
+ * FIX: Make a better error output for if moving the files fails from system
+ * Adding NULL protection in writeCover()?
 */
 
 /*TODO
  * Add cover art related things such as keeping or discarding them
  * Refactor the control flow in main for considering when to download arts and download modes
- * Adding NULL protection in writeCover()?
  * mv command or rename function?
  * perhaps have a way to add more metadata to mp3 files?
 */
@@ -47,7 +51,6 @@
 #include "../includes/writeArt.h"
 #include "../includes/fileOps.h"
 #include "../includes/pathMap.h"
-#include <strings.h>
 
 #define W4_NOT_GIVEN "Destination to send video does not exist. Please specify where to send them with the -w4 flag"
 #define W3_NOT_GIVEN "Destination to send audio does not exist. Please specify where to send them with the -w3 flag\n"
@@ -115,22 +118,22 @@ typedef struct ModePackage{
 static MapArray_t destMaps [] = {{0}, {0}, {0}};
 
 void __attribute__((constructor)) initPaths (){
-	if(!checkIfExists(DES)){
+	if(checkIfExists(DES) == HAD_ERROR){
 		PRINT_ERROR("Destinations directory is not present. Please run the makefile with \"make\"");
 		exit(EXIT_FAILURE);
 	}
 	int valid = 1;
-	if(!checkIfExists(DES_MP4)){
+	if(checkIfExists(DES_MP4) == HAD_ERROR){
 		PRINT_ERROR("Destinations for videos have not been initalized.\n Please use the -w4 flag to specify them");
 		valid = 0;
 	}
 
-	if(!checkIfExists(DES_MP3)){
+	if(checkIfExists(DES_MP3) == HAD_ERROR){
 		PRINT_ERROR("Destinations for audio have not been initalized.\n Please use the -w3 flag to specify them");
 		valid = 0;
 	}
 
-	if(!checkIfExists(DES_COVER)){
+	if(checkIfExists(DES_COVER) == HAD_ERROR){
 		PRINT_ERROR("Destinations for covers have not been initalized.\n Please use the -wc flag to specify them");
 		valid = 0;
 	}
@@ -146,9 +149,9 @@ void __attribute__((constructor)) initPaths (){
 	destFiles[1] = fopen(DES_MP3, "r");
 	destFiles[2] = fopen(DES_COVER, "r");
 
-	if(destFiles[0] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open video destination file");
-	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open audio destination file");
-	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open cover destination file");
+	if(destFiles[0] == NULL) printAndExit(EXIT_FAILURE, "Constructor Failed to open video destination file");
+	if(destFiles[1] == NULL) printAndExit(EXIT_FAILURE, "Constructor Failed to open audio destination file");
+	if(destFiles[2] == NULL) printAndExit(EXIT_FAILURE, "Constructor Failed to open cover destination file");
 
 	//build a map per each directory entry in the destination files
 	char* buffer = NULL;
@@ -217,33 +220,33 @@ static void convertFirstMoveBoth(MovePackage* movingInfo){
 
 	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
 	if(strlen(videoFileName) == 0)
-		printError(EXIT_FAILURE, "Could not find video file after downloading");
+		printAndExit(EXIT_FAILURE, "Could not find video file after downloading");
 
 	convertToMp3(videoFileName);
 
 	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
 	if(strlen(audioFileName) == 0)
-		printError(EXIT_FAILURE, "Could not find audio file after downloading");
+		printAndExit(EXIT_FAILURE, "Could not find audio file after downloading");
 
 	if(movingInfo->hasCoverArt){
 		if(movingInfo->artName == NULL){
 			char jpgFileName [MAX_FILE_NAME + 1] = "";
 			getFileNameByID(movingInfo->id, JPG_EXT, jpgFileName, MAX_FILE_NAME);
 			if(strlen(jpgFileName) == 0)
-				printError(EXIT_FAILURE, "Could not find cover file after downloading");
+				printAndExit(EXIT_FAILURE, "Could not find cover file after downloading");
 
 			writeCover(audioFileName, jpgFileName);
 			removeCoverArt(jpgFileName);
-			moveFile(videoFileName, movingInfo->videoDest);
-			moveFile(audioFileName, movingInfo->audioDest);
+			(void)moveFile(videoFileName, movingInfo->videoDest);
+			(void)moveFile(audioFileName, movingInfo->audioDest);
 		}else{
 			writeCover(audioFileName, movingInfo->artName);
-			moveFile(videoFileName, movingInfo->videoDest);
-			moveFile(audioFileName, movingInfo->audioDest);
+			(void)moveFile(videoFileName, movingInfo->videoDest);
+			(void)moveFile(audioFileName, movingInfo->audioDest);
 		}
 	}else{
-		moveFile(videoFileName, movingInfo->videoDest);
-		moveFile(audioFileName, movingInfo->audioDest);
+		(void)moveFile(videoFileName, movingInfo->videoDest);
+		(void)moveFile(audioFileName, movingInfo->audioDest);
 	}
 }
 
@@ -251,9 +254,9 @@ static void moveVideo (MovePackage* movingInfo){
 	char videoFileName [MAX_FILE_NAME + 1] = "";
 	getFileNameByID(movingInfo->id, MP4_EXT, videoFileName, MAX_FILE_NAME);
 	if(strlen(videoFileName) == 0)
-		printError(EXIT_FAILURE, "Could not find video file after downloading");
+		printAndExit(EXIT_FAILURE, "Could not find video file after downloading");
 
-	moveFile(videoFileName, movingInfo->videoDest);
+	(void)moveFile(videoFileName, movingInfo->videoDest);
 }
 
 static void moveAudio(MovePackage* movingInfo){
@@ -261,24 +264,24 @@ static void moveAudio(MovePackage* movingInfo){
 
 	getFileNameByID(movingInfo->id, MP3_EXT, audioFileName, MAX_FILE_NAME);
 	if(strlen(audioFileName) == 0)
-		printError(EXIT_FAILURE, "Could not find audio file after downloading");
+		printAndExit(EXIT_FAILURE, "Could not find audio file after downloading");
 
 	if(movingInfo->hasCoverArt){
 		if(movingInfo->artName == NULL){
 			char jpgFileName [MAX_FILE_NAME + 1] = "";
 			getFileNameByID(movingInfo->id, JPG_EXT, jpgFileName, MAX_FILE_NAME);
 			if(strcmp(jpgFileName, "") == 0)
-				printError(EXIT_FAILURE, "Could not find cover file after downloading");
+				printAndExit(EXIT_FAILURE, "Could not find cover file after downloading");
 
 			writeCover(audioFileName, jpgFileName);
 			removeCoverArt(jpgFileName);
-			moveFile(audioFileName, movingInfo->audioDest);
+			(void)moveFile(audioFileName, movingInfo->audioDest);
 		}else{
 			writeCover(audioFileName, movingInfo->artName);
-			moveFile(audioFileName, movingInfo->audioDest);
+			(void)moveFile(audioFileName, movingInfo->audioDest);
 		}
 	}else{
-		moveFile(audioFileName, movingInfo->audioDest);
+		(void)moveFile(audioFileName, movingInfo->audioDest);
 	}
 }
 
@@ -324,7 +327,6 @@ static void getModeFromSelection(const char* videoDest, const char* audioDest, M
 }
 
 int main(int argc, char** argv){
-
 	char SKIP [] = "SKIP";
 	//modes for different execution
 	int fileMode = 0;
@@ -347,7 +349,7 @@ int main(int argc, char** argv){
 
 			exit(EXIT_SUCCESS);
 		}else if(strcmp("-f", argv[c]) == 0){
-			if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
+			if(checkIfExists(argv[c + 1]) == HAD_ERROR) printAndExit(EXIT_FAILURE, FILE_FAIL_MSG);
 
 			fileMode = 1;
 			fileFlagIndex = ++c;
@@ -416,7 +418,7 @@ int main(int argc, char** argv){
 			if(strcmp("NO-ART", argv[c + 1]) == 0){
 				coverArtMode = NO_ART;
 			}else{
-				if(!checkIfExists(argv[c + 1])) printError(EXIT_FAILURE, FILE_FAIL_MSG);
+				if(checkIfExists(argv[c + 1]) == HAD_ERROR) printAndExit(EXIT_FAILURE, FILE_FAIL_MSG);
 				coverArtMode = HAS_ART;
 			}
 			coverArtIndex = c + 1;
@@ -430,7 +432,7 @@ int main(int argc, char** argv){
 	}//finished parsing arguments
 
 	if(keepArt && coverArtMode == NO_ART)
-		printError(EXIT_FAILURE, "Can not keep cover art and specify a cover art");
+		printAndExit(EXIT_FAILURE, "Can not keep cover art and specify a cover art");
 
 	char* sendAudio = NULL;
 	char* sendVideo = NULL;
@@ -464,6 +466,9 @@ int main(int argc, char** argv){
 	}
 
 	getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
+	//surround destination in quotes because they can contain spaces
+	sendVideo = surroundInQuotes(sendVideo);
+	sendAudio = surroundInQuotes(sendAudio);
 	movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
 
 	//default and cover art mode
@@ -480,6 +485,9 @@ int main(int argc, char** argv){
 				(*moveFunction)(&movementInfo);
 			}
 
+			//free surrounded in quote string
+			free(sendVideo);
+			free(sendAudio);
 			sendAudio = NULL;
 			sendVideo = NULL;
 
@@ -503,8 +511,8 @@ int main(int argc, char** argv){
 				}
 
 				//check if skipped entirely
-				if(sendAudio == NULL) printError(EXIT_FAILURE, SKIP_VALID_MSG);
-				if(sendVideo == NULL) printError(EXIT_FAILURE, SKIP_VALID_MSG);
+				if(sendAudio == NULL) printAndExit(EXIT_FAILURE, SKIP_VALID_MSG);
+				if(sendVideo == NULL) printAndExit(EXIT_FAILURE, SKIP_VALID_MSG);
 
 				//reset the modes
 				modeInfo.downloadMode = DEFAULT_MODE;
@@ -512,6 +520,8 @@ int main(int argc, char** argv){
 
 				//reset movementPackage
 				getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
+				sendVideo = surroundInQuotes(sendVideo);
+				sendAudio = surroundInQuotes(sendAudio);
 				movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
 			}
 		}while(repeat);
@@ -557,13 +567,13 @@ int main(int argc, char** argv){
 					++logsWritten;
 				}
 			}else if(strstr(buffer, ".mp3") != NULL){
-				if(checkIfExists(buffer)){
+				if(checkIfExists(buffer) == NO_ERROR){
 					//change this later
 					if(coverArt == NULL){
-						moveFile(buffer, movementInfo.audioDest);
+						(void)moveFile(buffer, movementInfo.audioDest);
 					}else{
 						writeCover(buffer, coverArt);
-						moveFile(buffer, movementInfo.audioDest);
+						(void)moveFile(buffer, movementInfo.audioDest);
 					}
 				}else{
 					(void)printf(PNT_RED"can't find .mp3 %s via its path\n"PNT_RESET, buffer);
@@ -613,7 +623,7 @@ int main(int argc, char** argv){
 				//into the struct to avoid more conditionals
 				//exiting is done here to be more user friendly
 				//their intention is to move to a new place, but an error stops that
-				if(newDest == SKIP || (newDest != NULL && checkIfExists(buffer + 3))){
+				if(newDest == SKIP || (newDest != NULL && checkIfExists(buffer + 3) == NO_ERROR)){
 					*((char**)(&movementInfo) + offset) = newDest;
 					//set to choose download mode automatically
 					modeInfo.downloadMode = DEFAULT_MODE;
@@ -629,17 +639,14 @@ int main(int argc, char** argv){
 				(void)fprintf(logFile, "String is not a youtube URL or mp3 path: %s\n", buffer);
 				++logsWritten;
 			}
-			free(buffer);
-			buffer = NULL;
 		}
+		free(buffer);
+		buffer = NULL;
 		fclose(inFile);
 		fclose(logFile);
 		//This can still overflow if there are 4,294,967,295 + 1 non-exiting errors
 		if(logsWritten == 0)system("rm FailedDownloads.txt");
 		else PRINT_ERROR("Failed to download or move some of the specified lines. Check FailedDownloads.txt to see which ones.");
-
-		sendAudio = NULL;
-		sendVideo = NULL;
 	}
 
 	//freeing destMaps would go here, but it's going to exit anyway

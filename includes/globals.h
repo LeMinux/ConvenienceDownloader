@@ -1,6 +1,10 @@
 #ifndef __GLOBALS_H
 #define __GLOBALS_H
 
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"

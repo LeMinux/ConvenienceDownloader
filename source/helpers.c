@@ -1,9 +1,7 @@
 #include "../includes/helpers.h"
 
-//printing an Error is more dynamic and more compact
-//this also means there is no table to shift
-void printError(int code, const char* message){
-	(void)fprintf(stderr, PNT_RED"%s\n"PNT_RESET,message);
+void printAndExit(int code, const char* message){
+	(void)fprintf(stderr, PNT_RED"%s\n"PNT_RESET, message);
 	exit(code);
 }
 
@@ -27,7 +25,7 @@ char* surroundInQuotes(const char* surround){
 	//+2 for quotes
 	length += 2;
 	char* newString = malloc(length + 1);
-	if(newString == NULL) printError(EXIT_FAILURE,FAILED_MALLOC_MSG);
+	if(newString == NULL) printAndExit(EXIT_FAILURE, FAILED_MALLOC_MSG);
 	newString[0] = '\"';
 	i = 0;
 	int p = 1;
