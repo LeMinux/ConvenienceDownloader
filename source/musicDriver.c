@@ -80,9 +80,10 @@
 #define JPG_EXT ".jpg"
 
 #define DEST_AMOUNT 3
-#define MP4_INDEX 0
-#define MP3_INDEX 1
-#define COVER_INDEX 2
+enum destIndexEnum {MP4_INDEX, MP3_INDEX, COVER_INDEX};
+//#define MP4_INDEX 0
+//#define MP3_INDEX 1
+//#define COVER_INDEX 2
 
 #define ID_BUFFER 12
 
@@ -107,9 +108,11 @@ typedef struct ModePackage{
 	int coverMode;
 } ModePackage;
 
-//global dynamic variables
-//these act as the base path. This way opening the destination files only happens once
-static MapArray_t* destMaps = NULL;
+//holds all the paths of the destinations.
+//index 0 is for MP4
+//index 1 is for MP3
+//index 2 is for cover arts
+static MapArray_t destMaps [] = {{0}, {0}, {0}};
 
 void __attribute__((constructor)) initPaths (){
 	if(!checkIfExists(DES)){
@@ -147,34 +150,37 @@ void __attribute__((constructor)) initPaths (){
 	if(destFiles[1] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open audio destination file");
 	if(destFiles[2] == NULL) printError(EXIT_FAILURE, "Constructor Failed to open cover destination file");
 
-	destMaps = calloc(DEST_AMOUNT, sizeof(*destMaps));
-	if(destMaps == NULL){
-		PRINT_ERROR(FAILED_MALLOC_MSG);
-		exit(EXIT_FAILURE);
-	}
-
 	//build a map per each directory entry in the destination files
 	char* buffer = NULL;
-	int index = 0;
+	//int index = 0;
+	enum destIndexEnum index = MP4_INDEX;
 	for(; index < DEST_AMOUNT; ++index){
 		int dirCount = 0;
 		while(unknownInput(destFiles[index], &buffer) != 0){
-			destMaps[index].mapArray = realloc(destMaps[index].mapArray, sizeof(Map_t) * dirCount + 1);
+
+			destMaps[index].mapArray = realloc(destMaps[index].mapArray, sizeof(*destMaps[index].mapArray) * (dirCount + 1));
 			if(destMaps[index].mapArray == NULL){
 				PRINT_ERROR(FAILED_MALLOC_MSG);
 				exit(EXIT_FAILURE);
 			}
 
 			//dereferencing the return since it returns a Map_t*
-			//destMaps[index].mapArray[dirCount] = *(obtainPathMap(buffer));
+			//yes this is inefficient, but turning the array into pointers
+			//would then require more heap memory
 
-			Map_t* newMapEntry = obtainPathMap(buffer);
-			destMaps[index].mapArray[dirCount] = *newMapEntry;
+			//destMaps[index].mapArray[dirCount] = *(obtainPathMap(buffer));
+			Map_t* newMap = obtainPathMap(buffer);
+
+			//inserts values directly into the struct
+			destMaps[index].mapArray[dirCount] = *newMap;
+			free(newMap);
+			newMap = NULL;
 			++dirCount;
 		}
 		destMaps[index].length = dirCount;
 		fclose(destFiles[index]);
 	}
+	free(buffer);
 }
 
 //mode specifies audio or video

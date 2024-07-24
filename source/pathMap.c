@@ -1,5 +1,6 @@
 #include "../includes/pathMap.h"
 #include <bits/posix1_lim.h>
+#include <complex.h>
 
 //credit to this post https://stackoverflow.com/questions/1723002/how-to-list-all-subdirectories-in-a-given-directory-in-c#1723583
 static void getSubdirectories(Map_t* map, const char* basePath){
@@ -78,6 +79,11 @@ static void getSubdirectories(Map_t* map, const char* basePath){
 }
 
 char* getSelection(MapArray_t* mapsOfSubDirs, const char* prompt, int isSkipping){
+	if(mapsOfSubDirs == NULL || mapsOfSubDirs->mapArray == NULL){
+		PRINT_ERROR("Selection can't get options from NULL");
+		exit(EXIT_FAILURE);
+	}
+
 	int maxInput = 0;
 	int c = 0;
 	for(; c < mapsOfSubDirs->length; ++c)
