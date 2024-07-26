@@ -150,16 +150,15 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	}
 	(void)snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
 	(void)printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
+	int retVal = NO_ERROR;
 	if(system(downloadCommand) > 0){
 		PRINT_ERROR(DOWNLOAD_FAIL_MSG);
-		free(downloadCommand);
-		return HAD_ERROR;
+		retVal = HAD_ERROR;
 	}
-
 	free(downloadCommand);
-	return NO_ERROR;
+	downloadCommand = NULL;
+	return retVal;
 }
-
 
 //helper method for if the user wants to repeat or not
 int askToRepeat(void){
