@@ -35,6 +35,10 @@
 */
 
 /*TODO
+ * FIX: A potential error of the previous dest being SKIP when changing 
+ * 	with the file tags
+ * FIX: Places where a string literal is being returned as free can
+ *	It also can provide unstability
  * Add cover art related things such as keeping or discarding them
  * Refactor the control flow in main for considering when to download arts and download modes
  * mv command or rename function?
@@ -87,8 +91,6 @@ enum destIndexEnum {MP4_INDEX, MP3_INDEX, COVER_INDEX};
 //#define MP4_INDEX 0
 //#define MP3_INDEX 1
 //#define COVER_INDEX 2
-
-#define ID_BUFFER 12
 
 #define SLEEP_AMT 2
 
@@ -434,13 +436,18 @@ int main(int argc, char** argv){
 	if(keepArt && coverArtMode == NO_ART)
 		printAndExit(EXIT_FAILURE, "Can not keep cover art and specify a cover art");
 
-	char* sendAudio = NULL;
-	char* sendVideo = NULL;
+	//char* sendAudio = NULL;
+	//char* sendVideo = NULL;
 	void (*moveFunction)(MovePackage*) = NULL;
-	char id [ID_BUFFER] = "";
-	MovePackage movementInfo;
+	char id [YT_ID_SIZE] = "";
+	MovePackage movementInfo = {0};
 	ModePackage modeInfo = {DEFAULT_MODE, coverArtMode};
 	char* coverArt = NULL;
+
+	//these help when having to change strings
+	//and also prevents a char* copy getting out of sync
+	char** sendAudio = &movementInfo.audioDest;
+	char** sendVideo = &movementInfo.videoDest;
 
 	if(coverArtMode == HAS_ART)
 		coverArt = argv[coverArtIndex];
@@ -449,15 +456,15 @@ int main(int argc, char** argv){
 	//depending on the flags only certain paths can be skipped
 	if(coverArtMode != DEFAULT_MODE){
 		(void)puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
-		sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
-		sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
+		*sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
+		*sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
 	}else{
 		int valid = 0;
 		do{
-			sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
-			sendAudio = askUserForPath(MP3_MODE, ALLOW_SKIPS);
+			*sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
+			*sendAudio = askUserForPath(MP3_MODE, ALLOW_SKIPS);
 
-			if((strcmp(sendAudio, "SKIP") == 0 && strcmp(sendVideo, "SKIP") == 0)){
+			if((strcmp(*sendAudio, "SKIP") == 0 && strcmp(*sendVideo, "SKIP") == 0)){
 				(void)puts(PNT_RED"Both destinations can not be skipped!"PNT_RESET);
 			}else{
 				valid = 1;
@@ -465,11 +472,14 @@ int main(int argc, char** argv){
 		}while(!valid);
 	}
 
-	getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
+	getModeFromSelection(*sendVideo, *sendAudio, &modeInfo, &moveFunction);
 	//surround destination in quotes because they can contain spaces
-	sendVideo = surroundInQuotes(sendVideo);
-	sendAudio = surroundInQuotes(sendAudio);
-	movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
+	movementInfo.id = id;
+	*sendVideo = surroundInQuotes(*sendVideo);
+	*sendAudio = surroundInQuotes(*sendAudio);
+	movementInfo.hasCoverArt = modeInfo.coverMode;
+	movementInfo.artName = coverArt;
+	//movementInfo = (MovePackage){id, *sendAudio, *sendVideo, NULL, modeInfo.coverMode, coverArt};
 
 	//default and cover art mode
 	if(!fileMode){
@@ -479,30 +489,30 @@ int main(int argc, char** argv){
 			getURL(url);
 
 			//snprintf will rewrite the id string
-			snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(url, "?v=") + 3);
+			snprintf(movementInfo.id, YT_ID_SIZE, "%s", strstr(url, "?v=") + 3);
 
 			if(downloadFromURL(url, modeInfo.downloadMode, modeInfo.coverMode) == NO_ERROR){
 				(*moveFunction)(&movementInfo);
 			}
 
 			//free surrounded in quote string
-			free(sendVideo);
-			free(sendAudio);
-			sendAudio = NULL;
-			sendVideo = NULL;
+			free(*sendVideo);
+			free(*sendAudio);
+			*sendAudio = NULL;
+			*sendVideo = NULL;
 
 			if((repeat = askToRepeat()) == 1){
 				if(coverArtMode != DEFAULT_MODE){
 					(void)puts(PNT_RED"NOTE: for this option there is no skipping MP3 paths since the cover art option is selected."PNT_RESET);
-					sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
-					sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
+					*sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
+					*sendAudio = askUserForPath(MP3_MODE, DISALLOW_SKIPS);
 				}else{
 					int valid = 0;
 					do{
-						sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
-						sendAudio = askUserForPath(MP3_MODE, ALLOW_SKIPS);
+						*sendVideo = askUserForPath(MP4_MODE, ALLOW_SKIPS);
+						*sendAudio = askUserForPath(MP3_MODE, ALLOW_SKIPS);
 
-						if((strcmp(sendAudio, "SKIP") == 0 && strcmp(sendVideo, "SKIP") == 0)){
+						if((strcmp(*sendAudio, "SKIP") == 0 && strcmp(*sendVideo, "SKIP") == 0)){
 							(void)puts(PNT_RED"Both destinations can not be skipped!"PNT_RESET);
 						}else{
 							valid = 1;
@@ -511,18 +521,18 @@ int main(int argc, char** argv){
 				}
 
 				//check if skipped entirely
-				if(sendAudio == NULL) printAndExit(EXIT_FAILURE, SKIP_VALID_MSG);
-				if(sendVideo == NULL) printAndExit(EXIT_FAILURE, SKIP_VALID_MSG);
+				if(*sendAudio == NULL) printAndExit(EXIT_FAILURE, SKIP_VALID_MSG);
+				if(*sendVideo == NULL) printAndExit(EXIT_FAILURE, SKIP_VALID_MSG);
 
 				//reset the modes
 				modeInfo.downloadMode = DEFAULT_MODE;
 				modeInfo.coverMode = coverArtMode;
 
 				//reset movementPackage
-				getModeFromSelection(sendVideo, sendAudio, &modeInfo, &moveFunction);
-				sendVideo = surroundInQuotes(sendVideo);
-				sendAudio = surroundInQuotes(sendAudio);
-				movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
+				getModeFromSelection(*sendVideo, *sendAudio, &modeInfo, &moveFunction);
+				*sendVideo = surroundInQuotes(*sendVideo);
+				*sendAudio = surroundInQuotes(*sendAudio);
+				//movementInfo = (MovePackage){id, sendAudio, sendVideo, NULL, modeInfo.coverMode, coverArt};
 			}
 		}while(repeat);
 
@@ -538,15 +548,6 @@ int main(int argc, char** argv){
 			PRINT_ERROR("Failed to create log file for logging errors");
 			exit(EXIT_FAILURE);
 		}
-
-		//free surrounded in quote string
-		//these aren't needed anymore as
-		//any future changes are written directly in the struct
-		free(sendVideo);
-		free(sendAudio);
-		sendAudio = NULL;
-		sendVideo = NULL;
-
 
 		unsigned int logsWritten = 0;
 		char* buffer = NULL;
@@ -564,7 +565,7 @@ int main(int argc, char** argv){
 				strncpy(shortenedURL, buffer, YT_URL_INPUT_SIZE);
 				shortenedURL[YT_URL_INPUT_SIZE - 1] = '\0';
 
-				snprintf(movementInfo.id, ID_BUFFER, "%s", strstr(shortenedURL, "?v=") + 3);
+				snprintf(movementInfo.id, YT_ID_SIZE, "%s", strstr(shortenedURL, "?v=") + 3);
 
 				//adding a sleep so it doesn't rapid fire youtube
 				sleep(SLEEP_AMT);
@@ -597,14 +598,18 @@ int main(int argc, char** argv){
 					case '3':
 						newDest = findPath(&destMaps[MP3_INDEX], buffer + 3);
 						offset = 1;
-						free(movementInfo.audioDest);
-						movementInfo.audioDest = NULL;
+						if(*sendAudio != SKIP){
+							free(*sendAudio);
+							*sendAudio = NULL;
+						}
 					break;
 					case '4':
 						newDest = findPath(&destMaps[MP4_INDEX], buffer + 3);
 						offset = 2;
-						free(movementInfo.videoDest);
-						movementInfo.videoDest = NULL;
+						if(*sendVideo != SKIP){
+							free(*sendVideo);
+							*sendVideo = NULL;
+						}
 					break;
 					case 'c': case 'C':
 						newDest = findPath(&destMaps[COVER_INDEX], buffer + 3);
@@ -654,6 +659,8 @@ int main(int argc, char** argv){
 				++logsWritten;
 			}
 		}
+		free(*sendVideo);
+		free(*sendAudio);
 		free(buffer);
 		buffer = NULL;
 		fclose(inFile);
