@@ -18,6 +18,6 @@
 #define FAILED_MALLOC_MSG "\nError MEM: Allocation of memory failed"
 
 #define YT_URL_INPUT_SIZE 44 //this is from the beginning of the URL to the end of the ID (32 + 11 + 1)
-#define YT_ID_SIZE 11
+#define YT_ID_SIZE 12
 
 #endif

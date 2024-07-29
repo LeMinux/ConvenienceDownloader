@@ -539,6 +539,15 @@ int main(int argc, char** argv){
 			exit(EXIT_FAILURE);
 		}
 
+		//free surrounded in quote string
+		//these aren't needed anymore as
+		//any future changes are written directly in the struct
+		free(sendVideo);
+		free(sendAudio);
+		sendAudio = NULL;
+		sendVideo = NULL;
+
+
 		unsigned int logsWritten = 0;
 		char* buffer = NULL;
 		//this spagetti code is here just to get the file to work
@@ -588,10 +597,14 @@ int main(int argc, char** argv){
 					case '3':
 						newDest = findPath(&destMaps[MP3_INDEX], buffer + 3);
 						offset = 1;
+						free(movementInfo.audioDest);
+						movementInfo.audioDest = NULL;
 					break;
 					case '4':
 						newDest = findPath(&destMaps[MP4_INDEX], buffer + 3);
 						offset = 2;
+						free(movementInfo.videoDest);
+						movementInfo.videoDest = NULL;
 					break;
 					case 'c': case 'C':
 						newDest = findPath(&destMaps[COVER_INDEX], buffer + 3);
@@ -624,6 +637,7 @@ int main(int argc, char** argv){
 				//exiting is done here to be more user friendly
 				//their intention is to move to a new place, but an error stops that
 				if(newDest == SKIP || (newDest != NULL && checkIfExists(buffer + 3) == NO_ERROR)){
+					if(newDest != SKIP) newDest = surroundInQuotes(newDest);
 					*((char**)(&movementInfo) + offset) = newDest;
 					//set to choose download mode automatically
 					modeInfo.downloadMode = DEFAULT_MODE;
