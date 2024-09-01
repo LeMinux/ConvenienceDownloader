@@ -5,6 +5,9 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
   - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./download.out or make run will then ask for you to specify where to send video, audio, and cover art files.
 
 ## Usage
+  - General
+
+    When you run the program it will ask you specify where you want to send video and audio files. Here you are prompted to enter the number associated with that path. It is done this way because you may have many paths and typing the entire path out is annoying. However, note that the maximum number of paths you can have is 9999. You can also type skip to skip sending files for that type, or type exit to leave the program. After you enter where you you want to send video and audio files it will ask for a youtube URL. Youtube mobile urls will not work it has to be in the format of "https://www.youtube.com/watch?v=[11 character id]" like this "https://www.youtube.com/watch?v=Or4IE8fkpn4". Once that url has been downloaded and sent to where you wanted it will ask if you want to download again if you didn't specify a file, but if you did specify a file it continue to the next entry.
   - default   
 
     Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading. The user is also prompted each time per URL where to send MP4 and MP3 files. This will also download the youtube thumbnail and place it as a cover art.
@@ -19,7 +22,7 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
     This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. Separate the list by newlines of youtube URLs, .mp3 file paths, and tags. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.
 
     These tags are
-    -  ![3,4,c]> <new directory path that exists when you use the -l flag>
+    -  ![3, 4, or c]> <new directory path that exists when you use the -l flag>
         - 3 to change where to send audio
         - 4 to change where to send video
         - c to change where to send cover arts
@@ -79,5 +82,5 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
 
   ## Features
   - You are able to skip downloading videos or audios, but depending on what you choose you can only opt out of certain ones. For example if you choose to add cover art you can not skip downloading audio files since the purpose of this flag is to add cover art to them, but you can skip downloading videos.
-  - Now can choose directories that are deeper than one in. For now you will have to type the entire path.
+  - Can choose directories that are deeper than one in.
   - You can use relative paths as long as you execute within the directory the executable is in. Ex: ../Music/Bangers instead of /home/User/Music/Bangers.
