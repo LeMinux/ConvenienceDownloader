@@ -2,37 +2,68 @@
 C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and more beneficial to download from youtube. First it downloads the video into the current directory then converts to .mp3 for later transfering and moves the .mp4 into the specified directory.
 
 ## Initialization
-  - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./download.out or make run will then ask for you to specify where to send videos and audios per iteration.
+  - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./download.out or make run will then ask for you to specify where to send video, audio, and cover art files.
 
 ## Usage
-  - default
-    
+  - default   
+
     Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading. The user is also prompted each time per URL where to send MP4 and MP3 files. This will also download the youtube thumbnail and place it as a cover art.
-  - -l
-  
-    List available directories as specified by the given parent directory in Destinations. This will list for both MP4 and MP3.
     
+  - -l
+
+     List available directories as specified by the given parent directory in Destinations.    
     During execution of the program the same list of available directories will be specified also.
-  - -f
-  
-    This flag is useful in changing the behavior of program operation. This flag will only ask once where to send files. Use this flag when you want to bulk send your downloads into one directory.
-    Separate the list by newlines of youtube URLs or .mp3 files (**You must provide the -ca flag if you want to use mp3 files**)
+    
+  - -f 
+
+    This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. Separate the list by newlines of youtube URLs, .mp3 file paths, and tags. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.
+
+    These tags are
+    -  ![3,4,c]> <new directory path that exists when you use the -l flag>
+        - 3 to change where to send audio
+        - 4 to change where to send video
+        - c to change where to send cover arts
+    -  !s> [3, 4, or c]
+        - 3 is to skip downloading audio
+        - 4 is to skip downloading video
+        - c is to skip cover arts
+
+      ```Ex: !3>Music/Wacky/```
+
+      ```Ex: !3>Music/Wacky```
+
+      ```Ex: !s>4```
+
+    **The write to destination flags (-w4, -w3, -wc) specified below are for providing root directories for the program to scan through. You can specify multiple, but you can only use one of these flags at a time and must separate each root path with a space when using the command.**
+    ```Ex: <executable> -w4 Music/Loud/ ../Funny/```
+    NOT
+    ```<executable> -w4 Music/Loud ../Funny/ -w3 Music/Smaller.```
+
   - -w4
-  
-    Used to specify the parent directory on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../ This can be used to change where to send videos.
+
+    Used to specify the parent directory(s) on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../
+    
   - -w3
-  
-    Used to specify the parent directory on where to send MP3(audio) files. This can be used to change where to send audios.
+
+    Used to specify the parent directory(s) on where to send MP3(audio) files.
+    
+  - -wc  
+
+     Used to specify the parent directory(s) on where to send cover arts
+    
   - -ca
-  
+
     Used to write cover art to MP3 files. 
     
     This will overwrite the original files specified in the file given unless it is NO-ART.
     
-    If this flag is combined with the -f flag it has the ability to parse through a list
-    that contains youtubeURLs and .mp3 file paths, and it will add the cover art to each entry.
+    If this flag is combined with the -f flag it will add the cover art to each entry.
     
     Passing in "NO-ART" will just download the .mp3 file with no cover art. MP3 files that already have cover arts will not be affected by this option.
+- --keep-art (not implemented yet)
+
+    Use this option if you want to keep the cover art downloaded. By default cover arts will not be kept, so use this to keep them.
+    Note that you can not keep cover arts and specify a cover art to use since these conflict with each other.
     
     ## Example Usage
   
