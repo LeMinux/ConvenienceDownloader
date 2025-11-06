@@ -6,6 +6,8 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <limits.h>
+#include <errno.h>
 
 #include "helpers.h"
 #include "fileOps.h"
@@ -77,5 +79,7 @@ int exactInput(FILE* stream, char* dest, int buffer);
 *	return: returns how much was read excluding nul byte
 */
 int unknownInput(FILE* stream, char** dest);
+
+int appendEntry(DirInfoArray* entry_array, const char* new_entry);
 
 #endif
