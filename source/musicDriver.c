@@ -32,16 +32,17 @@
  * FIX: account for spaces in file names when getting from the selection
  * FIX: Make a better error output for if moving the files fails from system
  * Adding NULL protection in writeCover()?
+ * mv command or rename function?
 */
 
 /*TODO
- * FIX: A potential error of the previous dest being SKIP when changing 
+ * FIX: A potential error of the previous dest being SKIP when changing
  * 	with the file tags
  * FIX: Places where a string literal is being returned as free can
  *	It also can provide unstability
  * Add cover art related things such as keeping or discarding them
  * Refactor the control flow in main for considering when to download arts and download modes
- * mv command or rename function?
+ *	Also have exiting have control return back to main
  * perhaps have a way to add more metadata to mp3 files?
 */
 
@@ -445,7 +446,7 @@ int main(int argc, char** argv){
 	char* coverArt = NULL;
 
 	//these help when having to change strings
-	//and also prevents a char* copy getting out of sync
+	//and also prevents a char* copy getting out of sync creating leaks
 	char** sendAudio = &movementInfo.audioDest;
 	char** sendVideo = &movementInfo.videoDest;
 

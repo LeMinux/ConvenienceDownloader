@@ -179,6 +179,65 @@ int askToRepeat(void){
 	return HAD_ERROR;
 }
 
+int appendEntry(DirInfoArray* entry_array, const char* new_entry){
+    assert(entry_array != NULL);
+    assert(new_entry != NULL);
+    assert(entry_array->length >= 0);
+
+    //REMEMBER NAME IS MALLOCED
+    long depth = -1;
+    int path_length = 0;
+    char* name = NULL;
+    char* comma = strrchr(new_entry, ','); //last comma found
+    if(comma != NULL){
+        path_length = comma - new_entry;
+
+        errno = 0; //strtol man page says to set errno to zero before handling
+        depth = strtol(comma + 1, NULL, 10);
+        if(errno == ERANGE || depth > INT_MAX){
+            fprintf(stderr, "Depth given is too large\n");
+            return HAD_ERROR;
+        }
+
+        if(depth < 0){
+            fprintf(stderr, "Depth can't be negative\n");
+            return HAD_ERROR;
+        }
+    }else{
+        path_length = strlen(new_entry);
+    }
+
+    if(path_length >= MY_MAX_PATH_SIZE){
+        fprintf(stderr, "File path is too long\n");
+        return HAD_ERROR;
+    }
+
+    if((name = strndup(new_entry, path_length)) == NULL){
+        fprintf(stderr, "Not enough memory\n");
+        return HAD_ERROR;
+    }
+
+    entry_array->dir_entries = realloc(entry_array->dir_entries, sizeof(DirInfo) * (entry_array->length + 1));
+    if(entry_array->dir_entries == NULL){
+        fprintf(stderr, "Not enough memory\n");
+        return HAD_ERROR;
+    }
+
+    openDir(name, &(entry_array->dir_entries[entry_array->length].open_dir));
+
+    if(entry_array->dir_entries[entry_array->length].open_dir == NULL){
+        fprintf(stderr, "Failed to open directory %s.\n", name);
+        return HAD_ERROR;
+    }
+
+    entry_array->dir_entries[entry_array->length].root_name = name;
+    entry_array->dir_entries[entry_array->length].name_length = path_length;
+    entry_array->dir_entries[entry_array->length].depth = depth;
+    ++entry_array->length;
+
+    return NO_ERROR;
+}
+
 /*
 //gets from the user what directory they want to download into
 //with the help of getDirectories
