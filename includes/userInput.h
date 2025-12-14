@@ -10,7 +10,7 @@
 #include <errno.h>
 
 #include "helpers.h"
-#include "fileOps.h"
+//#include "fileOps.h"
 #include "globals.h"
 
 //error message defines
@@ -21,6 +21,11 @@
 #define MP4_FAIL_MSG "\nERROR MVP4: Error in moving video file to desired directory"
 #define MP3_FAIL_MSG "\nERROR MVP3: Error in moving audio file to desired directory"
 #define SKIP_VALID_MSG "\nERROR INVD: Error in user skipping selecting a directory"
+
+#define AUDIO_STRING "audio"
+#define VIDEO_STRING "video"
+#define COVER_STRING "cover"
+#define OPTION_LEN 5
 
 #define CHUNK_READ 51
 
@@ -80,6 +85,10 @@ int exactInput(FILE* stream, char* dest, int buffer);
 */
 int unknownInput(FILE* stream, char** dest);
 
-int appendEntry(DirInfoArray* entry_array, const char* new_entry);
+//int appendRootEntry(RootInfoArray* entry_array, const char* new_entry);
+
+enum CONFIG getConfigToEdit(const char* input);
+
+
 
 #endif

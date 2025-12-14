@@ -14,7 +14,7 @@ int moveFile(const char* fileName, const char* destination){
 
 	//file is still in the current directory if NO_ERROR occurs
 	if(checkIfExists(fileName) == NO_ERROR){
-		fprintf(stderr, PNT_RED "Failed to move file %s to the destination %s\n" PNT_RESET, fileName, destination);
+		PRINT_FORMAT_ERROR(PNT_RED "Failed to move file %s to the destination %s\n" PNT_RESET, fileName, destination);
 		return HAD_ERROR;
 	}else{
 		return NO_ERROR;
@@ -92,25 +92,25 @@ int validateDirPath(const char* path){
 	//path doesn't exist
 	struct stat checkStat;
 	if(stat(path, &checkStat) == -1){
-		fprintf(stderr, RED "Path \"%s\" does not exist\n" RESET, path);
+		PRINT_FORMAT_ERROR(RED "Path \"%s\" does not exist\n" RESET, path);
 		return HAD_ERROR;
 	}
 
 	if(S_ISDIR(checkStat.st_mode) == NOT_A_DIR) {
-		fprintf(stderr, RED "Path \"%s\" is not a directory\n" RESET, path);
+		PRINT_FORMAT_ERROR(RED "Path \"%s\" is not a directory\n" RESET, path);
 		return HAD_ERROR;
 	}
 
 	//checks if the effective user id matches the directory
 	if(geteuid() != checkStat.st_uid){
-		fprintf(stderr, RED "The user does not own the directory \"%s\"\n" RESET, path);
+		PRINT_FORMAT_ERROR(RED "The user does not own the directory \"%s\"\n" RESET, path);
 		return HAD_ERROR;
 	}
 
 	//S_I*USR only checks if user bits are set
 	//this does not check if the user owns it hence the check above
 	if((checkStat.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR)) != (S_IRUSR | S_IWUSR | S_IXUSR)) {
-		fprintf(stderr, RED "Directory \"%s\" needs read, write, and execution privledges" RESET, path);
+		PRINT_FORMAT_ERROR(RED "Directory \"%s\" needs read, write, and execution privledges" RESET, path);
 		return HAD_ERROR;
 	}
 
@@ -124,7 +124,7 @@ dirent openDir(const char* dir_name){
     //Plus the user may want a symlink to a directory in the file.
     struct stat dir_stat = {0};
     if(stat(dir_name, &dir_stat) != 0){
-        fprintf(stderr, "Couldn't get dir information\n");
+        PRINT_FORMAT_ERROR("Couldn't get dir information\n");
         return NULL;
     }
 
@@ -133,10 +133,10 @@ dirent openDir(const char* dir_name){
     if(S_ISDIR(dir_stat.st_mode)){
         open_file = fopen(file_name, "r");
         if(open_file == NULL){
-            fprintf(stderr, "Failed to open file: %s", file_name);
+            PRINT_FORMAT_ERROR("Failed to open file: %s", file_name);
         }
     }else{
-        fprintf(stderr, "File name given is not a regular file: %s", file_name);
+        PRINT_FORMAT_ERROR("File name given is not a regular file: %s", file_name);
     }
 
     return open_file;
@@ -153,12 +153,12 @@ int checkIsDir(const char* dir_name){
     //once again dont' care if it's a link
     struct stat dir_stat = {0};
     if(stat(dir_name, &dir_stat) != 0){
-        fprintf(stderr, "Couldn't get directory information\n");
+        PRINT_FORMAT_ERROR("Couldn't get directory information\n");
         return -1;
     }
 
     if(!S_ISDIR(dir_stat.st_mode)){
-        fprintf(stderr, "Directory path given is not a directory: %s", dir_name);
+        PRINT_FORMAT_ERROR("Directory path given is not a directory: %s", dir_name);
         return -1;
     }
 
@@ -172,7 +172,7 @@ void openDir(const char* dir_path, DIR** stream_result){
 
     DIR* dir_stream = opendir(dir_path);
     if(dir_stream == NULL){
-        fprintf(stderr, "Failed to open directory: %s\n", dir_path);
+        PRINT_FORMAT_ERROR("Failed to open directory: %s\n", dir_path);
         *stream_result = NULL;
     }else{
         *stream_result = dir_stream;
@@ -183,27 +183,90 @@ FILE* openFile(const char* file_name, const char* mode){
     assert(file_name != NULL || file_name[0] != '\0');
     assert(mode != NULL || mode[0] != '\0');
 
+    FILE* open_file = fopen(file_name, mode);
+    if(open_file == NULL){
+        PRINT_FORMAT_ERROR("Failed to open file: %s", file_name);
+        goto error_no_open;
+    }
+
+    int fd = fileno(open_file);
+    if(fd < 0){
+        PRINT_FORMAT_ERROR("Failed to get descriptor of file: %s", file_name);
+        goto error_did_open;
+    }
+
+
     struct stat file_stat = {0};
-    if(stat(file_name, &file_stat) != 0){
-        fprintf(stderr, "Couldn't get file information on %s\n", file_name);
-        return NULL;
+    if(fstat(fd, &file_stat) != 0){
+        PRINT_FORMAT_ERROR("Couldn't get file information on %s\n", file_name);
+        goto error_did_open;
     }
 
     //Directories can be opened with fopen without returning NULL
-    FILE* open_file = NULL;
     if(S_ISREG(file_stat.st_mode)){
-        open_file = fopen(file_name, mode);
-        if(open_file == NULL){
-            fprintf(stderr, "Failed to open file: %s", file_name);
-        }
+        goto success;
     }else{
-        fprintf(stderr, "File name given is not a regular file: %s", file_name);
+        PRINT_FORMAT_ERROR("File name given is not a regular file: %s", file_name);
+        goto error_did_open;
     }
 
-    return open_file;
+    error_did_open:
+        fclose(open_file);
+
+    error_no_open:
+        return NULL;
+
+    success:
+        return open_file;
 }
 
-int setConfigDest(int config, const DirInfoArray* dir_infos){
+/*
+int setConfigDest(int config, const RootInfoArray* dir_infos){
+    assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
+    assert(dir_infos != NULL);
+    assert(dir_infos->dir_entries != NULL);
+    assert(dir_infos->length != 0);
+
+    char* config_path = "";
+    switch(config){
+        case AUDIO_CONFIG: config_path = AUDIO_CONFIG_PATH; break;
+        case VIDEO_CONFIG: config_path = VIDEO_CONFIG_PATH; break;
+        case COVER_CONFIG: config_path = COVER_CONFIG_PATH; break;
+    }
+
+    sqlite3* database = NULL;
+    if(sqlite3_open(CONFIG_DATABASE, &database) != SQLITE_OK){
+        PRINT_ERROR("Could not open database for configs.\nNo settings have been changed");
+        return -1;
+    }
+
+    //ensure that string is nul terminated
+    sqlite3_stmt* statement = NULL;
+    for(int i = 0; i < dir_infos->length; ++i){
+        RootInfo* entry = &dir_infos->dir_entries[i];
+        if(sqlite3_prepare_v2(database, "INSERT INTO ? VALUES(?, ?, ?)", -1, &statement, NULL) != SQLITE_OK){
+
+        }
+
+        sqlite3_bind_text();
+        sqlite3_bind_int();
+        sqlite3_bind_int();
+        sqlite3_step();
+        sqlite3_finalize();
+
+        if(fprintf(config_file, "%.*s,%d\n", entry->name_length, entry->root_name, entry->depth) < 0){
+            PRINT_FORMAT_ERROR("Encountered an error while rewriting %s.\nData has been lost.", config_path);
+            return -1;
+        }
+    }
+
+    fclose(config_file);
+    return 0;
+}
+*/
+
+/*
+int setConfigDest(int config, const RootInfoArray* dir_infos){
     assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
     assert(dir_infos != NULL);
     assert(dir_infos->dir_entries != NULL);
@@ -218,14 +281,17 @@ int setConfigDest(int config, const DirInfoArray* dir_infos){
 
     FILE* config_file = openFile(config_path, "w");
     if(config_file == NULL){
-        fprintf(stderr, RED"Failed to open config file: %s.\nNo settings have been overwritten."RESET, config_path);
+        PRINT_FORMAT_ERROR("Failed to open config file: %s.\nNo settings have been overwritten.", config_path);
         return -1;
     }
 
     //ensure that string is nul terminated
     for(int i = 0; i < dir_infos->length; ++i){
-        if(fprintf(config_file, "%s,%d\n", dir_infos->dir_entries[i].root_name, dir_infos->dir_entries[i].depth) < 0){
-            fprintf(stderr, "Encountered an error while rewriting the audio config file.\nData has been lost.");
+        RootInfo* entry = &dir_infos->dir_entries[i];
+        //probably figure out how to make it so it doesn't lose data
+        //maybe make a temp file first then later rename to config file
+        if(fprintf(config_file, "%.*s,%d\n", entry->name_length, entry->root_name, entry->depth) < 0){
+            PRINT_FORMAT_ERROR("Encountered an error while rewriting %s.\nData has been lost.", config_path);
             return -1;
         }
     }
@@ -233,8 +299,10 @@ int setConfigDest(int config, const DirInfoArray* dir_infos){
     fclose(config_file);
     return 0;
 }
+*/
 
-int readConfig(int config, DirInfoArray* dir_array){
+/*
+int readConfig(int config, RootInfoArray* dir_array){
     assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
     assert(dir_array != NULL);
     assert(dir_array->dir_entries == NULL);
@@ -249,15 +317,41 @@ int readConfig(int config, DirInfoArray* dir_array){
 
     FILE* config_file = openFile(config_path, "r");
     if(config_file == NULL){
-        fprintf(stderr, RED"Failed to open config file: %s.\nNo settings have been overwritten.\n"RESET, config_path);
+        PRINT_FORMAT_ERROR("Failed to open config file: %s.", config_path);
         return -1;
     }
 
-    char buffer [267] = "";
-    while(fgets(buffer, 267, config_file)){
-        //find new line and set to proper position file pointer
-        appendEntry(dir_array, buffer);
+    char buffer [CONFIG_BUFFER] = "";
+    //length is determined in appendRootEntry
+    (void)exactInput(config_file, buffer, CONFIG_BUFFER);
+    if(appendRootEntry(dir_array, buffer) != 0){
+        PRINT_FORMAT_ERROR("Entry %s in file %s had an issue", buffer, config_path);
+        return HAD_ERROR;
     }
 
     return 0;
 }
+*/
+
+/*
+void listConfig(int config){
+
+    char* config_path = "";
+    switch(config){
+        case AUDIO_CONFIG: config_path = AUDIO_CONFIG_PATH; break;
+        case VIDEO_CONFIG: config_path = VIDEO_CONFIG_PATH; break;
+        case COVER_CONFIG: config_path = COVER_CONFIG_PATH; break;
+    }
+
+    FILE* config_file = openFile(config_path, "r");
+    if(config_file == NULL){
+        PRINT_FORMAT_ERROR("Failed to open config file: %s.", config_path);
+    }
+
+    char buffer [CONFIG_BUFFER] = "";
+    while(exactInput(config_file, buffer, CONFIG_BUFFER)){
+        printf("%s\n", buffer);
+        //probably some code to print paths too for depth
+    }
+}
+*/

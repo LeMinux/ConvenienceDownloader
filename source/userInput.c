@@ -32,7 +32,6 @@ int exactInput(FILE* stream, char* dest, int length){
 		return length - 1;
 	}else{
 		*newLinePos = '\0';
-		//returns the length in a constant time since the end is already known
 		return (int)(newLinePos - dest);
 	}
 }
@@ -179,7 +178,8 @@ int askToRepeat(void){
 	return HAD_ERROR;
 }
 
-int appendEntry(DirInfoArray* entry_array, const char* new_entry){
+/*
+int appendRootEntry(RootInfoArray* entry_array, const char* new_entry){
     assert(entry_array != NULL);
     assert(new_entry != NULL);
     assert(entry_array->length >= 0);
@@ -217,7 +217,7 @@ int appendEntry(DirInfoArray* entry_array, const char* new_entry){
         return HAD_ERROR;
     }
 
-    entry_array->dir_entries = realloc(entry_array->dir_entries, sizeof(DirInfo) * (entry_array->length + 1));
+    entry_array->dir_entries = realloc(entry_array->dir_entries, sizeof(RootInfo) * (entry_array->length + 1));
     if(entry_array->dir_entries == NULL){
         fprintf(stderr, "Not enough memory\n");
         return HAD_ERROR;
@@ -236,6 +236,34 @@ int appendEntry(DirInfoArray* entry_array, const char* new_entry){
     ++entry_array->length;
 
     return NO_ERROR;
+}
+*/
+
+enum CONFIG getConfigToEdit(const char* input){
+    assert(input != NULL);
+
+    size_t input_length = strlen(input);
+    if(input_length == 1){
+        switch(*input){
+            case 'A': case 'a': return AUDIO_CONFIG; break;
+            case 'V': case 'v': return VIDEO_CONFIG; break;
+            case 'C': case 'c': return COVER_CONFIG; break;
+            case 'B': case 'b': return BLACK_CONFIG; break;
+            default: return -1; break;
+        }
+    }else if(input_length == OPTION_LEN){
+        if(strcasecmp(input, AUDIO_STRING) == 0){
+            return AUDIO_CONFIG;
+        }else if(strcasecmp(input, VIDEO_STRING) == 0){
+            return VIDEO_CONFIG;
+        }else if(strcasecmp(input, COVER_STRING) == 0){
+            return COVER_CONFIG;
+        }else{
+            return -1;
+        }
+    }else{
+        return -1;
+    }
 }
 
 /*
