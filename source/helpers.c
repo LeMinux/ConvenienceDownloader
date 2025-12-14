@@ -1,10 +1,13 @@
 #include "../includes/helpers.h"
 
+/*
 void printAndExit(int code, const char* message){
 	(void)fprintf(stderr, PNT_RED"%s\n"PNT_RESET, message);
 	exit(code);
 }
+*/
 
+/*
 //surrounds a string in quotes
 //simplifies needing to do this\ is\ a\ test
 //single quotes could be used, but they can not escape characters
@@ -42,3 +45,4 @@ char* surroundInQuotes(const char* surround){
 	newString[length] = '\0';
 	return newString;
 }
+*/
