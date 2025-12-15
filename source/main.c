@@ -33,19 +33,19 @@ int main(int argc, char** argv){
     int edit_choice  = -1;
     while(parsing){
         int option_index = 0;
-        static const char short_options [] = "lhvf:c:a:o:";
+        static const char short_options [] = "dhlrvc:e:f:";
         static const struct option long_options [] = {
+            {"deep-list", no_argument, NULL, 'd'},
+            {"help", no_argument, NULL, 'h'},
             {"list", no_argument, NULL, 'l'},
             //{"ll", no_argument, NULL, 'd'},
-            {"deep-list", no_argument, NULL, 'd'},
-            {"file", required_argument, NULL, 'f'},
-            {"cover", required_argument, NULL, 'c'},
             //{"write-audio", required_argument, NULL, 'a'},
             //{"write-video", required_argument, NULL, 'o'},
-            {"help", no_argument, NULL, 'h'},
-            {"version", no_argument, NULL, 'v'},
-            {"edit", required_argument, NULL, 'e'},
             {"refresh", no_argument, NULL, 'r'},
+            {"version", no_argument, NULL, 'v'},
+            {"cover", required_argument, NULL, 'c'},
+            {"edit", required_argument, NULL, 'e'},
+            {"file", required_argument, NULL, 'f'},
             {0, 0, 0, 0} //last struct must be zeros
         };
 
@@ -150,9 +150,9 @@ int main(int argc, char** argv){
                     "-l, --list\t\t\tPrint all your root paths from your config\n"
                     "-d, --deep-list\t\t\tPrint all potential destinations based on your config\n"
                     "-f, --file [FILE]\t\t\tSpecify a file with youtube URLs separated by newlines\n"
-                    //"-r, --refresh\t\t\tTell the configuration database to check stored paths"
-                    "-e, --edit \t\t\t[(a)udio, (v)ideo, (c)over, (b)lack] edit your destinations for the specified type. Short hand a, v, and c can be used",
-                    //"-c, --cover=COVER\t\tSpecify what cover art to use or pass NO-ART to enforce adding no art\n"
+                    "-r, --refresh\t\t\tTell the configuration database to check stored paths"
+                    "-e, --edit \t\t\t[(a)udio, (v)ideo, (c)over, (b)lack] edit your destinations for the specified type. Short hand a, v, and c can be used"
+                    "-c, --cover=COVER\t\tSpecify what cover art to use or pass NO-ART to enforce adding no art\n",
                     //"-a, --write-audio=PATH,DEPTH\tSpecify what file paths to save audio to and their depths. Only giving the path without a depth will default to infinite depth.\n"
                     //"-o, --write-video=PATH,DEPTH\tSpecify what file paths to save video to and their depths. Only giving the path without a depth will default to infinite depth.\n",
                     argv[0]
