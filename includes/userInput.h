@@ -72,7 +72,7 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
 *
 *	return: returns how much was read excluding nul byte
 */
-int exactInput(FILE* stream, char* dest, int buffer);
+int exactInput(FILE* stream, char* dest, size_t length);
 
 /*
 *	helper method to read a line in a file of an unknown length

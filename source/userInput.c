@@ -20,10 +20,13 @@ static void clearLine(FILE* stream){
 	}
 }
 
-int exactInput(FILE* stream, char* dest, int length){
+int exactInput(FILE* stream, char* dest, size_t length){
+    assert(stream != NULL);
+    assert(dest != NULL);
+
 	if(fgets(dest, length, stream) == NULL && ferror(stream)){
 		PRINT_ERROR("Encountered a stream error while reading the file/stream");
-		exit(EXIT_FAILURE);
+        return HAD_ERROR;
 	}
 
 	char* newLinePos = strchr(dest, '\n');
