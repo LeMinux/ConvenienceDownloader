@@ -1,3 +1,10 @@
+# Secure Branch
+
+Originally the intention was to make this more secure by removing some stuff like usage of system() and avoiding needing to escape strings.
+As I went into it, there was so much to change that I am basically changing the implementation completely to make things more readable and make more sense.
+I guess these are the faults of changing your first actual C program :P.
+As of right now this branch is a mess since I haven't really done any testing yet since I want to get basic implementation down first.
+
 # ConvenienceDownloader
 C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and more beneficial to download from youtube. First it downloads the video into the current directory then converts to .mp3 for later transfering and moves the .mp4 into the specified directory.
 
@@ -5,66 +12,52 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
   - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./download.out or make run will then ask for you to specify where to send video, audio, and cover art files.
 
 ## Usage
-  - default   
+  - default
 
     Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading. The user is also prompted each time per URL where to send MP4 and MP3 files. This will also download the youtube thumbnail and place it as a cover art.
-    
-  - -l
 
-     List available directories as specified by the given parent directory in Destinations.    
-    During execution of the program the same list of available directories will be specified also.
-    
-  - -f 
+  - -c, --cover \[\<Path to cover art\>\ | NO-ART]
 
-    This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. Separate the list by newlines of youtube URLs, .mp3 file paths, and tags. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.
+    Specify if you want to your cover art image or don't add any cover art to MP3 files.
+    To specify you don't want to add art make the argument NO-ART instead of a file path.
 
-    These tags are
-    -  ![3,4,c]> <new directory path that exists when you use the -l flag>
-        - 3 to change where to send audio
-        - 4 to change where to send video
-        - c to change where to send cover arts
-    -  !s> [3, 4, or c]
-        - 3 is to skip downloading audio
-        - 4 is to skip downloading video
-        - c is to skip cover arts
+  - -d, --deep-list
 
-      ```Ex: !3>Music/Wacky/```
+    List every root path and depth and their associated child paths for every configuration.
 
-      ```Ex: !3>Music/Wacky```
+  - -e, --edit \[video, audio, cover, black?\]
 
-      ```Ex: !s>4```
+    Modify one of the configuration of paths for those kind of files.
+    - video modifies paths for MP4s.
+    - audio modifies paths of MP3s.
+    - cover modifies paths for cover arts
+    - black modifies what paths you have blacklisted 
 
-    **The write to destination flags (-w4, -w3, -wc) specified below are for providing root directories for the program to scan through. You can specify multiple, but you can only use one of these flags at a time and must separate each root path with a space when using the command.**
-    ```Ex: <executable> -w4 Music/Loud/ ../Funny/```
-    NOT
-    ```<executable> -w4 Music/Loud ../Funny/ -w3 Music/Smaller.```
+    A menu is given which gives you the option to add, update, or delete directory paths.
+    Selection is done by giving the numeric index.
 
-  - -w4
+  - -f, --file
 
-    Used to specify the parent directory(s) on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../
-    
-  - -w3
+    The file flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. Separate the list by newlines of youtube URLs, .mp3 file paths, and tags. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.
 
-    Used to specify the parent directory(s) on where to send MP3(audio) files.
-    
-  - -wc  
+  - -h, --help
 
-     Used to specify the parent directory(s) on where to send cover arts
-    
-  - -ca
+    List the help menu
 
-    Used to write cover art to MP3 files. 
-    
-    This will overwrite the original files specified in the file given unless it is NO-ART.
-    
-    If this flag is combined with the -f flag it will add the cover art to each entry.
-    
-    Passing in "NO-ART" will just download the .mp3 file with no cover art. MP3 files that already have cover arts will not be affected by this option.
-- --keep-art (not implemented yet)
+  - -l, --list
 
-    Use this option if you want to keep the cover art downloaded. By default cover arts will not be kept, so use this to keep them.
-    Note that you can not keep cover arts and specify a cover art to use since these conflict with each other.
-    
+    List the root paths and their depth for every configuration.
+
+  - -r, --refresh
+
+    Not entirely sold on this yet, but the idea is that when this is implemented you would refresh the database when you make changes like deleting a path without using -e.
+
+  - -v, --version
+
+   Print the version number
+
+
+
     ## Example Usage
   
   -```./download.out -f listOfURLs.txt``` downloads all urls in that list to where the user specifies during execution. This does not prompt per entry in the list. This also downloads the youtube thumbnail and places it into the .mp3.
@@ -77,7 +70,8 @@ C program that uses yt-dlp, grep, and ffmpeg to make it less time consuming and 
 
   -```./download.out``` Downloads the youtube video and its thumbnail. The thumbnail is then added as a cover art to the .mp3. This is great for downloading unrelated videos and having .mp3 with their thumbnail.
 
-  ## Features
-  - You are able to skip downloading videos or audios, but depending on what you choose you can only opt out of certain ones. For example if you choose to add cover art you can not skip downloading audio files since the purpose of this flag is to add cover art to them, but you can skip downloading videos.
-  - Now can choose directories that are deeper than one in. For now you will have to type the entire path.
-  - You can use relative paths as long as you execute within the directory the executable is in. Ex: ../Music/Bangers instead of /home/User/Music/Bangers.
+## Features
+
+Thinking about making it so meta data is added automatically to files like the artist and maybe genre.
+If not automatic then using a file with some tags would work.
+
