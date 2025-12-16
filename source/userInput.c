@@ -29,7 +29,15 @@ int exactInput(FILE* stream, char* dest, size_t length){
         return HAD_ERROR;
 	}
 
-	char* newLinePos = strchr(dest, '\n');
+    //fgets is nul terminating
+    if(feof(stream)){
+        return strlen(dest);
+    }
+
+    //apparently memrchr isn't standard?
+    //It would search in reverse where \n would likely be first.
+    //Not the biggest deal just really annoying
+    char* newLinePos = memchr(dest, '\n', length);
 	if(newLinePos == NULL){
 		clearLine(stream);
 		return length - 1;
@@ -87,9 +95,9 @@ void getURL(char ret [YT_URL_INPUT_SIZE]){
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
 		if(exactInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1){
-			(void)printf(PNT_RED"URL is too short! It should look like %s[11 chars]\n"PNT_RESET, YOUTUBE_URL);
+            PRINT_ERROR("URL is too short! It should look like %s[11 chars]\n");
 		}else if(strstr(ret, YOUTUBE_URL) == NULL){
-				puts(PNT_RED"This is not a youtubeURL!"PNT_RESET);
+            PRINT_ERROR("This is not a youtubeURL!");
 		}else{
 			return;
 		}
@@ -151,7 +159,8 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 		exit(EXIT_FAILURE);
 	}
 	(void)snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
-	(void)printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
+    puts(downloadCommand);
+	//(void)printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
 	int retVal = NO_ERROR;
 	if(system(downloadCommand) > 0){
 		PRINT_ERROR(DOWNLOAD_FAIL_MSG);
