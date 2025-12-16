@@ -1,0 +1,27 @@
+#ifndef USER_INPUT_TESTING_H
+#define USER_INPUT_TESTING_H
+
+#include "../testGlobals.h"
+#include "../../includes/userInput.h"
+
+//Testing the differences in streams like stdin vs a file isn't necessary
+//They are both FILE* streams, and testing OS nuance isn't needed.
+//There are of course differences like how you can't ftell or fseek if it's a buffered stream
+
+//simulates reading from a user
+void testExactInputExactBoundWithNewline(void** state);
+void testExactInputLessThanBoundWithNewline(void** state);
+void testExactInputGreaterThanBoundWithNewline(void** state);
+void testExactInputClearsLineWithNewline(void** state);
+
+//simulates reading a file where it reaches EOF
+void testExactInputExactBoundWithoutNewline(void** state);
+void testExactInputLessThanBoundWithoutNewline(void** state);
+void testExactInputGreaterThanBoundWithoutNewline(void** state);
+void testExactInputClearsLineWithoutNewline(void** state);
+
+void testExactInputJustNewline(void** state);
+void testExactInputEmptyInput(void** state);
+void testExactInputNewlineAtExact(void** state);
+
+#endif
