@@ -24,4 +24,8 @@ void testExactInputJustNewline(void** state);
 void testExactInputEmptyInput(void** state);
 void testExactInputNewlineAtExact(void** state);
 
+void testExactInputMultipleLinesExactBound(void** state);
+void testExactInputMultipleLinesBelowBound(void** state);
+void testExactInputMultipleLinesAboveBound(void** state);
+
 #endif

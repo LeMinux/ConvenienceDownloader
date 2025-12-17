@@ -43,6 +43,7 @@ void testExactInputExactBoundWithNewline(void** state){
     assert_null(strchr(dest, '\n'));
     assert_int_equal(amount_written, 20);
     assert_true(dest[20] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
 }
 
 void testExactInputExactBoundWithoutNewline(void** state){
@@ -57,6 +58,7 @@ void testExactInputExactBoundWithoutNewline(void** state){
 
     assert_int_equal(amount_written, 20);
     assert_true(dest[20] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
 }
 
 void testExactInputNewlineAtExact(void** state){
@@ -72,6 +74,7 @@ void testExactInputNewlineAtExact(void** state){
     assert_null(strchr(dest, '\n'));
     assert_int_equal(amount_written, 19);
     assert_true(dest[19] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAA");
 }
 
 void testExactInputLessThanBoundWithNewline(void** state){
@@ -87,6 +90,7 @@ void testExactInputLessThanBoundWithNewline(void** state){
     assert_null(strchr(dest, '\n'));
     assert_int_equal(amount_written, 10);
     assert_true(dest[10] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAA");
 }
 
 void testExactInputLessThanBoundWithoutNewline(void** state){
@@ -101,6 +105,7 @@ void testExactInputLessThanBoundWithoutNewline(void** state){
 
     assert_int_equal(amount_written, 15);
     assert_true(dest[15] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAAAAAAA");
 }
 
 void testExactInputGreaterThanBoundWithNewline(void** state){
@@ -116,6 +121,7 @@ void testExactInputGreaterThanBoundWithNewline(void** state){
     assert_null(strchr(dest, '\n'));
     assert_int_equal(amount_written, 20);
     assert_true(dest[20] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
 }
 
 void testExactInputGreaterThanBoundWithoutNewline(void** state){
@@ -130,6 +136,7 @@ void testExactInputGreaterThanBoundWithoutNewline(void** state){
 
     assert_int_equal(amount_written, 20);
     assert_true(dest[20] == '\0');
+    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
 }
 
 void testExactInputClearsLineWithNewline(void** state){
@@ -191,3 +198,72 @@ void testExactInputEmptyInput(void** state){
     assert_int_equal(amount_written, 0);
     assert_true(dest[0] == '\0');
 }
+
+void testExactInputMultipleLinesExactBound(void** state){
+    (void) state;
+    char input_text [] = "AAAAAAAAAAAAAAAAAAAA\nBBBBBBBBBBBBBBBBBBBB\nCCCCCCCCCCCCCCCCCCCC\n";
+    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
+
+    char dest [21] = "";
+    for(int i = 0; i < 3; ++i){
+        char check_equal [sizeof(dest)];
+        memset(check_equal, 'A' + i, sizeof(dest) - 1);
+        check_equal[sizeof(dest) - 1] = '\0';
+
+        int amount_written = exactInput(input_stream, dest, sizeof(dest));
+
+        assert_null(strchr(dest, '\n'));
+        assert_int_equal(amount_written, 20);
+        assert_true(dest[20] == '\0');
+        assert_string_equal(dest, check_equal);
+    }
+
+    closeMemFile(input_stream);
+}
+
+void testExactInputMultipleLinesBelowBound(void** state){
+    (void) state;
+    char input_text [] = "AAAAAAAAAA\nBBBBBBBBBB\nCCCCCCCCCC\n";
+    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
+
+    char dest [21] = "";
+    for(int i = 0; i < 3; ++i){
+        char check_equal [11];
+        memset(check_equal, 'A' + i, 10);
+        check_equal[10] = '\0';
+
+        int amount_written = exactInput(input_stream, dest, sizeof(dest));
+
+        assert_null(strchr(dest, '\n'));
+        assert_int_equal(amount_written, 10);
+        assert_true(dest[20] == '\0');
+        assert_string_equal(dest, check_equal);
+    }
+
+    closeMemFile(input_stream);
+}
+
+void testExactInputMultipleLinesAboveBound(void** state){
+    (void) state;
+    char input_text [] = "AAAAAAAAAAAAAAAAAAAAAAAAA\nBBBBBBBBBBBBBBBBBBBBBBBBB\nCCCCCCCCCCCCCCCCCCCCCCCCC\n";
+    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
+
+    char dest [21] = "";
+    for(int i = 0; i < 3; ++i){
+        char check_equal [sizeof(dest)];
+        memset(check_equal, 'A' + i, sizeof(dest) - 1);
+        check_equal[sizeof(dest) - 1] = '\0';
+
+        int amount_written = exactInput(input_stream, dest, sizeof(dest));
+
+        assert_null(strchr(dest, '\n'));
+        assert_int_equal(amount_written, 20);
+        assert_true(dest[20] == '\0');
+        assert_string_equal(dest, check_equal);
+    }
+
+    closeMemFile(input_stream);
+}
+
+
+

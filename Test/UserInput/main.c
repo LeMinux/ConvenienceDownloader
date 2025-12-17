@@ -15,6 +15,9 @@ int main(void){
         cmocka_unit_test(testExactInputJustNewline),
         cmocka_unit_test(testExactInputNewlineAtExact),
         cmocka_unit_test(testExactInputEmptyInput),
+        cmocka_unit_test(testExactInputMultipleLinesExactBound),
+        cmocka_unit_test(testExactInputMultipleLinesBelowBound),
+        cmocka_unit_test(testExactInputMultipleLinesAboveBound),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
