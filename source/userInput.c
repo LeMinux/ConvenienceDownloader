@@ -20,33 +20,38 @@ static void clearLine(FILE* stream){
 	}
 }
 
-int exactInput(FILE* stream, char* dest, size_t length){
+int boundedInput(FILE* stream, char* dest, size_t dest_size){
     assert(stream != NULL);
     assert(dest != NULL);
+    assert(dest_size > 0);
 
-	if(fgets(dest, length, stream) == NULL && ferror(stream)){
-		PRINT_ERROR("Encountered a stream error while reading the file/stream");
-        return HAD_ERROR;
-	}
+    //fgets is normally the better choice for taking user input,
+    //However, On input where it's just EOF length can't be determined if previous input wasn't overwritten
 
-    //fgets is nul terminating
-    if(feof(stream)){
-        return strlen(dest);
+    size_t amount_written = 0;
+    int data = '\0';
+    int found_end = 0;
+    while(amount_written < dest_size - 1){
+        data = getc(stream);
+        if(data == '\n' || data == EOF){
+            if(ferror(stream)){
+                PRINT_ERROR("Encountered an error reading stream for input");
+                return HAD_ERROR;
+            }
+            found_end = 1;
+            break;
+        }
+        dest[amount_written++] = data;
     }
 
-    //apparently memrchr isn't standard?
-    //It would search in reverse where \n would likely be first.
-    //Not the biggest deal just really annoying
-    char* newLinePos = memchr(dest, '\n', length);
-	if(newLinePos == NULL){
-		clearLine(stream);
-		return length - 1;
-	}else{
-		*newLinePos = '\0';
-		return (int)(newLinePos - dest);
-	}
+    if(!found_end) clearLine(stream);
+
+    dest[amount_written] = '\0';
+    return amount_written;
 }
 
+//This function isn't needed as getLine() exists
+/*
 int unknownInput(FILE* stream, char** dest){
 	char buffer[CHUNK_READ] = "";
 	size_t inputLength = 0;
@@ -87,6 +92,7 @@ int unknownInput(FILE* stream, char** dest){
 
 	return inputLength;
 }
+*/
 
 void getURL(char ret [YT_URL_INPUT_SIZE]){
 	do{
@@ -94,7 +100,7 @@ void getURL(char ret [YT_URL_INPUT_SIZE]){
 
 		//fgets is nul terminating so, clearing ret is not necessary
 		//for each invalid attempt
-		if(exactInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1){
+		if(boundedInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1){
             PRINT_ERROR("URL is too short! It should look like %s[11 chars]\n");
 		}else if(strstr(ret, YOUTUBE_URL) == NULL){
             PRINT_ERROR("This is not a youtubeURL!");
@@ -251,6 +257,7 @@ int appendRootEntry(RootInfoArray* entry_array, const char* new_entry){
 }
 */
 
+/*
 enum CONFIG getConfigToEdit(const char* input){
     assert(input != NULL);
 
@@ -277,6 +284,7 @@ enum CONFIG getConfigToEdit(const char* input){
         return -1;
     }
 }
+*/
 
 /*
 //gets from the user what directory they want to download into
@@ -298,7 +306,7 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt){
 		do{
 			printList(listOfDirs);
 			(void)printf("%s", prompt);
-		}while(exactInput(stdin, input, 101) == 0);
+		}while(boundedInput(stdin, input, 101) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
 			exit(0);
@@ -339,7 +347,7 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt){
 		do{
 			printList(listOfDirs);
 			(void)printf("%s", prompt);
-		}while(exactInput(stdin, input, 101) == 0);
+		}while(boundedInput(stdin, input, 101) == 0);
 
 		if(strcmp(input, "exit") == 0 || strcmp(input, "Exit") == 0){
 			exit(0);

@@ -1,269 +1,326 @@
 #include "./user_input_unit_test.h"
 
-static FILE* createMemFile(const char* buffer, size_t write_size){
-    FILE* temp = tmpfile();
+static void assertCorrect(char* test_text, int test_length, const char* act_text, int act_bound, int exp_bound){
 
-    if(temp == NULL){
-        fprintf(stderr, "Could not create temporary file for testing\n");
-        return NULL;
+    if(test_text[test_length - 1] == '\n'){
+        assert_null(strchr(act_text, '\n'));
     }
 
+    assert_int_equal(act_bound, exp_bound);
+    assert_true(act_text[act_bound] == '\0');
+
+    test_text[exp_bound] = '\0';
+    assert_string_equal(act_text, test_text);
+}
+
+static void writeData(const char* init_text, size_t init_size, FILE* file){
     //fwrite returns how many objects were successful
     //in this case it's one object of write_amount bytes
     //-1 since we don't need the nul byte in there
-    if(fwrite(buffer, write_size - 1, 1, temp) != 1){
-        fprintf(stderr, "Didn't write proper length of content to temporary file \n");
-        return NULL;
+    if(fwrite(init_text, init_size - 1, 1, file) != 1){
+        fail_msg("Didn't write proper length of content to temporary file \n");
     }
 
-    (void)fflush(temp);
+    (void)fflush(file);
 
-    if(fseek(temp, 0, SEEK_SET) != 0){
-        fprintf(stderr, "Temporary file could not set itself to beginning\n");
-        return NULL;
+    if(fseek(file, 0, SEEK_SET) != 0){
+        fail_msg("Temporary file could not set itself to beginning\n");
     }
-
-    return temp;
-}
-
-static void closeMemFile(FILE* temp_file){
-    (void)fclose(temp_file);
 }
 
 void testExactInputExactBoundWithNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAAA\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = sizeof(dest) - 1;
 
-    assert_null(strchr(dest, '\n'));
-    assert_int_equal(amount_written, 20);
-    assert_true(dest[20] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
 void testExactInputExactBoundWithoutNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAAAA";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = sizeof(dest) - 1;
 
-    assert_int_equal(amount_written, 20);
-    assert_true(dest[20] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
 void testExactInputNewlineAtExact(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAA\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = strlen(input_text) - 1;
 
-    assert_null(strchr(dest, '\n'));
-    assert_int_equal(amount_written, 19);
-    assert_true(dest[19] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAA");
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
 void testExactInputLessThanBoundWithNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAA\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = strlen(input_text) - 1;
 
-    assert_null(strchr(dest, '\n'));
-    assert_int_equal(amount_written, 10);
-    assert_true(dest[10] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAA");
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
 void testExactInputLessThanBoundWithoutNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAA";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = strlen(input_text);
 
-    assert_int_equal(amount_written, 15);
-    assert_true(dest[15] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAAAAAAA");
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
 void testExactInputGreaterThanBoundWithNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAAAAAAA\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = TEST_BUFFER_SIZE - 1;
 
-    assert_null(strchr(dest, '\n'));
-    assert_int_equal(amount_written, 20);
-    assert_true(dest[20] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
+
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
 void testExactInputGreaterThanBoundWithoutNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAAAAAAA";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = TEST_BUFFER_SIZE - 1;
 
-    assert_int_equal(amount_written, 20);
-    assert_true(dest[20] == '\0');
-    assert_string_equal(dest, "AAAAAAAAAAAAAAAAAAAA");
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
-void testExactInputClearsLineWithNewline(void** state){
-    (void) state;
+void testExactInputClearsLineToNewline(void** state){
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    (void)exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    assert_int_equal(ftell(input_stream), 36);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int expected_end = strlen(input_text);
 
-    closeMemFile(input_stream);
+    (void)boundedInput(test_file, dest, sizeof(dest));
+    assert_int_equal(ftell(test_file), expected_end);
 }
 
-void testExactInputClearsLineWithoutNewline(void** state){
-    (void) state;
+void testExactInputClearsLineToEOF(void** state){
+    FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    (void)exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    assert_int_equal(ftell(input_stream), 35);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int expected_end = strlen(input_text);
 
-    closeMemFile(input_stream);
+    (void)boundedInput(test_file, dest, sizeof(dest));
+    assert_int_equal(ftell(test_file), expected_end);
 }
 
 void testExactInputJustNewline(void** state){
-    (void) state;
+    FILE* test_file = *state;
     char input_text [] = "\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    closeMemFile(input_stream);
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = strlen(input_text) - 1;
 
-    assert_null(strchr(dest, '\n'));
-    assert_int_equal(amount_written, 0);
-    assert_true(dest[0] == '\0');
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
+//testing EOF
 void testExactInputEmptyInput(void** state){
-    (void) state;
-    FILE* input_stream = tmpfile();
+    FILE* test_file = *state;
+    char dest [TEST_BUFFER_SIZE] = "";
 
-    if(input_stream == NULL){
-        fprintf(stderr, "Could not create temporary file for empty testing\n");
-        fail();
-    }
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
 
-    char dest [21] = "";
-    int amount_written = exactInput(input_stream, dest, sizeof(dest));
-
-    closeMemFile(input_stream);
-
-    assert_null(strchr(dest, '\n'));
     assert_int_equal(amount_written, 0);
     assert_true(dest[0] == '\0');
 }
+
+void testExactInputEmptyInputResetsPrev(void** state){
+    FILE* test_file = *state;
+
+    char dest [TEST_BUFFER_SIZE] = "AAA";
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+
+    assert_int_equal(amount_written, 0);
+    assert_true(dest[0] == '\0');
+}
+
+/*
+ *
+ * It isn't necessary to test exact string comparisons here because
+ * previous tests do that given a certain bound.
+ * It can then be reasonable to say if the unit can read correctly with the bounds
+ * as long as the FILE* is stopped accordingly the expected text would be correct.
+ *
+ */
 
 void testExactInputMultipleLinesExactBound(void** state){
-    (void) state;
+    FILE* test_file = *state;
+
+    enum {size=TEST_BUFFER_SIZE};
+    enum Fp_Spots {fp1 = 21, fp2 = 42, fp3 = 63};
+
     char input_text [] = "AAAAAAAAAAAAAAAAAAAA\nBBBBBBBBBBBBBBBBBBBB\nCCCCCCCCCCCCCCCCCCCC\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
 
-    char dest [21] = "";
+    writeData(input_text, sizeof(input_text), test_file);
+
+    char dest [size] = "";
+    int expected_length = size - 1;
+    int exp_file_pos = 0;
+
     for(int i = 0; i < 3; ++i){
-        char check_equal [sizeof(dest)];
-        memset(check_equal, 'A' + i, sizeof(dest) - 1);
-        check_equal[sizeof(dest) - 1] = '\0';
+        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        exp_file_pos += size;
+        assert_int_equal(amount_written, expected_length);
+        switch(i){
+            case 0:
+                assert_int_equal(ftell(test_file), fp1);
 
-        int amount_written = exactInput(input_stream, dest, sizeof(dest));
+            break;
+            case 1:
+                assert_int_equal(ftell(test_file), fp2);
+            break;
 
-        assert_null(strchr(dest, '\n'));
-        assert_int_equal(amount_written, 20);
-        assert_true(dest[20] == '\0');
-        assert_string_equal(dest, check_equal);
+            case 2:
+                assert_int_equal(ftell(test_file), fp3);
+            break;
+        }
     }
-
-    closeMemFile(input_stream);
 }
 
 void testExactInputMultipleLinesBelowBound(void** state){
-    (void) state;
+    FILE* test_file = *state;
+    enum {size=11};
+    enum Fp_Spots {fp1 = 11, fp2 = 22, fp3 = 33};
+
     char input_text [] = "AAAAAAAAAA\nBBBBBBBBBB\nCCCCCCCCCC\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    char dest [21] = "";
+    char dest [TEST_BUFFER_SIZE] = "";
+    int expected_length = size - 1;
+    int exp_file_pos = 0;
     for(int i = 0; i < 3; ++i){
-        char check_equal [11];
-        memset(check_equal, 'A' + i, 10);
-        check_equal[10] = '\0';
+        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        exp_file_pos += size;
+        assert_int_equal(amount_written, expected_length);
+        switch(i){
+            case 0:
+                assert_int_equal(ftell(test_file), fp1);
 
-        int amount_written = exactInput(input_stream, dest, sizeof(dest));
+            break;
+            case 1:
+                assert_int_equal(ftell(test_file), fp2);
+            break;
 
-        assert_null(strchr(dest, '\n'));
-        assert_int_equal(amount_written, 10);
-        assert_true(dest[20] == '\0');
-        assert_string_equal(dest, check_equal);
+            case 2:
+                assert_int_equal(ftell(test_file), fp3);
+            break;
+        }
     }
-
-    closeMemFile(input_stream);
 }
 
 void testExactInputMultipleLinesAboveBound(void** state){
-    (void) state;
+    FILE* test_file = *state;
+    enum {size=26};
+    enum Fp_Spots {fp1 = 26, fp2 = 52, fp3 = 78};
     char input_text [] = "AAAAAAAAAAAAAAAAAAAAAAAAA\nBBBBBBBBBBBBBBBBBBBBBBBBB\nCCCCCCCCCCCCCCCCCCCCCCCCC\n";
-    FILE* input_stream = createMemFile(input_text, sizeof(input_text));
+    writeData(input_text, sizeof(input_text), test_file);
 
-    char dest [21] = "";
+    char dest [TEST_BUFFER_SIZE] = "";
+    int expected_length = sizeof(dest) - 1;
+    int exp_file_pos = 0;
     for(int i = 0; i < 3; ++i){
-        char check_equal [sizeof(dest)];
-        memset(check_equal, 'A' + i, sizeof(dest) - 1);
-        check_equal[sizeof(dest) - 1] = '\0';
+        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        exp_file_pos += size;
 
-        int amount_written = exactInput(input_stream, dest, sizeof(dest));
+        assert_int_equal(amount_written, expected_length);
+        switch(i){
+            case 0:
+                assert_int_equal(ftell(test_file), fp1);
 
-        assert_null(strchr(dest, '\n'));
-        assert_int_equal(amount_written, 20);
-        assert_true(dest[20] == '\0');
-        assert_string_equal(dest, check_equal);
+            break;
+            case 1:
+                assert_int_equal(ftell(test_file), fp2);
+            break;
+
+            case 2:
+                assert_int_equal(ftell(test_file), fp3);
+            break;
+        }
     }
-
-    closeMemFile(input_stream);
 }
 
+void testExactInputMultipleLinesMixedBound(void** state){
+    FILE* test_file = *state;
+    enum Exp_Amount {amount1 = 13, amount2 = TEST_BUFFER_SIZE - 1, amount3 = TEST_BUFFER_SIZE - 1};
+    enum Fp_Spots {fp1 = 14, fp2 = 35, fp3 = 61};
 
+    char input_text [] = "AAAAAAAAAAAAA\nBBBBBBBBBBBBBBBBBBBB\nCCCCCCCCCCCCCCCCCCCCCCCCC\n";
 
+    writeData(input_text, sizeof(input_text), test_file);
+
+    char dest [TEST_BUFFER_SIZE] = "";
+    for(int i = 0; i < 3; ++i){
+        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        switch(i){
+            case 0:
+                assert_int_equal(amount_written, amount1);
+                assert_int_equal(ftell(test_file), fp1);
+
+            break;
+            case 1:
+                assert_int_equal(amount_written, amount2);
+                assert_int_equal(ftell(test_file), fp2);
+            break;
+
+            case 2:
+                assert_int_equal(amount_written, amount3);
+                assert_int_equal(ftell(test_file), fp3);
+            break;
+        }
+    }
+}

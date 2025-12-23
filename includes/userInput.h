@@ -60,19 +60,18 @@ char* getUserChoiceForDir(const char* baseDir, const char* prompt);
 char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
 
 /*
-*	method for obtaining input from file streams where input size is known
-*	returns how many characters read for any error checking needed
-*	this excludes the count for the nul byte
-*	Uses fgets so it is gaurenteed to be nul terminating
+*	method for obtaining user input where size is bounded
+*   returns how many characters were read excluding newlines and the nul byte.
+*   The amount returned is able to be used to determine the position of the nul byte.
+*   The bound is meant for c_strings, so the bound must be at least 1 so a nul byte can be inserted at the end, and at least 2 for actual input.
 *
 *	stream: file stream which can include stdin*
 *	dest: destination string and should not be NULL
-*		NULL is not checked since if you are calling this you already can check yourself
-*	buffer: size of input expected. This should account for the nul byte
+*	buffer: size of input expected. This should account for the nul byte like you would for fgets.
 *
-*	return: returns how much was read excluding nul byte
+*	return: returns how much was read
 */
-int exactInput(FILE* stream, char* dest, size_t length);
+int boundedInput(FILE* stream, char* dest, size_t size);
 
 /*
 *	helper method to read a line in a file of an unknown length
