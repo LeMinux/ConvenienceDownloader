@@ -18,13 +18,19 @@
 #define BUFFER_SIZE 101
 #define LARGER_BUFFER_SIZE 201
 
-enum ERROR {NO_ERROR, HAD_ERROR};
+#define INF_DEPTH -1
+
+enum ERROR {NO_ERROR = 0, HAD_ERROR};
 enum CONFIG {AUDIO_CONFIG = 1, VIDEO_CONFIG, COVER_CONFIG, BLACK_CONFIG};
+enum INPUT {VALID = 0, INVALID};
 
 #define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET"\n", stderr))
+
 //If you're a NASA programmer seeing this sorry for the variadic macro.
-//Although you probably don't like the usage of dynamic memory after initalization anyway lol
-#define PRINT_FORMAT_ERROR(format_, ...) fprintf(stderr, RED format_ RESET, __VA_ARGS__)
+//Although you probably don't like the usage of dynamic memory after initalization from the printf family anyway lol
+#define PRINT_FORMAT_ERROR(format_, ...) ((void)fprintf(stderr, RED format_ RESET, __VA_ARGS__))
+
+#define ADVISE_USER(message_) ((void)puts(CYAN message_ RESET))
 
 //general failed malloc message
 #define FAILED_MALLOC_MSG "\nError MEM: Allocation of memory failed"
