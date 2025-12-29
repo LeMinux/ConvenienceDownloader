@@ -22,11 +22,13 @@ int main(void){
         cmocka_unit_test_setup_teardown(testExactInputExactBoundWithNewline, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputLessThanBoundWithNewline, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputGreaterThanBoundWithNewline, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testExactInputTakingOneCharWithNewline, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputClearsLineToNewline, createMemFile, closeMemFile),
 
         cmocka_unit_test_setup_teardown(testExactInputExactBoundWithoutNewline, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputLessThanBoundWithoutNewline, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputGreaterThanBoundWithoutNewline, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testExactInputTakingOneCharWithoutNewline, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputClearsLineToEOF, createMemFile, closeMemFile),
 
         cmocka_unit_test_setup_teardown(testExactInputJustNewline, createMemFile, closeMemFile),

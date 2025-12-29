@@ -85,6 +85,20 @@ void testExactInputLessThanBoundWithNewline(void** state){
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
+void testExactInputTakingOneCharWithNewline(void** state){
+    FILE* test_file = *state;
+    char input_text [] = "A\n";
+
+    writeData(input_text, sizeof(input_text), test_file);
+
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = strlen(input_text) - 1;
+
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
+}
+
 void testExactInputLessThanBoundWithoutNewline(void** state){
     FILE* test_file = *state;
     char input_text [] = "AAAAAAAAAAAAAAA";
@@ -123,6 +137,20 @@ void testExactInputGreaterThanBoundWithoutNewline(void** state){
     char dest [TEST_BUFFER_SIZE] = "";
     int input_length = strlen(input_text);
     int expected_length = TEST_BUFFER_SIZE - 1;
+
+    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
+}
+
+void testExactInputTakingOneCharWithoutNewline(void** state){
+    FILE* test_file = *state;
+    char input_text [] = "A";
+
+    writeData(input_text, sizeof(input_text), test_file);
+
+    char dest [TEST_BUFFER_SIZE] = "";
+    int input_length = strlen(input_text);
+    int expected_length = strlen(input_text);
 
     int amount_written = boundedInput(test_file, dest, sizeof(dest));
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);

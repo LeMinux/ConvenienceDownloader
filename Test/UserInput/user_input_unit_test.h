@@ -14,11 +14,13 @@
 void testExactInputExactBoundWithNewline(void** state);
 void testExactInputLessThanBoundWithNewline(void** state);
 void testExactInputGreaterThanBoundWithNewline(void** state);
+void testExactInputTakingOneCharWithNewline(void** state);
 
 //simulates reading a file where it reaches EOF
 void testExactInputExactBoundWithoutNewline(void** state);
 void testExactInputLessThanBoundWithoutNewline(void** state);
 void testExactInputGreaterThanBoundWithoutNewline(void** state);
+void testExactInputTakingOneCharWithoutNewline(void** state);
 
 //testing if clearing to end of line works
 void testExactInputClearsLineToNewline(void** state);
