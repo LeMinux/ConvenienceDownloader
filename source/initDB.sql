@@ -3,25 +3,27 @@
 --Root paths may also have meta data
 CREATE TABLE IF NOT EXISTS Roots(
     root_id INTEGER PRIMARY KEY,
-    config_type INTEGER CHECK (config_type IN (3, 2, 1)) NOT NULL,
+    root_type INTEGER CHECK (root_type IN (4, 3, 2, 1)) NOT NULL,
     root_name VARCHAR(4096) NOT NULL,
     root_length INTEGER CHECK (root_length > 0 AND root_length < 4096),
-    depth INTEGER CHECK (depth <= 4096 AND depth >= -1) NOT NULL
+    root_depth INTEGER CHECK (root_depth <= 4096 AND root_depth >= -1) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Paths(
     path_index INTEGER PRIMARY KEY,
     root_id INTEGER NOT NULL,
-    path VARCHAR(4096),
-    path_length INTEGER,
+    path_name VARCHAR(4096) NOT NULL,
+    path_length INTEGER CHECK (path_length > 0),
     FOREIGN KEY (root_id) REFERENCES Roots (root_id)
 );
 
+/*
 CREATE TABLE IF NOT EXISTS Blacklist(
     black_index INTEGER PRIMARY KEY,
     black_path VARCHAR(4096) NOT NULL,
     black_length INTEGER CHECK (black_length > 0 AND black_length < 4096)
 );
+*/
 
 --Consider maybe making this inside the code
 --as sqlite doesn't have direct support for variables
