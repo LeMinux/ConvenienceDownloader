@@ -6,7 +6,6 @@
 downloader
 debug
 leak
-test
 Destinations/
 objects/
 deps/

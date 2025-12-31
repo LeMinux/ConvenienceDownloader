@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS Roots(
     root_type INTEGER CHECK (root_type IN (4, 3, 2, 1)) NOT NULL,
     root_name VARCHAR(4096) NOT NULL,
     root_length INTEGER CHECK (root_length > 0 AND root_length < 4096),
-    root_depth INTEGER CHECK (root_depth <= 4096 AND root_depth >= -1) NOT NULL
+    root_depth INTEGER CHECK (root_depth <= 4096 AND root_depth >= 0 OR root_depth == -5) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Paths(
