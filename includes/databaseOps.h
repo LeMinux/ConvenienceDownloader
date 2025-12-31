@@ -27,9 +27,11 @@ enum ERROR initDatabase(void);
 */
 enum ERROR refreshDatabase(void);
 
-enum ERROR addMenu(enum CONFIG);
-enum ERROR updateMenu(enum CONFIG);
-enum ERROR deleteMenu(enum CONFIG);
+/*
+enum ERROR addMenu(enum CONFIG config_type);
+enum ERROR updateMenu(enum CONFIG config_type);
+enum ERROR deleteMenu(enum CONFIG config_type);
+*/
 
 enum ERROR findEntry(const char* entry);
 

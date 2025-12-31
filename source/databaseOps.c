@@ -28,6 +28,27 @@ static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
     return NO_ERROR;
 }
 
+static enum ERROR addMenu(enum CONFIG config_type){
+    assert(single_database_connection != NULL);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
+
+    char path_input [4096] = "";
+    int depth = 0;
+    while(takeDirectoryInput(path_input, sizeof(path_input)) != INVALID) {}
+
+    if(config_type != BLACK_CONFIG){
+        do{
+            depth = takeDepthInput();
+        }while(depth != INVALID);
+    }
+
+    addEntry(config_type, path_input, depth);
+    return NO_ERROR;
+}
+
 static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
     assert(single_database_connection != NULL);
     assert(index > 0);
@@ -97,6 +118,18 @@ static void printSectionHeader(enum CONFIG config_type){
     }
 }
 
+static enum ERROR updateMenu(enum CONFIG config_type){
+
+    return NO_ERROR;
+
+}
+
+static enum ERROR deleteMenu(enum CONFIG config_type){
+
+    return NO_ERROR;
+}
+
+
 static void translateOptionToRow(size_t user_selection){
 /*
  *SELECT *
@@ -153,30 +186,6 @@ void editMenu(enum CONFIG config){
             default: puts("Enter an available number"); break;
         }
     }
-}
-
- enum ERROR addMenu(enum CONFIG config_type){
-
-    char path_input [4096] = "";
-    int depth = 0;
-
-    takeDirectoryInput(path_input, sizeof(path_input));
-    depth = takeDepthInput();
-
-    addEntry(config_type, path_input, depth);
-
-    return NO_ERROR;
-}
-
-static enum ERROR updateMenu(enum CONFIG){
-
-    return NO_ERROR;
-
-}
-
-static enum ERROR deleteMenu(enum CONFIG){
-
-    return NO_ERROR;
 }
 
 enum ERROR findEntry(const char* entry){

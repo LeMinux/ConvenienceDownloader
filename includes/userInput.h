@@ -25,6 +25,8 @@
 #define AUDIO_STRING "audio"
 #define VIDEO_STRING "video"
 #define COVER_STRING "cover"
+#define INF_STRING "INF"
+
 #define OPTION_LEN 5
 
 #define CHUNK_READ 51
@@ -85,6 +87,16 @@ int boundedInput(FILE* stream, char* dest, size_t size);
 int unknownInput(FILE* stream, char** dest);
 
 //int appendRootEntry(RootInfoArray* entry_array, const char* new_entry);
+//
+
+enum INPUT takeDirectoryInput(char* input, size_t input_size);
+
+/*
+*   Function for taking in input for what depth a root path should have
+*
+*   return: returns a value < INT_MAX or the value of INF_DEPTH
+*/
+int takeDepthInput(void);
 
 enum CONFIG getConfigToEdit(const char* input);
 
