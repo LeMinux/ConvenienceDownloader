@@ -3,9 +3,9 @@
 
 #include <sqlite3.h>
 
-#include "helpers.h"
 #include "globals.h"
 #include "userInput.h"
+#include "databaseUserInput.h"
 
 #define ADD_OPTION 1
 #define UPT_OPTION 2

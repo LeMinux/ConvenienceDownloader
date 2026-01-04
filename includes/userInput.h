@@ -25,11 +25,10 @@
 #define AUDIO_STRING "audio"
 #define VIDEO_STRING "video"
 #define COVER_STRING "cover"
-#define INF_STRING "INF"
 
 #define OPTION_LEN 5
 
-#define CHUNK_READ 51
+//#define CHUNK_READ 51
 
 //gets the URL from the user
 //the parameter is an array of YT_URL_BUFFER size since
@@ -84,22 +83,12 @@ int boundedInput(FILE* stream, char* dest, size_t size);
 *
 *	return: returns how much was read excluding nul byte
 */
-int unknownInput(FILE* stream, char** dest);
+//int unknownInput(FILE* stream, char** dest);
 
 //int appendRootEntry(RootInfoArray* entry_array, const char* new_entry);
 //
 
-enum INPUT takeDirectoryInput(char* input, size_t input_size);
-
-/*
-*   Function for taking in input for what depth a root path should have
-*
-*   return: returns a value < INT_MAX or the value of INF_DEPTH
-*/
-int takeDepthInput(void);
 
 enum CONFIG getConfigToEdit(const char* input);
-
-
 
 #endif
