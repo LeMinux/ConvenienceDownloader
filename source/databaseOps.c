@@ -35,14 +35,12 @@ static enum ERROR addMenu(enum CONFIG config_type){
            config_type == COVER_CONFIG ||
            config_type == BLACK_CONFIG);
 
-    char path_input [4096] = "";
+    char* path_input;
     int depth = 0;
-    while(takeDirectoryInput(path_input, sizeof(path_input)) != INVALID) {}
+    while((path_input = takeDirectoryInput()) != NULL) {}
 
     if(config_type != BLACK_CONFIG){
-        do{
-            depth = takeDepthInput();
-        }while(depth != INVALID);
+        while((depth = takeDepthInput()) != INVALID);
     }
 
     addEntry(config_type, path_input, depth);
@@ -55,14 +53,13 @@ static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
     assert(new_value != NULL);
     assert(new_depth > 0 || new_depth == INF_DEPTH);
 
-    char sql_statement [100] = "";
-    snprintf(sql_statement, 100, "UPDATE FROM Roots SET root_name = ?, root_depth = ? WHERE root_id = ?");
+    char sql_statement [] = "UPDATE FROM Roots SET root_name = ?, root_depth = ? WHERE root_id = ?";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
     if(ret_code != SQLITE_OK){
-        PRINT_FORMAT_ERROR("Failed to prepare deleting %s", sqlite3_errmsg(single_database_connection));
+        PRINT_FORMAT_ERROR("Failed to prepare updating statement %s", sqlite3_errmsg(single_database_connection));
         return HAD_ERROR;
     }
 

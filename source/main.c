@@ -20,14 +20,6 @@ int main(int argc, char** argv){
     unsigned int new_audio_amount = 0;
     unsigned int new_video_amount = 0;
 
-    //array of open directory streams
-    //DIR** audio_dirs = NULL;
-    //DIR** video_dirs = NULL;
-    //RootInfoArray audio_roots = {.dir_entries = NULL, .length = 0};
-    //RootInfoArray video_roots = {.dir_entries = NULL, .length = 0};
-    //RootInfoArray cover_roots = {.dir_entries = NULL, .length = 0};
-
-
     int opt = 0;
     int parsing = 1;
     int edit_choice  = -1;
@@ -38,9 +30,6 @@ int main(int argc, char** argv){
             {"deep-list", no_argument, NULL, 'd'},
             {"help", no_argument, NULL, 'h'},
             {"list", no_argument, NULL, 'l'},
-            //{"ll", no_argument, NULL, 'd'},
-            //{"write-audio", required_argument, NULL, 'a'},
-            //{"write-video", required_argument, NULL, 'o'},
             {"refresh", no_argument, NULL, 'r'},
             {"version", no_argument, NULL, 'v'},
             {"cover", required_argument, NULL, 'c'},
@@ -58,21 +47,15 @@ int main(int argc, char** argv){
 
         switch(opt){
             case 'l':
-                listAllRoots();
+                if(listAllRoots() == HAD_ERROR){
+                    PRINT_ERROR("Sorry couldn't list root paths :(");
+                }
             break;
 
             case 'd':
-                (void)listAllRootWithPaths();
-                /*
-                (void)puts("v list of all MP4 destinations");
-                (void)listAllRootWithPaths(VIDEO_CONFIG);
-
-                (void)puts("v list of all MP3 destinations");
-                (void)listAllRootWithPaths(AUDIO_CONFIG);
-
-                (void)puts("v list of all cover art destinations");
-                (void)listAllRootWithPaths(COVER_CONFIG);
-                */
+                if(listAllRootWithPaths() == HAD_ERROR){
+                    PRINT_ERROR("Sorry couldn't list all paths :(");
+                }
             break;
 
             case 'f':
@@ -114,35 +97,6 @@ int main(int argc, char** argv){
                 refreshDatabase();
             break;
 
-            //getopt doesn't really have a way to accept multiple arguments for one option.
-            //There is a way by looping through optind, but it risks missing directories
-            //that start with '-' since any amount of arguments can be given for this.
-            //There may also be issues if -a and -o are combined together since
-            //both arguments would be in optind without a way to distinguish.
-            /*
-            case 'a':
-                if(appendRootEntry(&audio_roots, optarg) != 0){
-                    fprintf(stderr, "Audio config has not been overwritten.\n");
-                    exit(EXIT_FAILURE);
-                }
-            break;
-
-            case 'o':
-                if(appendRootEntry(&video_roots, optarg) != 0){
-                    fprintf(stderr, "Video config has not been overwritten.\n");
-                    exit(EXIT_FAILURE);
-                }
-            break;
-
-            //NOT IMPELEMTNED
-            case 'r':
-                if(appendRootEntry(&cover_roots, optarg) != 0){
-                    fprintf(stderr, "Cover config has not been overwritten.\n");
-                    exit(EXIT_FAILURE);
-                }
-            break;
-            */
-
             case 'h':
                 printf("Usage: %s [OPTIONS]\n\nOptions\n"
                     "-h, --help\t\t\tPrint this help menu :D\n"
@@ -150,7 +104,7 @@ int main(int argc, char** argv){
                     "-l, --list\t\t\tPrint all your root paths from your config\n"
                     "-d, --deep-list\t\t\tPrint all potential destinations based on your config\n"
                     "-f, --file [FILE]\t\t\tSpecify a file with youtube URLs separated by newlines\n"
-                    "-r, --refresh\t\t\tTell the configuration database to check stored paths"
+                    "-r, --refresh\t\t\tTell the database to scan through its root paths to remove or add entries."
                     "-e, --edit \t\t\t[(a)udio, (v)ideo, (c)over, (b)lack] edit your destinations for the specified type. Short hand a, v, and c can be used"
                     "-c, --cover=COVER\t\tSpecify what cover art to use or pass NO-ART to enforce adding no art\n",
                     //"-a, --write-audio=PATH,DEPTH\tSpecify what file paths to save audio to and their depths. Only giving the path without a depth will default to infinite depth.\n"
@@ -172,50 +126,6 @@ int main(int argc, char** argv){
     } //end of arg parsing
     
     puts("Finished parsing");
-
-    /*
-    if(audio_roots.length > 0){
-        if(setConfigDest(AUDIO_CONFIG, &audio_roots) != 0){
-            PRINT_ERROR("Failed to set audio destinations. Make sure paths are valid");
-            exit(EXIT_FAILURE);
-        }
-    }else{
-        if(readConfig(AUDIO_CONFIG, &audio_roots) != 0){
-            PRINT_ERROR("Error in reading audio config.");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if(video_roots.length > 0){
-        if(setConfigDest(VIDEO_CONFIG, &video_roots) != 0){
-            PRINT_ERROR("Failed to set video destinations");
-            exit(EXIT_FAILURE);
-        }
-    }else{
-        if(readConfig(VIDEO_CONFIG, &audio_roots) != 0){
-            PRINT_ERROR("Error in reading video config.");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if(cover_roots.length > 0){
-        if(setConfigDest(VIDEO_CONFIG, &video_roots) != 0){
-            PRINT_ERROR("Failed to set video destinations. Make sure paths are valid");
-            exit(EXIT_FAILURE);
-        }
-    }else{
-        if(readConfig(VIDEO_CONFIG, &audio_roots) != 0){
-            PRINT_ERROR("Error in reading video config. Make sure paths are valid");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    DirOptionArray* audio_options = buildDirOptions(&audio_roots);
-    DirOptionArray* video_options = buildDirOptions(&video_roots);
-    DirOptionArray* cover_options = buildDirOptions(&cover_roots);
-    */
-
-    //free rootInfos?
 
     if(url_list == NULL){
         //execute_no_list();

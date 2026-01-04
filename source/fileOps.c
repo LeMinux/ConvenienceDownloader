@@ -166,6 +166,7 @@ int checkIsDir(const char* dir_name){
 }
 */
 
+/*
 void openDir(const char* dir_path, DIR** stream_result){
     assert(dir_path != NULL);
     assert(stream_result != NULL);
@@ -178,15 +179,33 @@ void openDir(const char* dir_path, DIR** stream_result){
         *stream_result = dir_stream;
     }
 }
+*/
+
+enum INPUT checkDirPath(const char* dir_path){
+    assert(dir_path != NULL);
+    assert(dir_path[0] == '/'); //dummy check for absolute path
+
+    struct stat file_stat = {0};
+    if(stat(dir_path, &file_stat) != 0){
+        PRINT_FORMAT_ERROR("Couldn't get information on %s\n", dir_path);
+        return INVALID;
+    }
+
+    if(S_ISDIR(file_stat.st_mode)){
+        return INVALID;
+    }
+
+    return VALID;
+}
 
 FILE* openFile(const char* file_name, const char* mode){
-    assert(file_name != NULL || file_name[0] != '\0');
-    assert(mode != NULL || mode[0] != '\0');
+    assert(file_name != NULL && file_name[0] != '\0');
+    assert(mode != NULL && mode[0] != '\0');
 
     FILE* open_file = fopen(file_name, mode);
     if(open_file == NULL){
         PRINT_FORMAT_ERROR("Failed to open file: %s", file_name);
-        goto error_no_open;
+        return NULL;
     }
 
     int fd = fileno(open_file);
@@ -212,146 +231,8 @@ FILE* openFile(const char* file_name, const char* mode){
 
     error_did_open:
         fclose(open_file);
-
-    error_no_open:
         return NULL;
 
     success:
         return open_file;
 }
-
-/*
-int setConfigDest(int config, const RootInfoArray* dir_infos){
-    assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
-    assert(dir_infos != NULL);
-    assert(dir_infos->dir_entries != NULL);
-    assert(dir_infos->length != 0);
-
-    char* config_path = "";
-    switch(config){
-        case AUDIO_CONFIG: config_path = AUDIO_CONFIG_PATH; break;
-        case VIDEO_CONFIG: config_path = VIDEO_CONFIG_PATH; break;
-        case COVER_CONFIG: config_path = COVER_CONFIG_PATH; break;
-    }
-
-    sqlite3* database = NULL;
-    if(sqlite3_open(CONFIG_DATABASE, &database) != SQLITE_OK){
-        PRINT_ERROR("Could not open database for configs.\nNo settings have been changed");
-        return -1;
-    }
-
-    //ensure that string is nul terminated
-    sqlite3_stmt* statement = NULL;
-    for(int i = 0; i < dir_infos->length; ++i){
-        RootInfo* entry = &dir_infos->dir_entries[i];
-        if(sqlite3_prepare_v2(database, "INSERT INTO ? VALUES(?, ?, ?)", -1, &statement, NULL) != SQLITE_OK){
-
-        }
-
-        sqlite3_bind_text();
-        sqlite3_bind_int();
-        sqlite3_bind_int();
-        sqlite3_step();
-        sqlite3_finalize();
-
-        if(fprintf(config_file, "%.*s,%d\n", entry->name_length, entry->root_name, entry->depth) < 0){
-            PRINT_FORMAT_ERROR("Encountered an error while rewriting %s.\nData has been lost.", config_path);
-            return -1;
-        }
-    }
-
-    fclose(config_file);
-    return 0;
-}
-*/
-
-/*
-int setConfigDest(int config, const RootInfoArray* dir_infos){
-    assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
-    assert(dir_infos != NULL);
-    assert(dir_infos->dir_entries != NULL);
-    assert(dir_infos->length != 0);
-
-    char* config_path = "";
-    switch(config){
-        case AUDIO_CONFIG: config_path = AUDIO_CONFIG_PATH; break;
-        case VIDEO_CONFIG: config_path = VIDEO_CONFIG_PATH; break;
-        case COVER_CONFIG: config_path = COVER_CONFIG_PATH; break;
-    }
-
-    FILE* config_file = openFile(config_path, "w");
-    if(config_file == NULL){
-        PRINT_FORMAT_ERROR("Failed to open config file: %s.\nNo settings have been overwritten.", config_path);
-        return -1;
-    }
-
-    //ensure that string is nul terminated
-    for(int i = 0; i < dir_infos->length; ++i){
-        RootInfo* entry = &dir_infos->dir_entries[i];
-        //probably figure out how to make it so it doesn't lose data
-        //maybe make a temp file first then later rename to config file
-        if(fprintf(config_file, "%.*s,%d\n", entry->name_length, entry->root_name, entry->depth) < 0){
-            PRINT_FORMAT_ERROR("Encountered an error while rewriting %s.\nData has been lost.", config_path);
-            return -1;
-        }
-    }
-
-    fclose(config_file);
-    return 0;
-}
-*/
-
-/*
-int readConfig(int config, RootInfoArray* dir_array){
-    assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
-    assert(dir_array != NULL);
-    assert(dir_array->dir_entries == NULL);
-    assert(dir_array->length == 0);
-
-    char* config_path = "";
-    switch(config){
-        case AUDIO_CONFIG: config_path = AUDIO_CONFIG_PATH; break;
-        case VIDEO_CONFIG: config_path = VIDEO_CONFIG_PATH; break;
-        case COVER_CONFIG: config_path = COVER_CONFIG_PATH; break;
-    }
-
-    FILE* config_file = openFile(config_path, "r");
-    if(config_file == NULL){
-        PRINT_FORMAT_ERROR("Failed to open config file: %s.", config_path);
-        return -1;
-    }
-
-    char buffer [CONFIG_BUFFER] = "";
-    //length is determined in appendRootEntry
-    (void)exactInput(config_file, buffer, CONFIG_BUFFER);
-    if(appendRootEntry(dir_array, buffer) != 0){
-        PRINT_FORMAT_ERROR("Entry %s in file %s had an issue", buffer, config_path);
-        return HAD_ERROR;
-    }
-
-    return 0;
-}
-*/
-
-/*
-void listConfig(int config){
-
-    char* config_path = "";
-    switch(config){
-        case AUDIO_CONFIG: config_path = AUDIO_CONFIG_PATH; break;
-        case VIDEO_CONFIG: config_path = VIDEO_CONFIG_PATH; break;
-        case COVER_CONFIG: config_path = COVER_CONFIG_PATH; break;
-    }
-
-    FILE* config_file = openFile(config_path, "r");
-    if(config_file == NULL){
-        PRINT_FORMAT_ERROR("Failed to open config file: %s.", config_path);
-    }
-
-    char buffer [CONFIG_BUFFER] = "";
-    while(exactInput(config_file, buffer, CONFIG_BUFFER)){
-        printf("%s\n", buffer);
-        //probably some code to print paths too for depth
-    }
-}
-*/
