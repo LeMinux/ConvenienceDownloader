@@ -1,5 +1,4 @@
-#include "../test_include/bounded_input_unit_test.h"
-#include "../test_include/take_depth_input_unit_test.h"
+#include "../test_includes/bounded_input_unit_test.h"
 
 static int createMemFile(void** state){
     FILE* temp = tmpfile();
@@ -41,24 +40,5 @@ int main(void){
         cmocka_unit_test_setup_teardown(testExactInputMultipleLinesAboveBound, createMemFile, closeMemFile),
     };
 
-    const struct CMUnitTest take_depth_input_group[] = {
-        cmocka_unit_test(testTakeDepthInputEmptyInput),
-        /*
-        cmocka_unit_test(testTakeDepthInputJustNewline),
-        cmocka_unit_test(testTakeDepthInputNegativeNumber),
-        cmocka_unit_test(testTakeDepthInputZero),
-        cmocka_unit_test(testTakeDepthInputInBoundNumber),
-        cmocka_unit_test(testTakeDepthInputReallyLargeNumber),
-        cmocka_unit_test(testTakeDepthInputInfInput),
-        cmocka_unit_test(testTakeDepthInputRandomLetters),
-        cmocka_unit_test(testTakeDepthInputNotAFullNumberLettersAfter),
-        cmocka_unit_test(testTakeDepthInputNotAFullNumberLettersBefore),
-        cmocka_unit_test(testTakeDepthInputWithCommas)
-        */
-    };
-
-    return (
-        cmocka_run_group_tests(exact_input_group, NULL, NULL) &&
-        cmocka_run_group_tests(take_depth_input_group, NULL, NULL)
-    );
+    return cmocka_run_group_tests(exact_input_group, NULL, NULL);
 }

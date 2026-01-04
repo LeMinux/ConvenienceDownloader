@@ -6,12 +6,6 @@
 
 #define TEST_BUFFER_SIZE 21
 
-/*
-|- - - - - - - - - - - - |
-| Testing boundedInput() |
-|- - - - - - - - - - - - |
-*/
-
 //Testing the differences in streams like stdin vs a file isn't necessary
 //They are both FILE* streams, and testing OS nuance isn't needed.
 //There are of course differences like how you can't ftell or fseek if it's a buffered stream

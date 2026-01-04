@@ -1,4 +1,4 @@
-BINARY:=user-input-test.out
+BINARY:=database-input-test.out
 OBJECT_DIR:=./test_objects
 TEST_CODE_DIR:=./test_source
 SOURCE_CODE_DIR:=../../source
@@ -8,9 +8,10 @@ CC:=gcc
 DEP_FLAGS :=-MP -MD
 C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 		  -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings
+MOCK_FLAGS:=-Wl,--wrap=boundedInput
 
 TEST_C_FILES:=$(wildcard $(TEST_CODE_DIR)/*.c)
-SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/userInput.c
+SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseUserInput.c $(SOURCE_CODE_DIR)/userInput.c
 
 O_FILES := \
   $(patsubst $(TEST_CODE_DIR)/%.c,$(OBJECT_DIR)/%.o,$(TEST_C_FILES)) \
@@ -19,7 +20,7 @@ O_FILES := \
 all: $(BINARY)
 
 $(BINARY): $(O_FILES)
-	$(CC) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka
+	$(CC) $(C_FLAGS) $(DEP_FLAGS) $(MOCK_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
