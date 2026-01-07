@@ -191,7 +191,7 @@ enum INPUT checkDirPath(const char* dir_path){
         return INVALID;
     }
 
-    if(S_ISDIR(file_stat.st_mode)){
+    if(!(S_ISDIR(file_stat.st_mode))){
         return INVALID;
     }
 
