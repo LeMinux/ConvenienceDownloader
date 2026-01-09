@@ -1,10 +1,9 @@
 #ifndef DEPTH_INPUT_TESTING_H
 #define DEPTH_INPUT_TESTING_H
 
-#include "../../testGlobals.h"
-#include "../../../includes/databaseUserInput.h"
+#include "testWrapInput.h"
+#include "databaseUserInput.h"
 
-int __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size);
 
 void testTakeDepthInputEmptyInput(void** state);
 void testTakeDepthInputJustNewline(void** state);

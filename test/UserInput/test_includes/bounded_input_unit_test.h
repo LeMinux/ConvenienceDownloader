@@ -1,8 +1,8 @@
 #ifndef BOUNDED_INPUT_TESTING_H
 #define BOUNDED_INPUT_TESTING_H
 
-#include "../../testGlobals.h"
-#include "../../../includes/userInput.h"
+#include "testGlobals.h"
+#include "userInput.h"
 
 #define TEST_BUFFER_SIZE 21
 

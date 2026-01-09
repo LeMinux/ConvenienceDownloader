@@ -5,56 +5,6 @@ int __wrap_file_open(){
     return 0;
 }
 
-static void testOpenNormalFile(void** state){
-
-}
-
-static void testOpenNonExistFile(void** state){
-
-}
-
-static void testOpenFileButIsDirectory(void** state){
-
-}
-
-static void testOpenLinkFileToValid(void** state){
-
-}
-
-static void testOpenBrokenLink(void** state){
-
-}
-
-static void testLinkToDevFile(void** state){
-
-}
-
-static void testValidWriteToAudioConf(void** state){
-
-}
-
-static void testValidWriteToVideoConf(void** state){
-
-}
-
-static void testValidWriteToCoverConf(void** state){
-
-}
-
-//This test will use read permissions to simulate the conf file not being there
-static void testCatchConfNotThere(void** state){
-
-}
-
-static void testOpenNonExistFile(void** state){
-
-}
-
-static void testOpenNonExistFile(void** state){
-
-}
-
-
 int main(void){
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(testOpenNormalFile),
