@@ -28,9 +28,11 @@ enum INPUT {VALID = 0, INVALID};
 
 //If you're a NASA programmer seeing this sorry for the variadic macro.
 //Although you probably don't like the usage of dynamic memory after initalization from the printf family anyway lol
-#define PRINT_FORMAT_ERROR(format_, ...) ((void)fprintf(stderr, RED format_ RESET, __VA_ARGS__))
+#define PRINT_FORMAT_ERROR(format_, ...) ((void)fprintf(stderr, RED format_ RESET"\n", __VA_ARGS__))
 
 #define ADVISE_USER(message_) ((void)puts(CYAN message_ RESET))
+
+#define ADVISE_USER_FORMAT(format_, ...) ((void)fprintf(stderr, CYAN format_ RESET"\n", __VA_ARGS__))
 
 //general failed malloc message
 #define FAILED_MALLOC_MSG "\nError MEM: Allocation of memory failed"

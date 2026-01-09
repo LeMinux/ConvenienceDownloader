@@ -1,7 +1,6 @@
 #ifndef FILEOPS_H
 #define FILEOPS_H
 
-#include <sqlite3.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
@@ -19,12 +18,6 @@
 #define MY_MAX_PATH_SIZE 4096
 #define CONFIG_BUFFER 268 //255 + , + \n + 10 digits for depth + \0
 
-/*
-#define NOT_A_DIR 0
-#define CHECK_FOR_LINK 1
-#define NO_CARE_LINK 0
-*/
-
 int moveFile(const char* fileName, const char* destination);
 void getFileNameByID(const char* id, const char* extension, char* outString, int length);
 //void getSubdirectories(const char* basePath, Node_t** list);
@@ -34,7 +27,7 @@ int checkIfExists(const char*);
 
 int validateDirPath(const char*);
 
-//wrapper function to check mode is file
+//wrapper function to check i file
 FILE* openFile(const char*, const char* mode);
 
 
