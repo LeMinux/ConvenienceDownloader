@@ -9,6 +9,8 @@
 *   return: returns a value < INT_MAX or the value of INF_DEPTH
 */
 static void normalizeDepthInput(char* input){
+    assert(input != NULL);
+
     int inplace_insert = 0;
     for(int i = 0; input[i] != '\0'; ++i){
         if(!isspace(input[i]) && input[i] != ','){
@@ -16,6 +18,48 @@ static void normalizeDepthInput(char* input){
         }
     }
     input[inplace_insert] = '\0';
+}
+
+static char* canonizePath(const char* input){
+    assert(input != NULL);
+
+    char* absolute_path = realpath(input, NULL);
+
+    if(absolute_path == NULL){
+        int error = errno;
+        switch(error){
+            case EACCES: PRINT_FORMAT_ERROR("Path given is not accessible: %s", input); break;
+            case ELOOP: PRINT_FORMAT_ERROR("You trying to mess with me by using symlinks?: %s", input); break;
+            case ENAMETOOLONG: PRINT_FORMAT_ERROR("Path given is too long. Max length is %d: %s", PATH_MAX, input); break;
+            case ENOENT: PRINT_FORMAT_ERROR("Path given does not exist: %s", input); break;
+            default: PRINT_ERROR("System error occured preventing making absolute path"); break;
+        }
+        return NULL;
+    }
+
+    //add trailing / to the end just to make things a bit easier for strings
+    size_t path_len = strlen(absolute_path);
+    if(absolute_path[path_len - 1] != '/'){
+        if(path_len + 1 <= PATH_MAX){
+            void* temp = realloc(absolute_path, path_len + 1);
+            if(temp == NULL){
+                free(absolute_path);
+                absolute_path = NULL;
+                return NULL;
+            }else{
+                absolute_path = temp;
+                absolute_path[path_len] = '/';
+                absolute_path[path_len + 1] = '\0';
+            }
+        }else{
+            PRINT_FORMAT_ERROR("Path is too large to add trailing / to the end: %s", input);
+            free(absolute_path);
+            absolute_path = NULL;
+            return NULL;
+        }
+    }
+
+    return absolute_path;
 }
 
 int takeDepthInput(void){
@@ -61,24 +105,37 @@ int takeDepthInput(void){
 char* takeDirectoryInput(void){
     //realpath uses PATH_MAX
     char input [PATH_MAX];
+    size_t length = 0;
 
     puts("Enter the path you want:");
-    if(boundedInput(stdin, input, sizeof(input)) == 0){
+    length = boundedInput(stdin, input, sizeof(input));
+
+    if(length == 0){
         ADVISE_USER("You need to enter something\n");
         return NULL;
     }
-    char* absolute_path = realpath(input, NULL);
+
+    if(input[0] == '~'){
+        ADVISE_USER("Sorry, usage of ~ is a shell expansion");
+        return NULL;
+    }
+
+    //traling slashes can apparenlty mask a link if it points to a dir
+    if(input[length - 1] == '/'){
+        input[length - 1] = '\0';
+    }
+
+    if(checkDirPath(input) == INVALID){
+        return NULL;
+    }
+
+    char* absolute_path = canonizePath(input);
 
     if(absolute_path == NULL){
-        perror("Couldn't make an absolute path:");
+        PRINT_ERROR("Couldn't make an absolute path:");
         return NULL;
     }
 
-    if(checkDirPath(absolute_path) == INVALID){
-        free(absolute_path);
-        absolute_path = NULL;
-        return NULL;
-    }
 
     return absolute_path;
 }

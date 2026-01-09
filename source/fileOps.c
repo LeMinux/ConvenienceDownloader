@@ -183,15 +183,36 @@ void openDir(const char* dir_path, DIR** stream_result){
 
 enum INPUT checkDirPath(const char* dir_path){
     assert(dir_path != NULL);
-    assert(dir_path[0] == '/'); //dummy check for absolute path
 
+    printf("Handling %s\n", dir_path);
     struct stat file_stat = {0};
-    if(stat(dir_path, &file_stat) != 0){
-        PRINT_FORMAT_ERROR("Couldn't get information on %s\n", dir_path);
+    if(lstat(dir_path, &file_stat) < 0){
+        int error = errno;
+        switch(error){
+            case ENOENT: ADVISE_USER("Path given doesn't exist"); break;
+            case ENOTDIR: ADVISE_USER("Path given has broken components"); break;
+            case EACCES: ADVISE_USER("Can't access path given"); break;
+            case ENAMETOOLONG: ADVISE_USER_FORMAT("Path is too long. The limit is %d", PATH_MAX); break;
+            default: ADVISE_USER("System limits prevented opening the directory"); break;
+        }
+        return INVALID;
+    }
+
+    printf("%d\n", file_stat.st_mode);
+    if(S_ISLNK(file_stat.st_mode)){
+        ADVISE_USER("This program doesn't deal with links");
         return INVALID;
     }
 
     if(!(S_ISDIR(file_stat.st_mode))){
+        ADVISE_USER("Path given is not a directory");
+        return INVALID;
+    }
+
+    //yes access can have TOCTOU issues, but this program really doesn't directly
+    //handle paths and instead hands it off
+    if(access(dir_path, R_OK | W_OK | X_OK)){
+        ADVISE_USER("You don't have read, write, and execute permissions for the path");
         return INVALID;
     }
 

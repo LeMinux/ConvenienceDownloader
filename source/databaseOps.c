@@ -28,7 +28,7 @@ static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
     return NO_ERROR;
 }
 
-static enum ERROR addMenu(enum CONFIG config_type){
+static void addMenu(enum CONFIG config_type){
     assert(single_database_connection != NULL);
     assert(config_type == AUDIO_CONFIG ||
            config_type == VIDEO_CONFIG ||
@@ -44,7 +44,8 @@ static enum ERROR addMenu(enum CONFIG config_type){
     }
 
     addEntry(config_type, path_input, depth);
-    return NO_ERROR;
+    free(path_input);
+    path_input = NULL;
 }
 
 static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
@@ -180,16 +181,18 @@ void editMenu(enum CONFIG config){
 
             case EXT: editing = 0; break;
 
-            default: puts("Enter an available number"); break;
+            default: ADVISE_USER("Enter an available number"); break;
         }
     }
 }
 
+/*
 enum ERROR findEntry(const char* entry){
     assert(single_database_connection != NULL);
 
 
 }
+*/
 
 //Figure out how you want to figure out the index once a user inputs
 //returning the statement might be easier
@@ -209,10 +212,6 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
     sqlite3_bind_int(results, 1, config_type);
 
     int count = 1;
-    //puts("index) root ");
-    //just to print something for now
-    //printf("%s%-10s%s", "index", "root path", "depth");
-    //printf("%-25s", "-");
     printSectionHeader(config_type);
     while((ret_code = sqlite3_step(results)) == SQLITE_ROW){
         char* root = (char*)sqlite3_column_text(results, 0);
