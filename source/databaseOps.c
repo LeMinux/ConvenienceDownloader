@@ -4,13 +4,15 @@ static sqlite3* single_database_connection = NULL;
 
 static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
     assert(single_database_connection != NULL);
-    assert(config == AUDIO_CONFIG || config == VIDEO_CONFIG || config == COVER_CONFIG);
-    assert(entry != NULL);
-    assert(depth > 0 || depth == INF_DEPTH);
+    assert(entry != NULL && entry[0] != '\0');
+    assert(depth >= 0 || depth == INF_DEPTH);
+    assert(config == AUDIO_CONFIG ||
+           config == VIDEO_CONFIG ||
+           config == COVER_CONFIG ||
+           config == BLACK_CONFIG);
 
-    char sql_statement [100] = "";
-    snprintf(sql_statement, 100,"INSERT INTO Roots (root_type, root_name, root_length) VALUES (?, ?, ?)");
 
+    char sql_statement [100] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?)";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -19,13 +21,25 @@ static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
         return HAD_ERROR;
     }
 
-    sqlite3_bind_int(results, 1, config);
-    sqlite3_bind_text(results, 2, entry, strlen(entry), NULL);
-    sqlite3_bind_int(results, 3, depth);
+    if(sqlite3_bind_int(results, 1, config) != SQLITE_OK ||
+    sqlite3_bind_text(results, 2, entry, strlen(entry), NULL) != SQLITE_OK ||
+    sqlite3_bind_int(results, 3, strlen(entry)) != SQLITE_OK ||
+    sqlite3_bind_int(results, 4, depth) != SQLITE_OK){
+        PRINT_ERROR("Failed to bind parameters. No changes have been made");
+        return HAD_ERROR;
+    }
 
-    //executte sql
+    ret_code = sqlite3_step(results);
+    enum ERROR func_return = HAD_ERROR;
+    switch(ret_code){
+        case SQLITE_DONE: ADVISE_USER("Added entry!"); func_return = NO_ERROR; break;
+        case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
+        case SQLITE_ERROR: PRINT_FORMAT_ERROR("Database error: %s", sqlite3_errmsg(single_database_connection)); break;
+        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not add entry. You can try again."); break;
+        default: PRINT_ERROR("Error in database prevented adding the entry"); break;
+    }
 
-    return NO_ERROR;
+    return func_return;
 }
 
 static void addMenu(enum CONFIG config_type){
@@ -37,13 +51,13 @@ static void addMenu(enum CONFIG config_type){
 
     char* path_input;
     int depth = 0;
-    while((path_input = takeDirectoryInput()) != NULL) {}
+    while((path_input = takeDirectoryInput()) == NULL) {}
 
     if(config_type != BLACK_CONFIG){
-        while((depth = takeDepthInput()) != INVALID);
+        while((depth = takeDepthInput()) == INVALID);
     }
 
-    addEntry(config_type, path_input, depth);
+    (void)addEntry(config_type, path_input, depth);
     free(path_input);
     path_input = NULL;
 }
@@ -60,7 +74,7 @@ static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
     if(ret_code != SQLITE_OK){
-        PRINT_FORMAT_ERROR("Failed to prepare updating statement %s", sqlite3_errmsg(single_database_connection));
+        PRINT_FORMAT_ERROR("Failed to prepare updating statement: %s", sqlite3_errmsg(single_database_connection));
         return HAD_ERROR;
     }
 
@@ -68,9 +82,17 @@ static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
     sqlite3_bind_int(results, 2, new_depth);
     sqlite3_bind_int(results, 3, index);
 
-    //execute sql
+    ret_code = sqlite3_step(results);
+    enum ERROR func_return = HAD_ERROR;
+    switch(ret_code){
+        case SQLITE_DONE: ADVISE_USER("Updated entry!"); func_return = NO_ERROR; break;
+        case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
+        case SQLITE_ERROR: PRINT_FORMAT_ERROR("Database error: %s", sqlite3_errmsg(single_database_connection)); break;
+        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not update the entry. You can try again."); break;
+        default: PRINT_ERROR("Error in database prevented updating the entry"); break;
+    }
 
-    return NO_ERROR;
+    return func_return;
 }
 
 static enum ERROR removeEntry(int index){
@@ -84,13 +106,23 @@ static enum ERROR removeEntry(int index){
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
     if(ret_code != SQLITE_OK){
-        PRINT_FORMAT_ERROR("Failed to prepare deleting %s", sqlite3_errmsg(single_database_connection));
+        PRINT_FORMAT_ERROR("Failed to prepare delete statement: %s", sqlite3_errmsg(single_database_connection));
         return HAD_ERROR;
     }
 
     sqlite3_bind_int(results, 1, index);
 
-    //execute sql
+    ret_code = sqlite3_step(results);
+    enum ERROR func_return = HAD_ERROR;
+    switch(ret_code){
+        case SQLITE_DONE: ADVISE_USER("Deleted entry!"); func_return = NO_ERROR; break;
+        case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
+        case SQLITE_ERROR: PRINT_FORMAT_ERROR("Database error: %s", sqlite3_errmsg(single_database_connection)); break;
+        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not delete the entry. You can try again."); break;
+        default: PRINT_ERROR("Error in database prevented deleting the entry"); break;
+    }
+
+    return func_return;
 
     return NO_ERROR;
 
@@ -117,9 +149,27 @@ static void printSectionHeader(enum CONFIG config_type){
 }
 
 static enum ERROR updateMenu(enum CONFIG config_type){
+    assert(single_database_connection != NULL);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
 
+    int select_row = INVALID;
+    while((select_row = takeIndexInput(single_database_connection)) != INVALID){}
+
+    char* path_input;
+    int depth = 0;
+    while((path_input = takeDirectoryInput()) == NULL) {}
+
+    if(config_type != BLACK_CONFIG){
+        while((depth = takeDepthInput()) == INVALID);
+    }
+
+    (void)updateEntry(config_type, path_input, depth);
+    free(path_input);
+    path_input = NULL;
     return NO_ERROR;
-
 }
 
 static enum ERROR deleteMenu(enum CONFIG config_type){
@@ -128,7 +178,7 @@ static enum ERROR deleteMenu(enum CONFIG config_type){
 }
 
 
-static void translateOptionToRow(size_t user_selection){
+static int translateOptionToRow(int user_selection){
 /*
  *SELECT *
 FROM my_table
@@ -166,20 +216,20 @@ void editMenu(enum CONFIG config){
     int editing = 1;
     char buffer [5] = ""; //buffer of 5 just to see if length is greater than 1
     while(editing){
-        printf("What action do you want to take?\n%d) Add\n%d) Update\n%d) Delete\n%d) Exit\nEnter the number: ", ADD, UPT, DEL, EXT);
+        printf("What action do you want to take?\n%c) Add\n%c) Update\n%c) Delete\n%c) Exit\nEnter the number: ", ADD_OPT, UPT_OPT, DEL_OPT, EXT_OPT);
         if(boundedInput(stdin, buffer, 5) != 1){
             puts("Input only needs to be a single digit");
             continue;
         }
 
         switch(buffer[0]){
-            case ADD: addMenu(config); break;
+            case ADD_OPT: addMenu(config); break;
 
-            case UPT: updateMenu(config); break;
+            case UPT_OPT: updateMenu(config); break;
 
-            case DEL: deleteMenu(config); break;
+            case DEL_OPT: deleteMenu(config); break;
 
-            case EXT: editing = 0; break;
+            case EXT_OPT: editing = 0; break;
 
             default: ADVISE_USER("Enter an available number"); break;
         }
@@ -198,7 +248,10 @@ enum ERROR findEntry(const char* entry){
 //returning the statement might be easier
 enum ERROR listConfigRoots(enum CONFIG config_type){
     assert(single_database_connection != NULL);
-    assert(config_type == AUDIO_CONFIG || config_type == VIDEO_CONFIG || config_type == COVER_CONFIG);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
 
     char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type == ?;";
     sqlite3_stmt* results = NULL;
@@ -225,6 +278,9 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
 
 enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
     assert(single_database_connection != NULL);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG);
 
     char sql_statement [] =
              "SELECT r.root_id, r.root_name, p.path_name FROM Paths p "
@@ -277,7 +333,7 @@ enum ERROR listAllRoots(){
         return HAD_ERROR;
     }
 
-    int prev_type = -1;
+    enum CONFIG prev_type = -1;
     while((ret_code = sqlite3_step(results)) == SQLITE_ROW){
         enum CONFIG cur_type = sqlite3_column_int(results, 0);
         char* root = (char*)sqlite3_column_text(results, 1);

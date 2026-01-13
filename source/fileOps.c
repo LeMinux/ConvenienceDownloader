@@ -184,7 +184,6 @@ void openDir(const char* dir_path, DIR** stream_result){
 enum INPUT checkDirPath(const char* dir_path){
     assert(dir_path != NULL);
 
-    printf("Handling %s\n", dir_path);
     struct stat file_stat = {0};
     if(lstat(dir_path, &file_stat) < 0){
         int error = errno;

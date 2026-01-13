@@ -93,7 +93,36 @@ static void setupReadOnlyPaths(sqlite3* database){
     executeQuery(database, sql_paths);
 }
 
-int closePerTestDB(void** state){
+
+static void assertAddData(sqlite3* database, enum CONFIG exp_type, const char* exp_input, size_t exp_input_len, int exp_depth){
+    char sql_check [] = "SELECT root_type, root_name, root_length, root_depth FROM Roots WHERE root_name = ?";
+    sqlite3_stmt* statement = NULL;
+    int ret_code = sqlite3_prepare_v2(database, sql_check, -1, &statement, NULL);
+
+    if(ret_code != SQLITE_OK){
+        fail_msg("Failed to check data due to %s", sqlite3_errmsg(database));
+    }
+
+    if(sqlite3_bind_text(statement, 1, exp_input, exp_input_len, NULL) != SQLITE_OK){
+        fail_msg("Failed to bind data due to %s", sqlite3_errmsg(database));
+    }
+
+    ret_code = sqlite3_step(statement);
+    if(ret_code == SQLITE_ROW){
+        enum CONFIG added_type = sqlite3_column_int(statement, 0);
+        char* added_string = (char*)sqlite3_column_text(statement, 1);
+        int root_length = sqlite3_column_int(statement, 2);
+        int root_depth = sqlite3_column_int(statement, 3);
+
+        assert_int_equal(added_type, exp_type);
+        assert_string_equal(added_string, exp_input);
+        assert_int_equal(root_length, exp_input_len);
+        assert_int_equal(root_depth, exp_depth);
+    }else{
+        fail_msg("Did not add entry %s", exp_input);
+    }
+}
+int closePerGroupDB(void** state){
     (void)sqlite3_close(*state);
     return 0;
 }
@@ -104,7 +133,7 @@ int createTestDB(void** state){
     static char* sql_init = NULL;
 
     sqlite3* database = NULL;
-    int rc = sqlite3_open(":memory:", &database);
+    int rc = sqlite3_open(TESTING_CONFIG_DB, &database);
 
     if(rc != SQLITE_OK){
         fail_msg("Unable to create in memory database\n");
@@ -122,57 +151,241 @@ int createTestDB(void** state){
         return 1;
     }
 
+    setUpReadOnlyRoots(database);
+    setupReadOnlyPaths(database);
+    __testingSetDB(database);
     *state = database;
     return 0;
 }
 
 void testListAllRoots(void **state){
-    sqlite3* database = *state;
-    setUpReadOnlyRoots(database);
-    __testingSetDB(database);
-
+    (void) state;
     int ret = listAllRoots();
-
     assert(ret == NO_ERROR);
 }
 
 void testListRootsForConfig(void **state){
-    sqlite3* database = *state;
-    setUpReadOnlyRoots(database);
-    __testingSetDB(database);
-
+    (void) state;
     int ret = listConfigRoots(AUDIO_CONFIG);
-
     assert(ret == NO_ERROR);
 }
 
 void testListAllRootsWithPaths(void **state){
-    sqlite3* database = *state;
-    setUpReadOnlyRoots(database);
-    setupReadOnlyPaths(database);
-    __testingSetDB(database);
-
+    (void) state;
     int ret = listAllRootWithPaths();
-
     assert(ret == NO_ERROR);
 }
 
 void testListRootAndPathsForConfig(void **state){
-    sqlite3* database = *state;
-    setUpReadOnlyRoots(database);
-    setupReadOnlyPaths(database);
-    __testingSetDB(database);
-
+    (void) state;
     int ret = listConfigRootsWithPaths(AUDIO_CONFIG);
-
     assert(ret == NO_ERROR);
 }
 
-void testAddEntryAbsolutePath(void** state){
+char* __wrap_takeDirectoryInput(void){
+    function_called();
+    if(has_mock()){
+        return mock_type(char*);
+    }else{
+        stop();
+    }
+}
+
+//the mock type should be a pointer in the HEAP as sourct implementation uses malloc
+//A stack pointer may be attempted to be freed and crash the test
+int __wrap_takeDepthInput(void){
+    function_called();
+    if(has_mock()){
+        return mock_type(int);
+    }else{
+        stop();
+    }
+}
+
+void testAddEntryCatchesInvalidPath(void** state){
+    (void) state;
+    char edit_select [] = {ADD_OPT, '\0'};
+    char* dir_input = NULL;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+
+    editMenu(config_type);
+}
+
+void testAddEntryCatchesInvalidDepth(void** state){
+    (void) state;
+    char edit_select [] = {ADD_OPT, '\0'};
+    char dir_input [] = "TotallyRealPath";
+    int depth_input = INVALID;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+
+    editMenu(config_type);
+}
+
+void testAddEntryEnterBothValidInput(void** state){
     sqlite3* database = *state;
-    __testingSetDB(database);
+    char edit_select [] = {ADD_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    const char input [] = "HaHaTotallyRealDirectory/";
+    int depth_input = 7;
+    enum CONFIG config_type = AUDIO_CONFIG;
 
-    editMenu(AUDIO_CONFIG);
+    char* malloc_input = malloc(sizeof(input));
+    memcpy(malloc_input, input, sizeof(input));
 
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, malloc_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
+}
+
+void testAddEntryWithBlackList(void** state){
+    sqlite3* database = *state;
+    char edit_select [] = {ADD_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    const char input [] = "IDontWantThisDir/";
+    int exp_depth = 0;
+    enum CONFIG config_type = BLACK_CONFIG;
+
+    char* malloc_input = malloc(sizeof(input));
+    memcpy(malloc_input, input, sizeof(input));
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, malloc_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertAddData(database, config_type, input, sizeof(input) - 1, exp_depth);
+}
+
+void testAddEntryToVideoConfig(void** state){
+    sqlite3* database = *state;
+    char edit_select [] = {ADD_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    const char input [] = "HaHaTotallyRealDirectory/";
+    int depth_input = 7;
+    enum CONFIG config_type = VIDEO_CONFIG;
+
+    char* malloc_input = malloc(sizeof(input));
+    memcpy(malloc_input, input, sizeof(input));
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, malloc_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
+}
+
+void testAddEntryToCoverConfig(void** state){
+    sqlite3* database = *state;
+    char edit_select [] = {ADD_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    const char input [] = "HaHaTotallyRealDirectory/";
+    int depth_input = 7;
+    enum CONFIG config_type = COVER_CONFIG;
+
+    char* malloc_input = malloc(sizeof(input));
+    memcpy(malloc_input, input, sizeof(input));
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, malloc_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
+}
+
+void testUpdateEntryCatchesInvalidPath(void** state){
+    (void) state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char* dir_input = NULL;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+
+    editMenu(config_type);
+}
+
+void testUpdateEntryCatchesInvalidDepth(void** state){
+    (void) state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char dir_input [] = "IDunnoSomePath/";
+    int depth_input = INVALID;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+
+    editMenu(config_type);
+}
+
+void testUpdateEntryDiffPathAndDiffDepth(void** state){
+
+}
+
+void testUpdateEntryDiffPathAndSameDepth(void** state){
+
+}
+
+void testUpdateEntrySamePathAndDiffDepth(void** state){
+
+}
+
+void testUpdateEntrySamePathAndSameDepth(void** state){
+
+}
+
+void testUpdateBlackList(void** state){
+
+}
+
+void testUpdateVideoConfig(void** state){
+
+}
+
+void testUpdateCoverConfig(void** state){
 
 }

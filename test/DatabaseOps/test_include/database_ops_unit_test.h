@@ -5,14 +5,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "../../testGlobals.h"
-#include "../../../includes/databaseOps.h"
+#include "testGlobals.h"
+#include "databaseOps.h"
+#include "testWrapInput.h"
 
 #define WRITE_END 1
 #define READ_END 0
 
+char* __wrap_takeDirectoryInput(void);
+int __wrap_takeDepthInput(void);
+
+
 int createTestDB(void** state);
-int closePerTestDB(void** state);
+int closePerGroupDB(void** state);
 
 //Tests if the printing functions don't return error
 //Testing of the contents will be for integration testing
@@ -22,28 +27,35 @@ void testListAllRootsWithPaths(void** state);
 void testListRootsForConfig(void** state);
 void testListRootAndPathsForConfig(void** state);
 
-void testAddEntryAbsolutePath(void** state);
-void testAddEntryEmtpy(void** state);
-void testAddEntryVeryLong(void** state);
-void testAddEntryRelativePath(void** state);
-void testAddEntryLinkToFile(void** state);
-void testAddEntryLinkToDir(void** state);
-void testAddEntryFileInvalidPermissions(void** state);
-void testAddEntryUsingTildeShortcut(void** state);
+void testAddEntryCatchesInvalidPath(void** state);
+void testAddEntryCatchesInvalidDepth(void** state);
+void testAddEntryEnterBothValidInput(void** state);
+void testAddEntryWithBlackList(void** state);
+void testAddEntryToVideoConfig(void** state);
+void testAddEntryToCoverConfig(void** state);
 
 //probably want just 2 entries to make sure that updating isn't 
 //affecting other rows
+void testUpdateEntryCatchesInvalidDepth(void** state);
+void testUpdateEntryCatchesInvalidPath(void** state);
 void testUpdateEntryDiffPathAndDiffDepth(void** state);
 void testUpdateEntryDiffPathAndSameDepth(void** state);
 void testUpdateEntrySamePathAndDiffDepth(void** state);
 void testUpdateEntrySamePathAndSameDepth(void** state);
-void testUpdateEntryRelativePath(void** state);
-void testUpdateEntryNegativeDepth(void** state);
-void testUpdateEntryReallyLargeDepth(void** state);
-void testUpdateEntryInfiniteDepth(void** state);
+void testUpdateBlackList(void** state);
+void testUpdateVideoConfig(void** state);
+void testUpdateCoverConfig(void** state);
 
 //check if root and its paths are gone
 void testDeleteEntry(void** state);
+
+//might have to add this somewhere else as mocking the tested functions isn't
+//a great idea
+void testEditMenuCallsAddMenu(void** state);
+void testEditMenuCallsUpdateMenu(void** state);
+void testEditMenuCallsDelMenu(void** state);
+void testEditMenuExits(void** state);
+void testEditMenuCatchesInvalidOption(void** state);
 
 //special cases
 //I delete an entry removing that index then adding another entry

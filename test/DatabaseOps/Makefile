@@ -9,9 +9,10 @@ COMPILER_FLAG:=-DTESTING
 DEP_FLAGS :=-MP -MD
 C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 		  -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings
+MOCK_FLAGS:=-Wl,--wrap=boundedInput,--wrap=takeDirectoryInput,--wrap=takeDepthInput
 
 TEST_C_FILES:=$(wildcard $(TEST_CODE_DIR)/*.c)
-SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseOps.c $(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/databaseUserInput.c $(SOURCE_CODE_DIR)/fileOps.c
+SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseUserInput.c $(SOURCE_CODE_DIR)/databaseOps.c $(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/testWrapInput.c
 
 O_FILES := \
   $(patsubst $(TEST_CODE_DIR)/%.c,$(OBJECT_DIR)/%.o,$(TEST_C_FILES)) \
@@ -20,7 +21,7 @@ O_FILES := \
 all: $(BINARY)
 
 $(BINARY): $(O_FILES)
-	$(CC) $(COMPILER_FLAG) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka -lsqlite3
+	$(CC) -g $(COMPILER_FLAG) $(MOCK_FLAGS) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka -lsqlite3
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
