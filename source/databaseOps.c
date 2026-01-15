@@ -2,6 +2,32 @@
 
 static sqlite3* single_database_connection = NULL;
 
+static int getNumOfRowsForConfig(enum CONFIG config){
+    assert(single_database_connection != NULL);
+    assert(config == AUDIO_CONFIG ||
+           config == VIDEO_CONFIG ||
+           config == COVER_CONFIG ||
+           config == BLACK_CONFIG);
+
+    //root_id is indexed so the count should be faster
+    const char sql_statement [] = "SELECT COUNT(root_id) FROM Roots";
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to obtain count of rows: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    ret_code = sqlite3_step(results);
+    if(ret_code != SQLITE_ROW){
+        PRINT_FORMAT_ERROR("Could not obtain count of rows: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    return sqlite3_column_int(results, 0);
+}
+
 static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
     assert(single_database_connection != NULL);
     assert(entry != NULL && entry[0] != '\0');
@@ -12,7 +38,7 @@ static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
            config == BLACK_CONFIG);
 
 
-    char sql_statement [100] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?)";
+    const char sql_statement [] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?)";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -68,7 +94,7 @@ static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
     assert(new_value != NULL);
     assert(new_depth > 0 || new_depth == INF_DEPTH);
 
-    char sql_statement [] = "UPDATE FROM Roots SET root_name = ?, root_depth = ? WHERE root_id = ?";
+    const char sql_statement [] = "UPDATE FROM Roots SET root_name = ?, root_depth = ? WHERE root_id = ?";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
@@ -99,8 +125,7 @@ static enum ERROR removeEntry(int index){
     assert(single_database_connection != NULL);
     assert(index > 0);
 
-    char sql_statement [100] = "";
-    snprintf(sql_statement, 100, "DELETE FROM Roots WHERE root_id = ?");
+    const char sql_statement [] = "DELETE FROM Roots WHERE root_id = ?";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
@@ -148,15 +173,17 @@ static void printSectionHeader(enum CONFIG config_type){
     }
 }
 
-static enum ERROR updateMenu(enum CONFIG config_type){
+static void updateMenu(enum CONFIG config_type){
     assert(single_database_connection != NULL);
     assert(config_type == AUDIO_CONFIG ||
            config_type == VIDEO_CONFIG ||
            config_type == COVER_CONFIG ||
            config_type == BLACK_CONFIG);
 
+    int max_index = getNumOfRowsForConfig(config_type);
+    if(max_index == HAD_ERROR) return;
     int select_row = INVALID;
-    while((select_row = takeIndexInput(single_database_connection)) != INVALID){}
+    while((select_row = takeIndexInput(max_index)) == INVALID){}
 
     char* path_input;
     int depth = 0;
@@ -253,7 +280,7 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
            config_type == COVER_CONFIG ||
            config_type == BLACK_CONFIG);
 
-    char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type == ?;";
+    const char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type == ?;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -282,7 +309,7 @@ enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
            config_type == VIDEO_CONFIG ||
            config_type == COVER_CONFIG);
 
-    char sql_statement [] =
+    const char sql_statement [] =
              "SELECT r.root_id, r.root_name, p.path_name FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
              "WHERE r.root_type == ? "
@@ -324,7 +351,7 @@ enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
 enum ERROR listAllRoots(){
     assert(single_database_connection != NULL);
 
-    char sql_statement [] = "SELECT root_type, root_name, root_depth FROM Roots ORDER BY root_type;";
+    const char sql_statement [] = "SELECT root_type, root_name, root_depth FROM Roots ORDER BY root_type;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -351,7 +378,7 @@ enum ERROR listAllRoots(){
 enum ERROR listAllRootWithPaths(){
     assert(single_database_connection != NULL);
 
-    char sql_statement [] =
+    const char sql_statement [] =
              "SELECT r.root_type, r.root_id, r.root_name, p.path_name, r.root_depth FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
              "ORDER BY r.root_type, r.root_id;";
