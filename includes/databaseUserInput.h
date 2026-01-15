@@ -23,11 +23,21 @@
 char* takeDirectoryInput(void);
 
 /*
-*   Function for taking in input for what depth a root path should have
+*   Function for taking in input for what depth a root path should have.
+*   There is no index 0, so index 1 is the first index.
 *
-*   return: returns a value < INT_MAX or the value of INF_DEPTH
+*   return: returns a value < INT_MAX or the value of INF_DEPTH or INVALID
 */
 int takeDepthInput(void);
+
+/*
+*   Function for taking in input for what index a root path is.
+*
+*   param: max_index specifies what is the maximum index allowed
+*
+*   return: returns a value < max_index or INVALID
+*/
+int takeIndexInput(int max_index);
 
 #endif
 

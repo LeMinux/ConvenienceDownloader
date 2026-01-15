@@ -1,14 +1,14 @@
 #include "../includes/databaseUserInput.h"
 
 /*
-*   Takes input a depth input and removes white space and commas.
+*   Takes a depth input and removes white space and commas.
 *   I dunno what crazy person would need a depth of 1,000, but if they need it
 *   at least they can enter a comma.
 *   The goal isn't to sanitize, but make it so strtol will handle a more consistent number format.
 *
 *   return: returns a value < INT_MAX or the value of INF_DEPTH
 */
-static void normalizeDepthInput(char* input){
+static void normalizeNumericInput(char* input){
     assert(input != NULL);
 
     int inplace_insert = 0;
@@ -20,6 +20,12 @@ static void normalizeDepthInput(char* input){
     input[inplace_insert] = '\0';
 }
 
+/*
+*   Takes a path input and sets it to an absolute path.
+*   This adds a trailing slash to the end
+*
+*   return: absolute path with a trailing slash
+*/
 static char* canonizePath(const char* input){
     assert(input != NULL);
 
@@ -73,7 +79,7 @@ int takeDepthInput(void){
         depth = INVALID;
     }
 
-    normalizeDepthInput(depth_input);
+    normalizeNumericInput(depth_input);
 
     if(depth != INVALID){
         errno = 0;
@@ -138,4 +144,48 @@ char* takeDirectoryInput(void){
 
 
     return absolute_path;
+}
+
+int takeIndexInput(int max_index){
+    puts("Enter the index you want to change.");
+
+    char index_input [15] = "";
+
+    if(boundedInput(stdin, index_input, sizeof(index_input)) == 0){
+        ADVISE_USER("Enter something");
+        return INVALID;
+    }
+
+    normalizeNumericInput(index_input);
+
+    long index = 0;
+    errno = 0;
+    char* non_digit = NULL;
+    index = strtol(index_input, &non_digit, 10);
+    if(*non_digit != '\0'){
+        ADVISE_USER("This isn't an index.");
+        index = INVALID;
+    }else{
+        if(errno == ERANGE || index > INT_MAX){
+            ADVISE_USER("Index given is too large.");
+            index = INVALID;
+        }
+
+        if(index < 0){
+            ADVISE_USER("Index can't be negative.");
+            index = INVALID;
+        }
+
+        if(index == 0){
+            ADVISE_USER("Index can't be zero. Index starts at 1.");
+            index = INVALID;
+        }
+
+        if(index > max_index){
+            ADVISE_USER("Index is larger than was is available.");
+            index = INVALID;
+        }
+    }
+
+    return index;
 }
