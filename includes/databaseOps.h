@@ -8,6 +8,7 @@
 #include "databaseUserInput.h"
 
 enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
+enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
 
 #define CONFIG_DATABASE "~/.config/con-downloader/con-downloader.db"
 
@@ -41,7 +42,7 @@ enum ERROR updateMenu(enum CONFIG config_type);
 enum ERROR deleteMenu(enum CONFIG config_type);
 */
 
-enum ERROR findEntry(const char* entry);
+enum FIND findEntry(enum CONFIG config_type, const char* entry);
 
 /*
 *   Lists every root from every config

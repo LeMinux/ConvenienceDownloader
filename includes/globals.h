@@ -20,9 +20,9 @@
 
 #define INF_DEPTH -5
 
-enum ERROR {NO_ERROR = 0, HAD_ERROR};
+enum ERROR {HAD_ERROR = -1, NO_ERROR = 0};
 enum CONFIG {AUDIO_CONFIG = 1, VIDEO_CONFIG, COVER_CONFIG, BLACK_CONFIG};
-enum INPUT {VALID = 0, INVALID};
+enum INPUT {INVALID = -1, VALID};
 
 #define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET"\n", stderr))
 
