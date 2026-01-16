@@ -122,7 +122,7 @@ static void assertAddData(sqlite3* database, enum CONFIG exp_type, const char* e
         fail_msg("Did not add entry %s", exp_input);
     }
 }
-int closePerGroupDB(void** state){
+int closeDB(void** state){
     (void)sqlite3_close(*state);
     return 0;
 }
@@ -182,6 +182,16 @@ void testListRootAndPathsForConfig(void **state){
     assert(ret == NO_ERROR);
 }
 
+int __wrap_takeIndexInput(int max){
+    puts("EEEEK");
+    function_called();
+    if(has_mock()){
+        return mock_type(int);
+    }else{
+        stop();
+    }
+}
+
 char* __wrap_takeDirectoryInput(void){
     function_called();
     if(has_mock()){
@@ -193,7 +203,7 @@ char* __wrap_takeDirectoryInput(void){
 
 //the mock type should be a pointer in the HEAP as sourct implementation uses malloc
 //A stack pointer may be attempted to be freed and crash the test
-int __wrap_takeDepthInput(void){
+int __wrap_takeDepthInput(){
     function_called();
     if(has_mock()){
         return mock_type(int);
@@ -331,15 +341,32 @@ void testAddEntryToCoverConfig(void** state){
     assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
 }
 
+void testUpdateEntryCatchesInvalidIndex(void** state){
+    (void) state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    int index_input = INVALID;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+
+    editMenu(config_type);
+}
+
 void testUpdateEntryCatchesInvalidPath(void** state){
     (void) state;
     char edit_select [] = {UPT_OPT, '\0'};
+    int index_input = 1;
     char* dir_input = NULL;
     enum CONFIG config_type = AUDIO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
     expect_function_calls(__wrap_takeDirectoryInput, 2);
     will_return(__wrap_boundedInput, edit_select);
     will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
     will_return(__wrap_takeDirectoryInput, dir_input);
 
     editMenu(config_type);
@@ -348,14 +375,17 @@ void testUpdateEntryCatchesInvalidPath(void** state){
 void testUpdateEntryCatchesInvalidDepth(void** state){
     (void) state;
     char edit_select [] = {UPT_OPT, '\0'};
+    int index_input = 1;
     char dir_input [] = "IDunnoSomePath/";
     int depth_input = INVALID;
     enum CONFIG config_type = AUDIO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
     expect_function_calls(__wrap_takeDirectoryInput, 1);
     expect_function_calls(__wrap_takeDepthInput, 2);
     will_return(__wrap_boundedInput, edit_select);
     will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
     will_return(__wrap_takeDirectoryInput, dir_input);
     will_return(__wrap_takeDepthInput, depth_input);
 

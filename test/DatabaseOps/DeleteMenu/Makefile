@@ -1,7 +1,7 @@
 BINARY:=database_ops_unit_test.out
 OBJECT_DIR:=./test_objects
 TEST_CODE_DIR:=./test_source
-SOURCE_CODE_DIR:=../../source
+SOURCE_CODE_DIR:=../../../source
 INCLUDES:=-I../../includes -I./test_includes
 
 CC:=gcc
