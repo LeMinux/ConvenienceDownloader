@@ -142,7 +142,6 @@ char* takeDirectoryInput(void){
         return NULL;
     }
 
-
     return absolute_path;
 }
 
