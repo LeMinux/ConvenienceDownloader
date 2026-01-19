@@ -1,6 +1,6 @@
 #include "../test_include/delete_menu_unit_test.h"
 
-static void assertDeleteData(sqlite3* database, int root_id){
+static void assertDeleteData(sqlite3* database, int root_id, int exp_remaining){
     char sql_check_total [] =
         "SELECT (SELECT COUNT(root_id) FROM Roots WHERE root_id = ?) AS root_count,"
         "(SELECT COUNT(path_index) FROM Paths WHERE root_id = ?) AS path_count,"
@@ -28,11 +28,7 @@ static void assertDeleteData(sqlite3* database, int root_id){
         int total_remaining = sqlite3_column_int(total_statement, 2);
         assert_int_equal(total_root_rows, 0);
         assert_int_equal(total_path_rows, 0);
-        if(root_id != PERSONAL_ROOT_ID){
-            assert_int_equal(total_remaining, 17);
-        }else{
-            assert_int_equal(total_remaining, 19);
-        }
+        assert_int_equal(total_remaining, exp_remaining);
     }else{
         fail_msg("Could not determine total delete count");
     }
@@ -68,7 +64,7 @@ void testDeleteEntryAudioConfig(void** state){
 
     editMenu(config_type);
 
-    assertDeleteData(database, JAZZY_ROOT_ID);
+    assertDeleteData(database, JAZZY_ROOT_ID, TOTAL_ROWS - 3);
 }
 
 void testDeleteEntryVideoConfig(void** state){
@@ -87,7 +83,7 @@ void testDeleteEntryVideoConfig(void** state){
 
     editMenu(config_type);
 
-    assertDeleteData(database, KEEPS_ROOT_ID);
+    assertDeleteData(database, KEEPS_ROOT_ID, TOTAL_ROWS - 3);
 }
 
 void testDeleteEntryCoverConfig(void** state){
@@ -107,7 +103,7 @@ void testDeleteEntryCoverConfig(void** state){
     editMenu(config_type);
     listAllRootWithPaths();
 
-    assertDeleteData(database, ARTS_ROOT_ID);
+    assertDeleteData(database, ARTS_ROOT_ID, TOTAL_ROWS - 3);
 }
 
 void testDeleteEntryBlackList(void** state){
@@ -126,5 +122,5 @@ void testDeleteEntryBlackList(void** state){
 
     editMenu(config_type);
 
-    assertDeleteData(database, PERSONAL_ROOT_ID);
+    assertDeleteData(database, PERSONAL_ROOT_ID, TOTAL_ROWS - 1);
 }

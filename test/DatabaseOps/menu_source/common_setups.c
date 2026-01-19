@@ -3,7 +3,7 @@
 static const char SQL_ROOT_FORMAT [] =
     "INSERT INTO Roots (root_id, root_type, root_name, root_length, root_depth)"
     "VALUES"
-    "(1, %d, '%s', %d, %d),"     //audio
+    "(1, %d, '%s', %d, %d),"    //audio
     "(2, %d, '%s', %d, %d),"
     "(3, %d, '%s', %d, 5),"     //video
     "(4, %d, '%s', %d, 5),"

@@ -48,6 +48,8 @@
 #define AUDIO_DEPTH_1 5
 #define AUDIO_DEPTH_2 5
 
+#define TOTAL_ROWS 20
+
 void readScript(const char* file_path, char** sql_init);
 void executeQuery(sqlite3* test_db, const char* sql_statement);
 
