@@ -1,76 +1,7 @@
 #include "../test_include/update_menu_unit_test.h"
 
-//sizeof this will be used which would be the length of the raw string
-//numbers used shouldn't be beyond two digits so it should be fine
-static const char sql_root_format [] =
-    "INSERT INTO Roots (root_id, root_type, root_name, root_length, root_depth)"
-    "VALUES"
-    "(1, %d, '/home/user/Music/Rock/', 22, %d),"       //audio
-    "(2, %d, '/home/user/Videos/MVs/', 22, %d),"       //video
-    "(3, %d, '/home/user/Pictures/CVs/', 24, 1),"      //covers
-    "(4, %d, '/home/user/Pictures/Sensitives/', 31, 0);"; //black list
-
-static void readScript(const char* file_path, char** sql_init){
-    FILE* init_script = fopen(file_path, "rb");
-    if(init_script == NULL){
-        fail_msg("Could open initDB.sql\n");
-    }
-
-    int fd = fileno(init_script);
-    if(fd < 0){
-        fclose(init_script);
-        fail_msg("Could not get fd from file");
-    }
-
-    struct stat file_stats;
-    if (fstat(fd, &file_stats) < 0) {
-        fclose(init_script);
-        fail_msg("Could not get size info from file");
-    }
-
-    int init_size = file_stats.st_size;
-    char* sql_text = malloc(init_size + 1);
-
-    if(sql_text == NULL){
-        fclose(init_script);
-        fail_msg("Could not allocate space to place init script");
-    }
-
-    if(fread(sql_text, init_size, 1, init_script) != 1){
-        fclose(init_script);
-        fail_msg("Could not read init script");
-    }
-
-    (void)fclose(init_script);
-
-    sql_text[init_size] = '\0';
-    *sql_init = sql_text;
-}
-
-static void executeQuery(sqlite3* test_db, const char* sql_statement){
-    char* error_msg = NULL;
-    sqlite3_exec(test_db, sql_statement, NULL, NULL, &error_msg);
-    if(error_msg){
-        fail_msg("Failed to add entries for reading in memory database:%s\n", error_msg);
-    }
-}
-
-static void setUpRoots(sqlite3* database){
-    char sql_string [sizeof(sql_root_format)];
-
-    //an init script would be better, but if the arbritary numbers for INF_DEPTH
-    //and config numbers changed the file would need to manually change
-    snprintf(sql_string, sizeof(sql_root_format), sql_root_format,
-             AUDIO_CONFIG, INF_DEPTH,
-             VIDEO_CONFIG, INF_DEPTH,
-             COVER_CONFIG,
-             BLACK_CONFIG);
-
-    executeQuery(database, sql_string);
-}
-
 static void assertUpdateData(sqlite3* database, enum CONFIG exp_type, const char* exp_input, size_t exp_input_len, int exp_depth){
-    char sql_check [] = "SELECT root_type, root_name, root_length, root_depth FROM Roots WHERE root_name = ? AND root_type = ?";
+    char sql_check [] = "SELECT root_name, root_length, root_depth FROM Roots WHERE root_name = ? AND root_type = ?;";
     sqlite3_stmt* statement = NULL;
     int ret_code = sqlite3_prepare_v2(database, sql_check, -1, &statement, NULL);
 
@@ -83,55 +14,26 @@ static void assertUpdateData(sqlite3* database, enum CONFIG exp_type, const char
         fail_msg("Failed to bind data due to %s", sqlite3_errmsg(database));
     }
 
-    ret_code = sqlite3_step(statement);
-    if(ret_code == SQLITE_ROW){
-        enum CONFIG added_type = sqlite3_column_int(statement, 0);
-        char* added_string = (char*)sqlite3_column_text(statement, 1);
-        int root_length = sqlite3_column_int(statement, 2);
-        int root_depth = sqlite3_column_int(statement, 3);
+    ;
+    int update_count = 0;
+    while((ret_code = sqlite3_step(statement)) == SQLITE_ROW){
+        ++update_count;
+        char* added_string = (char*)sqlite3_column_text(statement, 0);
+        int root_length = sqlite3_column_int(statement, 1);
+        int root_depth = sqlite3_column_int(statement, 2);
 
-        assert_int_equal(added_type, exp_type);
         assert_string_equal(added_string, exp_input);
         assert_int_equal(root_length, exp_input_len);
         assert_int_equal(root_depth, exp_depth);
-    }else{
-        fail_msg("Did not update entry %s", exp_input);
-    }
-}
-
-int closeDB(void** state){
-    (void)sqlite3_close(*state);
-    return 0;
-}
-
-int createTestDB(void** state){
-    //don't want to be constantly opening the file for initalizing
-    //and only this method needs to init
-    static char* sql_init = NULL;
-
-    sqlite3* database = NULL;
-    int rc = sqlite3_open(TESTING_CONFIG_DB, &database);
-
-    if(rc != SQLITE_OK){
-        fail_msg("Unable to create in memory database\n");
-        return 1;
     }
 
-    if(sql_init == NULL){
-        readScript("../../../source/initDB.sql", &sql_init);
+    if(update_count == 0){
+        fail_msg("Did not update anything\n", exp_input);
     }
 
-    char* error_msg = NULL;
-    sqlite3_exec(database, sql_init, NULL, NULL, &error_msg);
-    if(error_msg){
-        fail_msg("Failed to create tables for in memory database:%s\n", error_msg);
-        return 1;
+    if(update_count > 1){
+        fail_msg("Updated too many root rows. Check the SQL statement\n");
     }
-
-    setUpRoots(database);
-    __testingSetDB(database);
-    *state = database;
-    return 0;
 }
 
 void testUpdateEntryCatchesInvalidIndex(void** state){
@@ -187,35 +89,239 @@ void testUpdateEntryCatchesInvalidDepth(void** state){
 
 void testUpdateEntryDiffPathAndDiffDepth(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = "UpdatedAudioRoot/";
+    int depth_input = 7;
+    enum CONFIG config_type = AUDIO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
 }
 
 void testUpdateEntryDiffPathAndSameDepth(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = "UpdatedAudioRoot/";
+    int depth_input = INF_DEPTH;
+    enum CONFIG config_type = AUDIO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
 }
 
 void testUpdateEntrySamePathAndDiffDepth(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = AUDIO_ROOT_2;
+    int depth_input = 82;
+    enum CONFIG config_type = AUDIO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
 }
 
 void testUpdateEntrySamePathAndSameDepth(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = "/home/user/Music/Rock/";
+    int depth_input = INF_DEPTH;
+    enum CONFIG config_type = AUDIO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
 }
 
-void testUpdateBlackList(void** state){
+void testUpdateEntryBlackList(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = "/SomePathIDon'tWant";
+    enum CONFIG config_type = BLACK_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, 0);
 }
 
-void testUpdateVideoConfig(void** state){
+void testUpdateEntryVideoConfig(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = "UpdatedVideoRoot/";
+    int depth_input = 7;
+    enum CONFIG config_type = VIDEO_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
 }
 
-void testUpdateCoverConfig(void** state){
+void testUpdateEntryCoverConfig(void** state){
     (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = "UpdatedCoverRoot/";
+    int depth_input = 7;
+    enum CONFIG config_type = COVER_CONFIG;
 
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
+}
+
+void testUpdateEntryDuplicateNameInSameConfig(void** state){
+    (void) state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    int index_input = 1;
+    const char* dir_input = AUDIO_ROOT_1;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+
+    editMenu(config_type);
+}
+
+void testUpdateEntryDuplicateNameInDiffConfig(void** state){
+    (void) state;
+    sqlite3* database = *state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    char exit_select [] = {EXT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = AUDIO_ROOT_2;
+    int depth_input = 7;
+    enum CONFIG config_type = VIDEO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+    will_return(__wrap_boundedInput, exit_select);
+    will_return(__wrap_boundedInput, 1);
+
+    editMenu(config_type);
+
+    assertUpdateData(database, config_type, dir_input, sizeof(dir_input) - 1, depth_input);
+}
+
+void testUpdateEntryAddingExistingToBlackList(void** state){
+    (void) state;
+    char edit_select [] = {UPT_OPT, '\0'};
+    int index_input = 1;
+    const char dir_input [] = AUDIO_ROOT_1;
+    enum CONFIG config_type = BLACK_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    expect_function_calls(__wrap_takeDirectoryInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+
+    editMenu(config_type);
 }

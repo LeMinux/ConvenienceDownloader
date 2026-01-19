@@ -1,18 +1,9 @@
 #ifndef ADD_MENU_TEST_H
 #define ADD_MENU_TEST_H
 
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include "testGlobals.h"
-#include "databaseOps.h"
-#include "testWrapInput.h"
+#include "../../menu_includes/common_setups.h"
 
 #define DUPLICATE_ENTRY "Duplicate/"
-
-int createTestDB(void** state);
-int closeDB(void** state);
 
 void testAddEntryCatchesInvalidPath(void** state);
 void testAddEntryCatchesInvalidDepth(void** state);

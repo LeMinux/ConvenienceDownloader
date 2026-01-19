@@ -1,4 +1,4 @@
-#include "../test_include/database_ops_unit_test.h"
+#include "../test_include/delete_menu_unit_test.h"
 
 int main(void){
     #ifndef TESTING
@@ -6,36 +6,12 @@ int main(void){
         exit(EXIT_FAILURE);
     #endif
 
-    const struct CMUnitTest databas_ops_tests[] = {
-        /* read tests */
-        cmocka_unit_test(testListAllRoots),
-        cmocka_unit_test(testListAllRootsWithPaths),
-        cmocka_unit_test(testListRootsForConfig),
-        cmocka_unit_test(testListRootAndPathsForConfig),
-
-        /* add tests */
-        cmocka_unit_test(testAddEntryCatchesInvalidPath),
-        cmocka_unit_test(testAddEntryCatchesInvalidDepth),
-        cmocka_unit_test(testAddEntryEnterBothValidInput),
-        cmocka_unit_test(testAddEntryWithBlackList),
-        cmocka_unit_test(testAddEntryToVideoConfig),
-        cmocka_unit_test(testAddEntryToCoverConfig),
-
-        /* update tests */
-        cmocka_unit_test_setup_teardown(testUpdateEntryCatchesInvalidIndex, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testUpdateEntryCatchesInvalidDepth, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testUpdateEntryCatchesInvalidPath, createTestDB, closeDB),
-        //cmocka_unit_test(testUpdateEntryDiffPathAndDiffDepth),
-        //cmocka_unit_test(testUpdateEntryDiffPathAndSameDepth),
-        //cmocka_unit_test(testUpdateEntrySamePathAndDiffDepth),
-        //cmocka_unit_test(testUpdateEntrySamePathAndSameDepth),
-
-        /* delete tests */
-
-        /* edit menu tests? */
+    const struct CMUnitTest delete_tests[] = {
+        cmocka_unit_test_setup_teardown(testDeleteEntryCatchesInvalidIndex, createTestDBWithRootsAndPaths, closeDB),
+        cmocka_unit_test_setup_teardown(testDeleteEntryAudioConfig, createTestDBWithRootsAndPaths, closeDB),
+        cmocka_unit_test_setup_teardown(testDeleteEntryVideoConfig, createTestDBWithRootsAndPaths, closeDB),
+        cmocka_unit_test_setup_teardown(testDeleteEntryCoverConfig, createTestDBWithRootsAndPaths, closeDB),
+        cmocka_unit_test_setup_teardown(testDeleteEntryBlackList, createTestDBWithRootsAndPaths, closeDB),
     };
-    return
-        cmocka_run_group_tests(read_tests, createTestDB, closeDB) &&
-        cmocka_run_group_tests(add_tests, createTestDB, closeDB) &&
-        cmocka_run_group_tests(update_tests, NULL, NULL)// &&
+    return cmocka_run_group_tests(delete_tests, NULL, NULL);
 }

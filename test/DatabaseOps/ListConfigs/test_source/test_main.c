@@ -13,5 +13,5 @@ int main(void){
         cmocka_unit_test(testListRootAndPathsForConfig),
     };
 
-    return cmocka_run_group_tests(read_tests, createTestDB, closeDB);
+    return cmocka_run_group_tests(read_tests, createTestDBWithRootsAndPaths, closeDB);
 }

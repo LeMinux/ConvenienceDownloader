@@ -4,43 +4,6 @@ static const char add_dup_format [] =
     "INSERT INTO Roots (root_id, root_type, root_name, root_length, root_depth) VALUES"
     "(99, ?, ?, ?, 4)";
 
-static void readScript(const char* file_path, char** sql_init){
-    FILE* init_script = fopen(file_path, "rb");
-    if(init_script == NULL){
-        fail_msg("Could not open initDB.sql\n");
-    }
-
-    int fd = fileno(init_script);
-    if(fd < 0){
-        fclose(init_script);
-        fail_msg("Could not get fd from file");
-    }
-
-    struct stat file_stats;
-    if (fstat(fd, &file_stats) < 0) {
-        fclose(init_script);
-        fail_msg("Could not get size info from file");
-    }
-
-    int init_size = file_stats.st_size;
-    char* sql_text = malloc(init_size + 1);
-
-    if(sql_text == NULL){
-        fclose(init_script);
-        fail_msg("Could not allocate space to place init script");
-    }
-
-    if(fread(sql_text, init_size, 1, init_script) != 1){
-        fclose(init_script);
-        fail_msg("Could not read init script");
-    }
-
-    (void)fclose(init_script);
-
-    sql_text[init_size] = '\0';
-    *sql_init = sql_text;
-}
-
 static void addDupEntry(sqlite3* test_db, enum CONFIG config, const char* dup){
     sqlite3_stmt* statement = NULL;
     int ret_code = sqlite3_prepare_v2(test_db, add_dup_format, -1, &statement, NULL);
@@ -90,39 +53,6 @@ static void assertAddData(sqlite3* database, enum CONFIG exp_type, const char* e
     }else{
         fail_msg("Did not add entry %s", exp_input);
     }
-}
-int closeDB(void** state){
-    (void)sqlite3_close(*state);
-    return 0;
-}
-
-int createTestDB(void** state){
-    //don't want to be constantly opening the file for initalizing
-    //and only this method needs to init
-    static char* sql_init = NULL;
-
-    sqlite3* database = NULL;
-    int rc = sqlite3_open(TESTING_CONFIG_DB, &database);
-
-    if(rc != SQLITE_OK){
-        fail_msg("Unable to create in memory database\n");
-        return 1;
-    }
-
-    if(sql_init == NULL){
-        readScript("../../../source/initDB.sql", &sql_init);
-    }
-
-    char* error_msg = NULL;
-    sqlite3_exec(database, sql_init, NULL, NULL, &error_msg);
-    if(error_msg){
-        fail_msg("Failed to create tables for in memory database:%s\n", error_msg);
-        return 1;
-    }
-
-    __testingSetDB(database);
-    *state = database;
-    return 0;
 }
 
 void testAddEntryCatchesInvalidPath(void** state){
