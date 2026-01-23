@@ -1,4 +1,4 @@
-SUBDIRS:=./AddMenu ./DeleteMenu ./UpdateMenu/ ./ListConfigs/
+SUBDIRS:=./DeleteMenu ./ListConfigs/
 
 ops-all: $(SUBDIRS)
 	for dir in $(SUBDIRS); do\

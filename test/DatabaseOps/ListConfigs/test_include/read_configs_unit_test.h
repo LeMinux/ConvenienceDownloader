@@ -1,7 +1,8 @@
 #ifndef LIST_CONFIG_TEST_H
 #define LIST_CONFIG_TEST_H
 
-#include "../../menu_includes/common_setups.h"
+#include "testGlobals.h"
+#include "databaseOps.h"
 
 //Tests if the printing functions don't return error
 //as stdout would need to be redirected which can affect other tests breaking isolation

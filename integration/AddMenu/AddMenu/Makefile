@@ -1,17 +1,16 @@
-BINARY:=update_menu_unit_test.out
+BINARY:=add_menu_integration_test.out
 OBJECT_DIR:=./test_objects
 TEST_CODE_DIR:=./test_source
 SOURCE_CODE_DIR:=../../../source
 COMMON_CODE_DIR:=../menu_source
-INCLUDES:=-I../../../includes -I./test_includes -I../menu_includes/
+INCLUDES:=-I../../../includes -I./test_includes
 
 CC:=gcc
 COMPILER_FLAG:=-DTESTING
 DEP_FLAGS :=-MP -MD
 C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 		  -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings
-MOCK_FLAGS:=-Wl,--wrap=boundedInput,--wrap=takeDirectoryInput,--wrap=takeDepthInput,--wrap=takeIndexInput
-
+MOCK_FLAGS:=-Wl,--wrap=boundedInput,--wrap=takeDirectoryInput,--wrap=takeDepthInput
 
 COMMON_C_FILES:=$(wildcard $(COMMON_CODE_DIR)/*.c)
 TEST_C_FILES:=$(wildcard $(TEST_CODE_DIR)/*.c)

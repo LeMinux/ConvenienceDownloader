@@ -1,4 +1,4 @@
-#include "../test_include/add_menu_unit_test.h"
+#include "../test_include/add_menu_integration_test.h"
 
 static const char add_dup_format [] =
     "INSERT INTO Roots (root_id, root_type, root_name, root_length, root_depth) VALUES"
@@ -25,7 +25,7 @@ static void addDupEntry(sqlite3* test_db, enum CONFIG config, const char* dup){
     }
 }
 
-static void assertAddData(sqlite3* database, enum CONFIG exp_type, const char* exp_input, size_t exp_input_len, int exp_depth){
+static void assertRootRow(sqlite3* database, enum CONFIG exp_type, const char* exp_input, size_t exp_input_len, int exp_depth){
     char sql_check [] = "SELECT root_type, root_name, root_length, root_depth FROM Roots WHERE root_name = ? AND root_type = ?";
     sqlite3_stmt* statement = NULL;
     int ret_code = sqlite3_prepare_v2(database, sql_check, -1, &statement, NULL);
@@ -52,6 +52,53 @@ static void assertAddData(sqlite3* database, enum CONFIG exp_type, const char* e
         assert_int_equal(root_depth, exp_depth);
     }else{
         fail_msg("Did not add entry %s", exp_input);
+    }
+}
+
+static int indexOfExpString(const char* act_string, const PathCheck_t* exp_list, size_t length){
+    int is_found = NOT_FOUND;
+    for(int i = 0; i < length && is_found == NOT_FOUND; ++i){
+        if(strcmp(act_string, exp_list[i].exp_path_name) == 0){
+            is_found = i;
+        }
+    }
+
+    return is_found;
+}
+
+//Using an empty database per test makes it easier by not dealing with obtaining
+//a root ID
+static void assertPaths(sqlite3* database, int exp_count, PathCheck_t* exp_path_names){
+    char sql_count [] = "SELECT COUNT(path_index) FROM Paths";
+    char sql_get_paths [] = "SELECT path_name, path_length FROM Paths";
+    sqlite3_stmt* count_statement = NULL;
+    sqlite3_stmt* paths_statement = NULL;
+
+    int ret_code = sqlite3_prepare_v2(database, sql_get_paths, -1, &paths_statement, NULL);
+    if(ret_code != SQLITE_OK){
+        fail_msg("Failed to check data due to %s", sqlite3_errmsg(database));
+    }
+
+    ret_code = sqlite3_prepare_v2(database, sql_count, -1, &count_statement, NULL);
+    if(ret_code != SQLITE_OK){
+        fail_msg("Failed to check data due to %s", sqlite3_errmsg(database));
+    }
+
+    ret_code = sqlite3_step(count_statement);
+    if(ret_code == SQLITE_ROW){
+        int act_count = sqlite3_column_int(count_statement, 0);
+        assert_int_equal(act_count, exp_count);
+
+        while((ret_code = sqlite3_step(paths_statement)) == SQLITE_ROW){
+            char* act_path_name = (char*)sqlite3_column_text(paths_statement, 0);
+            int act_path_length = sqlite3_column_int(statement, 1);
+
+            int index = indexOfExpString(act_path_name, exp_path_names, exp_count);
+            assert_int_not_equal(index, NOT_FOUND);
+            assert_int_equal(act_count, exp_path_names[i].exp_path_len);
+        }
+    }else{
+        fail_msg("Could not get count of paths");
     }
 }
 
@@ -86,12 +133,22 @@ void testAddEntryCatchesInvalidDepth(void** state){
     editMenu(config_type);
 }
 
-void testAddEntryEnterBothValidInput(void** state){
+void testAddEntryEnterInfInputOnRootDir(void** state){
     sqlite3* database = *state;
     char edit_select [] = {ADD_OPT, '\0'};
     char exit_select [] = {EXT_OPT, '\0'};
-    const char input [] = "HaHaAudioRoot/";
-    int depth_input = 7;
+    const char input [] = ROOT1;
+    PathCheck_t exp_stats [] = {
+        {LEFT_DIR, sizeof(LEFT_DIR) - 1},
+        {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
+        {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGTH) - 1},
+        {LEFT_DIR_MOST_INNER, sizeof(LEFT_DIR_MOST_INNER) - 1},
+        {RIGHT_DIR, sizeof(RIGHT_DIR) - 1},
+        {RIGHT_DIR_RIGHT, sizeof(RIGHT_DIR_LEFT) - 1},
+        {RIGHT_DIR_RIGHT, sizeof(RIGHT_DIR_RIGTH) - 1},
+        {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
+    }
+    int depth_input = INF;
     enum CONFIG config_type = AUDIO_CONFIG;
 
     expect_function_calls(__wrap_takeDirectoryInput, 1);
@@ -105,7 +162,8 @@ void testAddEntryEnterBothValidInput(void** state){
 
     editMenu(config_type);
 
-    assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
+    assertRootrow(database, config_type, input, sizeof(input) - 1, depth_input);
+    assertPaths(database, sizeof(exp_stats)/sizeof(exp_stats[0]), exp_stats);
 }
 
 void testAddEntryWithBlackList(void** state){
@@ -172,7 +230,6 @@ void testAddEntryToCoverConfig(void** state){
     assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
 }
 
-
 void testAddEntryDuplicateNameButDiffConfigType(void** state){
     sqlite3* database = *state;
     char edit_select [] = {ADD_OPT, '\0'};
@@ -195,7 +252,6 @@ void testAddEntryDuplicateNameButDiffConfigType(void** state){
     assertAddData(database, config_type, input, sizeof(input) - 1, depth_input);
 }
 
-
 void testAddEntryCatchesDuplicateNameAndType(void** state){
     sqlite3* database = *state;
     char edit_select [] = {ADD_OPT, '\0'};
@@ -208,5 +264,19 @@ void testAddEntryCatchesDuplicateNameAndType(void** state){
     will_return(__wrap_takeDirectoryInput, input);
 
     addDupEntry(database, config_type, input);
+    editMenu(config_type);
+}
+
+void testAddEntryCatchesPathInBlackList(void** state){
+    (void) state;
+    char edit_select [] = {ADD_OPT, '\0'};
+    char* dir_input = ;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 2);
+    will_return(__wrap_boundedInput, edit_select);
+    will_return(__wrap_boundedInput, 1);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+
     editMenu(config_type);
 }
