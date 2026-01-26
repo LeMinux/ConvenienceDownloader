@@ -22,9 +22,8 @@ static void normalizeNumericInput(char* input){
 
 /*
 *   Takes a path input and sets it to an absolute path.
-*   This adds a trailing slash to the end
 *
-*   return: absolute path with a trailing slash
+*   return: absolute path without a trailing slash
 */
 static char* canonizePath(const char* input){
     assert(input != NULL);
@@ -41,28 +40,6 @@ static char* canonizePath(const char* input){
             default: PRINT_ERROR("System error occured preventing making absolute path"); break;
         }
         return NULL;
-    }
-
-    //add trailing / to the end just to make things a bit easier for strings
-    size_t path_len = strlen(absolute_path);
-    if(absolute_path[path_len - 1] != '/'){
-        if(path_len + 1 <= PATH_MAX){
-            void* temp = realloc(absolute_path, path_len + 1);
-            if(temp == NULL){
-                free(absolute_path);
-                absolute_path = NULL;
-                return NULL;
-            }else{
-                absolute_path = temp;
-                absolute_path[path_len] = '/';
-                absolute_path[path_len + 1] = '\0';
-            }
-        }else{
-            PRINT_FORMAT_ERROR("Path is too large to add trailing / to the end: %s", input);
-            free(absolute_path);
-            absolute_path = NULL;
-            return NULL;
-        }
     }
 
     return absolute_path;
