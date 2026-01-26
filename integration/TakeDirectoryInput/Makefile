@@ -7,11 +7,13 @@ INCLUDES:=-I../../includes -I./test_includes
 TEST_ENV:=test_env
 TEST_DIR:=test_dir
 TEST_FILE:=test_file
+
 TEST_DIR_LINK:=$(TEST_ENV)/link_test_dir
 TEST_FILE_LINK:=$(TEST_ENV)/link_test_file
 TEST_BROKEN_LINK:=$(TEST_ENV)/link_broken
 TEST_NO_PERM_LINK:=$(TEST_ENV)/link_no_perm
 TEST_NON_EXIST:=$(TEST_ENV)/nope
+TEST_HAS_SPACES:="$(TEST_ENV)/dir with spaces"
 
 
 CC:=gcc

@@ -9,17 +9,23 @@
 #include "databaseUserInput.h"
 
 
-void testTakeDirectoryInputAbsolutePathToDir(void** state);
-void testTakeDirectoryInputAbsolutePathToFile(void** state);
+//trailing slashes
+void testTakeDirectoryInputAbsolutePathToDirWithTrailingSlash(void** state);
+void testTakeDirectoryInputAbsolutePathToDirWithoutTrailingSlash(void** state);
 
-void testTakeDirectoryInputRelativePathToDir(void** state);
-void testTakeDirectoryInputRelativePathToFile(void** state);
+void testTakeDirectoryInputRelativePathToDirWithTrailingSlash(void** state);
+void testTakeDirectoryInputRelativePathToDirWithoutTrailingSlash(void** state);
 
+//tilde
 void testTakeDirectoryInputTildePathToDir(void** state);
 void testTakeDirectoryInputTildePathToFile(void** state);
 
+//special cases
+void testTakeDirectoryInputAbsolutePathToNonDir(void** state);
+void testTakeDirectoryInputRelativePathToNonDir(void** state);
 void testTakeDirectoryInputPathToNonExist(void** state);
 
+//links
 void testTakeDirectoryInputLinkToDir(void** state);
 void testTakeDirectoryInputLinkToDirWithTrailingSlash(void** state);
 void testTakeDirectoryInputLinkToFile(void** state);
@@ -29,13 +35,10 @@ void testTakeDirectoryInputLinkToNoPerms(void** state);
 //permissions
 void testTakeDirectoryInputNoPermsAbsolutePath(void** state);
 void testTakeDirectoryInputNoPermsRelativePath(void** state);
-void testTakeDirectoryInputLinkToNoPerms(void** state);
 
 void testTakeDirectoryInputNoWritePerms(void **state);
 
 //formatting
-
-void testTakeDirectoryInputNoSlashAtEndAboslute(void** state);
-void testTakeDirectoryInputNoSlashAtEndRelative(void** state);
+void testTakeDirectoryInputPathHasSpaces(void** state);
 
 #endif
