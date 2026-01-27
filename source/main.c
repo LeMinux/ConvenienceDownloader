@@ -7,6 +7,33 @@
 #include "../includes/databaseOps.h"
 #include "../includes/userInput.h"
 
+static void editMenu(enum CONFIG config){
+    int editing = 1;
+    char buffer [5] = ""; //buffer of 5 just to see if length is greater than 1
+    while(editing){
+        enum ERROR err = NO_ERROR;
+        err = listConfigRoots(config);
+
+        if(err){
+            PRINT_ERROR("Could not list paths");
+            break;
+        }
+
+        printf("What action do you want to take?\n%c) Add\n%c) Update\n%c) Delete\n%c) Exit\nEnter the number: ", ADD_OPT, UPT_OPT, DEL_OPT, EXT_OPT);
+        if(boundedInput(stdin, buffer, 5) != 1){
+            puts("Input only needs to be a single digit");
+            continue;
+        }
+        switch(buffer[0]){
+            case ADD_OPT: addMenu(config); break;
+            case UPT_OPT: updateMenu(config); break;
+            case DEL_OPT: deleteMenu(config); break;
+            case EXT_OPT: editing = 0; break;
+            default: ADVISE_USER("Enter an available number"); break;
+        }
+    }
+}
+
 int main(int argc, char** argv){
     if(initDatabase() == HAD_ERROR){
         exit(EXIT_FAILURE);
@@ -104,8 +131,8 @@ int main(int argc, char** argv){
                     "-l, --list\t\t\tPrint all your root paths from your config\n"
                     "-d, --deep-list\t\t\tPrint all potential destinations based on your config\n"
                     "-f, --file [FILE]\t\t\tSpecify a file with youtube URLs separated by newlines\n"
-                    "-r, --refresh\t\t\tTell the database to scan through its root paths to remove or add entries."
-                    "-e, --edit \t\t\t[(a)udio, (v)ideo, (c)over, (b)lack] edit your destinations for the specified type. Short hand a, v, and c can be used"
+                    "-r, --refresh\t\t\tTell the database to scan through its root paths to remove or add root paths."
+                    "-e, --edit [a,v,c]\t\t\tedit your destinations for the specified type."
                     "-c, --cover=COVER\t\tSpecify what cover art to use or pass NO-ART to enforce adding no art\n",
                     //"-a, --write-audio=PATH,DEPTH\tSpecify what file paths to save audio to and their depths. Only giving the path without a depth will default to infinite depth.\n"
                     //"-o, --write-video=PATH,DEPTH\tSpecify what file paths to save video to and their depths. Only giving the path without a depth will default to infinite depth.\n",
@@ -124,7 +151,7 @@ int main(int argc, char** argv){
             break;
         }
     } //end of arg parsing
-    
+
     puts("Finished parsing");
 
     if(url_list == NULL){
