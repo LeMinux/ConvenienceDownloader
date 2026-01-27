@@ -1,4 +1,4 @@
-#include "../integration_includes/take_directory_input_integration_test.h"
+#include "../includes/take_directory_input_integration_test.h"
 
 enum ACCEPTING_TRAILING_SLASH {NO = 0, YES};
 enum ACCEPTING_TRAILING_SLASH want_slash = NO;
@@ -8,10 +8,8 @@ void testTakeDirectoryInputAbsolutePathToDirWithTrailingSlash(void** state){
     char directory_input [] = "/tmp/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
-    directory_input[sizeof(directory_input) - 1] = '\0';
 
     assert_string_equal(act_result, "/tmp");
 }
@@ -21,10 +19,8 @@ void testTakeDirectoryInputAbsolutePathToDirWithoutTrailingSlash(void** state){
     char directory_input [] = "/tmp";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
-    directory_input[sizeof(directory_input) - 1] = '\0';
 
     assert_string_equal(act_result, "/tmp");
 }
@@ -34,7 +30,6 @@ void testTakeDirectoryInputRelativePathToDirWithTrailingSlash(void** state){
     char directory_input [] = "../../../../../../../../../tmp/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -46,7 +41,6 @@ void testTakeDirectoryInputRelativePathToDirWithoutTrailingSlash(void** state){
     const char directory_input [] = "../../../../../../../../../tmp";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -58,7 +52,6 @@ void testTakeDirectoryInputAbsolutePathToNonDir(void** state){
     const char directory_input [] = "/etc/passwd";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -70,7 +63,6 @@ void testTakeDirectoryInputRelativePathToNonDir(void** state){
     const char directory_input [] = "../../../../../../../../../../etc/passwd";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -82,7 +74,6 @@ void testTakeDirectoryInputTildePathToDir(void** state){
     const char directory_input [] = "~/.config/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -94,7 +85,6 @@ void testTakeDirectoryInputTildePathToFile(void** state){
     const char directory_input [] = "~/.bashrc";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -106,7 +96,6 @@ void testTakeDirectoryInputPathToNonExist(void** state){
     const char directory_input [] = "/wow/this/is/some/path/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -118,7 +107,6 @@ void testTakeDirectoryInputLinkToDir(void** state){
     const char directory_input [] = "./test_env/link_test_dir";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -135,7 +123,6 @@ void testTakeDirectoryInputLinkToDirWithTrailingSlash(void** state){
     const char directory_input [] = "./test_env/link_test_dir/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -147,7 +134,6 @@ void testTakeDirectoryInputLinkToFile(void** state){
     const char directory_input [] = "./test_env/link_test_file";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -159,7 +145,6 @@ void testTakeDirectoryInputPathToBrokenLink(void** state){
     const char directory_input [] = "./test_env/link_broken/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -172,7 +157,6 @@ void testTakeDirectoryInputLinkToNoPerms(void** state){
     const char directory_input [] = "./test_env/link_no_perm/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -185,7 +169,6 @@ void testTakeDirectoryInputNoPermsAbsolutePath(void** state){
     const char directory_input [] = "/root/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -197,7 +180,6 @@ void testTakeDirectoryInputNoPermsRelativePath(void** state){
     const char directory_input [] = "../../../../../../../../../../../root/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -209,7 +191,6 @@ void testTakeDirectoryInputNoWritePerms(void** state){
     const char directory_input [] = "/usr/bin/";
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 
@@ -226,7 +207,6 @@ void testTakeDirectoryInputPathHasSpaces(void** state){
     char* exp_result = directory_input;
 
     will_return(__wrap_boundedInput, directory_input);
-    will_return(__wrap_boundedInput, strlen(directory_input));
 
     char* act_result = takeDirectoryInput();
 

@@ -1,4 +1,4 @@
-#include "../integration_includes/take_directory_input_integration_test.h"
+#include "../includes/take_directory_input_integration_test.h"
 
 int main(void){
     const struct CMUnitTest dir_input_test[] = {
