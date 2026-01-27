@@ -70,7 +70,7 @@ int takeDepthInput(void){
                 depth = INVALID;
             }
         }else{
-            if(errno == ERANGE || depth > INT_MAX){
+            if(errno == ERANGE || depth > MAX_DEPTH){
                 ADVISE_USER("Depth given is too large");
                 depth = INVALID;
             }

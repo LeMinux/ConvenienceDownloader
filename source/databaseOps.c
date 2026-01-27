@@ -10,12 +10,18 @@ static int getNumOfRowsForConfig(enum CONFIG config){
            config == BLACK_CONFIG);
 
     //root_id is indexed so the count should be faster
-    const char sql_statement [] = "SELECT COUNT(root_id) FROM Roots";
+    const char sql_statement [] = "SELECT COUNT(root_id) FROM Roots WHERE root_type = ?;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
     if(ret_code != SQLITE_OK){
         PRINT_FORMAT_ERROR("Failed to obtain count of rows: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+
+    if(sqlite3_bind_int(results, 1, config) != SQLITE_OK){
+        PRINT_ERROR("Failed to bind config to obtain row count");
         return HAD_ERROR;
     }
 
@@ -28,17 +34,49 @@ static int getNumOfRowsForConfig(enum CONFIG config){
     return sqlite3_column_int(results, 0);
 }
 
-static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
+static int translateIndexToRow(int user_selection, enum CONFIG config_type){
+    assert(user_selection > 0);
+    assert(user_selection <= getNumOfRowsForConfig(config_type));
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
+
+    const char sql_statement [] = "SELECT root_id FROM Roots WHERE root_type = ? ORDER BY root_name LIMIT 1 OFFSET ?;";
+
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to translate index to row: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+
+    if(
+        sqlite3_bind_int(results, 1, config_type) != SQLITE_OK ||
+        sqlite3_bind_int(results, 2, user_selection - 1) != SQLITE_OK
+    ){
+        PRINT_ERROR("Failed to bind parameters to translate index to row");
+        return HAD_ERROR;
+    }
+
+    ret_code = sqlite3_step(results);
+    if(ret_code != SQLITE_ROW){
+        PRINT_FORMAT_ERROR("Could not obtain index translated row: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    return sqlite3_column_int(results, 0);
+}
+
+
+static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size, size_t root_len){
     assert(single_database_connection != NULL);
     assert(entry != NULL && entry[0] != '\0');
-    assert(depth >= 0 || depth == INF_DEPTH);
-    assert(config == AUDIO_CONFIG ||
-           config == VIDEO_CONFIG ||
-           config == COVER_CONFIG ||
-           config == BLACK_CONFIG);
+    assert(path_size <= PATH_MAX);
 
-
-    const char sql_statement [] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?)";
+    const char sql_statement [] = "INSERT INTO Paths (root_id, path_name, path_length) VALUES (?, ?, ?)";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -47,10 +85,11 @@ static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
         return HAD_ERROR;
     }
 
-    if(sqlite3_bind_int(results, 1, config) != SQLITE_OK ||
-    sqlite3_bind_text(results, 2, entry, strlen(entry), NULL) != SQLITE_OK ||
-    sqlite3_bind_int(results, 3, strlen(entry)) != SQLITE_OK ||
-    sqlite3_bind_int(results, 4, depth) != SQLITE_OK){
+    if(
+        sqlite3_bind_int(results, 1, root_id) != SQLITE_OK ||
+        sqlite3_bind_text(results, 2, entry + root_len, path_size - root_len, NULL) != SQLITE_OK ||
+        sqlite3_bind_int(results, 3, path_size - root_len) != SQLITE_OK
+    ){
         PRINT_ERROR("Failed to bind parameters. No changes have been made");
         return HAD_ERROR;
     }
@@ -58,43 +97,106 @@ static enum ERROR addEntry(enum CONFIG config, const char* entry, int depth){
     ret_code = sqlite3_step(results);
     enum ERROR func_return = HAD_ERROR;
     switch(ret_code){
-        case SQLITE_DONE: ADVISE_USER("Added entry!"); func_return = NO_ERROR; break;
+        case SQLITE_DONE: func_return = NO_ERROR; break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_ERROR: PRINT_FORMAT_ERROR("Database error: %s", sqlite3_errmsg(single_database_connection)); break;
         case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not add entry. You can try again."); break;
-        default: PRINT_ERROR("Error in database prevented adding the entry"); break;
+        default: PRINT_FORMAT_ERROR("Error in database prevented adding path entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
     return func_return;
 }
 
-static void addMenu(enum CONFIG config_type){
-    assert(single_database_connection != NULL);
-    assert(config_type == AUDIO_CONFIG ||
-           config_type == VIDEO_CONFIG ||
-           config_type == COVER_CONFIG ||
-           config_type == BLACK_CONFIG);
+static void addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth){
+    assert(root_path != NULL);
 
-    char* path_input;
-    int depth = 0;
-    while((path_input = takeDirectoryInput()) == NULL) {}
+    if(depth == 0) return;
 
-    if(config_type != BLACK_CONFIG){
-        while((depth = takeDepthInput()) == INVALID);
+    DIR* dir_stream = opendir(root_path);
+    if(dir_stream == NULL) return;
+
+    struct dirent* dir_entry;
+    while((dir_entry = readdir(dir_stream)) != NULL){
+        if( strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0){
+            continue;
+        }
+
+        char full_path [PATH_MAX];
+        int path_size = snprintf(full_path, PATH_MAX, "%s/%s", root_path, dir_entry->d_name);
+        if(path_size >= PATH_MAX){
+            ADVISE_USER_FORMAT("Can't add path '%s/%s' because it's too long", full_path, dir_entry->d_name);
+            continue;
+        }
+
+        struct stat file_stat = {0};
+        if(lstat(full_path, &file_stat) != 0){
+            continue;
+        }
+
+        if(!S_ISDIR(file_stat.st_mode)){
+            continue;
+        }
+
+        addPathEntry(root_id, full_path, path_size, root_len);
+        //check for errors
+        addSubDirs(root_id, full_path, root_len, (depth == INF_DEPTH) ? INF_DEPTH : depth - 1);
     }
 
-    (void)addEntry(config_type, path_input, depth);
-    free(path_input);
-    path_input = NULL;
+    closedir(dir_stream);
 }
 
-static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
+static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth){
+    assert(single_database_connection != NULL);
+    assert(entry != NULL && entry[0] != '\0');
+    assert(depth >= 0 || depth == INF_DEPTH);
+    assert(config == AUDIO_CONFIG ||
+           config == VIDEO_CONFIG ||
+           config == COVER_CONFIG ||
+           config == BLACK_CONFIG);
+
+    const char sql_statement [] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?) RETURNING root_id";
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to prepare adding %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    int entry_size = strlen(entry) + 1;
+    if(
+        sqlite3_bind_int(results, 1, config) != SQLITE_OK ||
+        sqlite3_bind_text(results, 2, entry, entry_size, NULL) != SQLITE_OK ||
+        sqlite3_bind_int(results, 3, entry_size - 1) != SQLITE_OK ||
+        sqlite3_bind_int(results, 4, depth) != SQLITE_OK
+    ){
+        PRINT_ERROR("Failed to bind parameters. No changes have been made");
+        return HAD_ERROR;
+    }
+
+    ret_code = sqlite3_step(results);
+    int inserted_id = -1;
+    int err_ret = HAD_ERROR;
+    switch(ret_code){
+        case SQLITE_ROW:
+            inserted_id = sqlite3_column_int(results, 0);
+            addSubDirs(inserted_id, entry, entry_size, depth);
+            err_ret = NO_ERROR;
+        break;
+        case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
+        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not add entry. You can try again."); break;
+        default: PRINT_FORMAT_ERROR("Error in database prevented adding root entry: %s", sqlite3_errmsg(single_database_connection)); break;
+    }
+
+    return err_ret;
+}
+
+static enum ERROR updateRootEntry(int index, const char* new_value, int new_depth){
     assert(single_database_connection != NULL);
     assert(index > 0);
     assert(new_value != NULL);
-    assert(new_depth > 0 || new_depth == INF_DEPTH);
+    assert(new_depth >= 0 || new_depth == INF_DEPTH);
 
-    const char sql_statement [] = "UPDATE FROM Roots SET root_name = ?, root_depth = ? WHERE root_id = ?";
+    const char sql_statement [] = "UPDATE Roots SET root_name = ?, root_length = ?, root_depth = ? WHERE root_id = ?;";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
@@ -104,28 +206,34 @@ static enum ERROR updateEntry(int index, const char* new_value, int new_depth){
         return HAD_ERROR;
     }
 
-    sqlite3_bind_text(results, 1, new_value, strlen(new_value), NULL);
-    sqlite3_bind_int(results, 2, new_depth);
-    sqlite3_bind_int(results, 3, index);
+    if(
+        sqlite3_bind_text(results, 1, new_value, strlen(new_value) + 1, NULL) != SQLITE_OK ||
+        sqlite3_bind_int(results, 2, strlen(new_value)) != SQLITE_OK ||
+        sqlite3_bind_int(results, 3, new_depth) != SQLITE_OK ||
+        sqlite3_bind_int(results, 4, index) != SQLITE_OK
+    ){
+        PRINT_ERROR("Failed to bind update query");
+        return HAD_ERROR;
+    }
 
     ret_code = sqlite3_step(results);
     enum ERROR func_return = HAD_ERROR;
     switch(ret_code){
         case SQLITE_DONE: ADVISE_USER("Updated entry!"); func_return = NO_ERROR; break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_ERROR: PRINT_FORMAT_ERROR("Database error: %s", sqlite3_errmsg(single_database_connection)); break;
         case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not update the entry. You can try again."); break;
-        default: PRINT_ERROR("Error in database prevented updating the entry"); break;
+        default: PRINT_FORMAT_ERROR("Error in database prevented updating the entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
     return func_return;
 }
 
-static enum ERROR removeEntry(int index){
+static enum ERROR deleteRootEntry(int index){
     assert(single_database_connection != NULL);
     assert(index > 0);
 
-    const char sql_statement [] = "DELETE FROM Roots WHERE root_id = ?";
+    //ON DELETE CASCADE does most of the work
+    const char sql_statement [] = "DELETE FROM Roots WHERE root_id = ?;";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
@@ -140,17 +248,120 @@ static enum ERROR removeEntry(int index){
     ret_code = sqlite3_step(results);
     enum ERROR func_return = HAD_ERROR;
     switch(ret_code){
-        case SQLITE_DONE: ADVISE_USER("Deleted entry!"); func_return = NO_ERROR; break;
+        case SQLITE_DONE: ADVISE_USER("Deleted entry and associated rows!"); func_return = NO_ERROR; break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_ERROR: PRINT_FORMAT_ERROR("Database error: %s", sqlite3_errmsg(single_database_connection)); break;
         case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not delete the entry. You can try again."); break;
-        default: PRINT_ERROR("Error in database prevented deleting the entry"); break;
+        default: PRINT_FORMAT_ERROR("Error in database prevented deleting the entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
     return func_return;
+}
 
-    return NO_ERROR;
+void addMenu(enum CONFIG config_type){
+    assert(single_database_connection != NULL);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
 
+    char* path_input = NULL;
+    int depth = 0;
+    int valid_path = INVALID;
+    while(valid_path == INVALID){
+        path_input = takeDirectoryInput();
+        if(path_input != NULL){
+            if(findEntry(config_type, path_input) == FOUND){
+                ADVISE_USER("This root path for this config already exists.");
+                free(path_input);
+                path_input = NULL;
+            }else if(findEntry(BLACK_CONFIG, path_input) == FOUND){
+                ADVISE_USER("This root path exists in your blacklist.");
+                free(path_input);
+                path_input = NULL;
+            }else{
+                valid_path = VALID;
+            }
+        }
+    }
+
+    if(config_type != BLACK_CONFIG){
+        while((depth = takeDepthInput()) == INVALID);
+    }
+
+    (void)addRootEntry(config_type, path_input, depth);
+    free(path_input);
+    path_input = NULL;
+}
+
+void updateMenu(enum CONFIG config_type){
+    assert(single_database_connection != NULL);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
+
+    int max_index = getNumOfRowsForConfig(config_type);
+    if(max_index == HAD_ERROR){
+        ADVISE_USER("No changes have been made.");
+        return;
+    }else if(max_index == 0){
+        ADVISE_USER("There is nothing to update.");
+        return;
+    }
+    int select_index = INVALID;
+    while((select_index = takeIndexInput(max_index)) == INVALID){}
+
+    char* path_input;
+    int depth = 0;
+    int valid_path = INVALID;
+    while(valid_path == INVALID){
+        path_input = takeDirectoryInput();
+        if(path_input != NULL){
+            if(findEntry(config_type, path_input) == FOUND){
+                ADVISE_USER("This path for this config already exists.");
+                free(path_input);
+                path_input = NULL;
+            }else{
+                valid_path = VALID;
+            }
+        }
+    }
+
+    if(config_type != BLACK_CONFIG){
+        while((depth = takeDepthInput()) == INVALID);
+    }
+
+    int row_id = translateIndexToRow(select_index, config_type);
+    if(row_id == HAD_ERROR){
+        ADVISE_USER("No changes have been made.");
+        return;
+    }
+    (void)updateRootEntry(row_id, path_input, depth);
+    //need to then set child paths
+    free(path_input);
+    path_input = NULL;
+}
+
+void deleteMenu(enum CONFIG config_type){
+    int max_index = getNumOfRowsForConfig(config_type);
+    if(max_index == HAD_ERROR){
+        ADVISE_USER("No changes have been made.");
+        return;
+    }else if(max_index == 0){
+        ADVISE_USER("There is nothing to delete.");
+        return;
+    }
+
+    int select_index = INVALID;
+    while((select_index = takeIndexInput(max_index)) == INVALID){}
+
+    int row_id = translateIndexToRow(select_index, config_type);
+    if(row_id == HAD_ERROR){
+        ADVISE_USER("No changes have been made.");
+        return;
+    }
+
+    deleteRootEntry(row_id);
 }
 
 static void printSectionHeader(enum CONFIG config_type){
@@ -173,49 +384,6 @@ static void printSectionHeader(enum CONFIG config_type){
     }
 }
 
-static void updateMenu(enum CONFIG config_type){
-    assert(single_database_connection != NULL);
-    assert(config_type == AUDIO_CONFIG ||
-           config_type == VIDEO_CONFIG ||
-           config_type == COVER_CONFIG ||
-           config_type == BLACK_CONFIG);
-
-    int max_index = getNumOfRowsForConfig(config_type);
-    if(max_index == HAD_ERROR) return;
-    int select_row = INVALID;
-    while((select_row = takeIndexInput(max_index)) == INVALID){}
-
-    char* path_input;
-    int depth = 0;
-    while((path_input = takeDirectoryInput()) == NULL) {}
-
-    if(config_type != BLACK_CONFIG){
-        while((depth = takeDepthInput()) == INVALID);
-    }
-
-    (void)updateEntry(config_type, path_input, depth);
-    free(path_input);
-    path_input = NULL;
-    return NO_ERROR;
-}
-
-static enum ERROR deleteMenu(enum CONFIG config_type){
-
-    return NO_ERROR;
-}
-
-
-static int translateOptionToRow(int user_selection){
-/*
- *SELECT *
-FROM my_table
-ORDER BY some_column
-LIMIT 1 OFFSET ?;
- *
- * ? is user_selection - 1
- */
-}
-
 enum ERROR initDatabase(void){
     if(sqlite3_open(CONFIG_DATABASE, &single_database_connection) != SQLITE_OK){
         PRINT_ERROR("Could not open configuration database. Have you done make init?");
@@ -225,51 +393,36 @@ enum ERROR initDatabase(void){
     return NO_ERROR;
 }
 
-void editMenu(enum CONFIG config){
-    assert(single_database_connection != NULL);
-    assert(config == AUDIO_CONFIG ||
-           config == VIDEO_CONFIG ||
-           config == COVER_CONFIG ||
-           config == BLACK_CONFIG);
 
-    enum ERROR err = NO_ERROR;
-    err = listConfigRoots(config);
+enum FIND findEntry(enum CONFIG config_type, const char* entry){
+    const char sql_statement [] = "SELECT COUNT(root_id) FROM Roots WHERE root_type = ? AND root_name = ?;";
 
-    if(err){
-        PRINT_ERROR("Could not list paths nothing has been changed");
-        return;
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to find entry due to %s", sqlite3_errmsg(single_database_connection));
+        return FIND_ERROR;
     }
 
-    int editing = 1;
-    char buffer [5] = ""; //buffer of 5 just to see if length is greater than 1
-    while(editing){
-        printf("What action do you want to take?\n%c) Add\n%c) Update\n%c) Delete\n%c) Exit\nEnter the number: ", ADD_OPT, UPT_OPT, DEL_OPT, EXT_OPT);
-        if(boundedInput(stdin, buffer, 5) != 1){
-            puts("Input only needs to be a single digit");
-            continue;
-        }
+    if(
+        sqlite3_bind_int(results, 1, config_type) != SQLITE_OK ||
+        sqlite3_bind_text(results, 2, entry, strlen(entry) + 1, NULL) != SQLITE_OK
+    ){
+        PRINT_FORMAT_ERROR("Failed to bind parameters for finding entry: %s", sqlite3_errmsg(single_database_connection));
+        return FIND_ERROR;
+    }
 
-        switch(buffer[0]){
-            case ADD_OPT: addMenu(config); break;
-
-            case UPT_OPT: updateMenu(config); break;
-
-            case DEL_OPT: deleteMenu(config); break;
-
-            case EXT_OPT: editing = 0; break;
-
-            default: ADVISE_USER("Enter an available number"); break;
+    enum FIND is_found = NOT_FOUND;
+    ret_code = sqlite3_step(results);
+    if(ret_code == SQLITE_ROW){
+        if(sqlite3_column_int(results, 0) > 0){
+            is_found = FOUND;
         }
     }
+
+    return is_found;
 }
-
-/*
-enum ERROR findEntry(const char* entry){
-    assert(single_database_connection != NULL);
-
-
-}
-*/
 
 //Figure out how you want to figure out the index once a user inputs
 //returning the statement might be easier
@@ -280,7 +433,16 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
            config_type == COVER_CONFIG ||
            config_type == BLACK_CONFIG);
 
-    const char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type == ?;";
+    int max_index = getNumOfRowsForConfig(config_type);
+    if(max_index == HAD_ERROR){
+        return HAD_ERROR;
+    }else if(max_index == 0){
+        printSectionHeader(config_type);
+        puts("No root entries");
+        return NO_ERROR;
+    }
+
+    const char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type == ? ORDER BY root_name;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -296,7 +458,11 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
     while((ret_code = sqlite3_step(results)) == SQLITE_ROW){
         char* root = (char*)sqlite3_column_text(results, 0);
         int depth = sqlite3_column_int(results, 1);
-        printf("%d) %s | %d\n", count, root, depth);
+        if(depth == INF_DEPTH){
+            printf("%d) %s | INF\n", count, root);
+        }else{
+            printf("%d) %s | %d\n", count, root, depth);
+        }
         ++count;
     }
 
@@ -313,7 +479,7 @@ enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
              "SELECT r.root_id, r.root_name, p.path_name FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
              "WHERE r.root_type == ? "
-             "ORDER BY r.root_id;";
+             "ORDER BY r.root_name, p.path_name;";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
@@ -351,7 +517,7 @@ enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
 enum ERROR listAllRoots(){
     assert(single_database_connection != NULL);
 
-    const char sql_statement [] = "SELECT root_type, root_name, root_depth FROM Roots ORDER BY root_type;";
+    const char sql_statement [] = "SELECT root_type, root_name, root_depth FROM Roots ORDER BY root_type, root_name;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -381,7 +547,7 @@ enum ERROR listAllRootWithPaths(){
     const char sql_statement [] =
              "SELECT r.root_type, r.root_id, r.root_name, p.path_name, r.root_depth FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
-             "ORDER BY r.root_type, r.root_id;";
+             "ORDER BY r.root_type, r.root_name, p.path_name;";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
