@@ -10,6 +10,7 @@
 enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
 enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
 
+//Probably need to change this because I don't know if ~ will get expanded
 #define CONFIG_DATABASE "~/.config/con-downloader/con-downloader.db"
 
 //since the db connection is static to this file inorder to use different
@@ -37,10 +38,19 @@ enum ERROR initDatabase(void);
 enum ERROR refreshDatabase(void);
 
 /*
-enum ERROR addMenu(enum CONFIG config_type);
-enum ERROR updateMenu(enum CONFIG config_type);
-enum ERROR deleteMenu(enum CONFIG config_type);
+*   Brings up the add menu interface
 */
+void addMenu(enum CONFIG config_type);
+
+/*
+*   Brings up the update menu interface
+*/
+void updateMenu(enum CONFIG config_type);
+
+/*
+*   Brings up the delete menu interface
+*/
+void deleteMenu(enum CONFIG config_type);
 
 enum FIND findEntry(enum CONFIG config_type, const char* entry);
 
@@ -67,8 +77,6 @@ enum ERROR listConfigRoots(enum CONFIG config_type);
 *
 */
 enum ERROR listConfigRootsWithPaths(enum CONFIG config_type);
-
-void editMenu(enum CONFIG config_file);
 
 #endif
 

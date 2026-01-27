@@ -1,11 +1,9 @@
 #ifndef __GLOBALS_H
 #define __GLOBALS_H
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-
 
 #define VERSION "2025 9.7"
 

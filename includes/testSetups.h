@@ -8,9 +8,6 @@
 #include "globals.h"
 #include "testGlobals.h"
 #include "databaseOps.h"
-#include "testWrapInput.h"
-
-#define INIT_DB_PATH "../../../source/initDB.sql"
 
 //Really only 4 roots and one path each is necessary for testing functionality,
 //but in order to test if updates or deletes are only acting on their rows
@@ -48,13 +45,10 @@
 
 #define TOTAL_ROWS 20
 
-//void readScript(const char* file_path, char** sql_init);
-//void executeQuery(sqlite3* test_db, const char* sql_statement);
-
-//an init script would be better, but if the arbritary numbers for INF_DEPTH
-//and config numbers changed the file would need to manually change
-//void setUpRoots(sqlite3* database);
-//void setUpPaths(sqlite3* database);
+//locations of the test file will vary
+//so they need to give a path to where they are.
+//Of course where the makefile is ran determines relative positioning
+extern const char* init_db_path;
 
 int createTestDB(void** state);
 int createTestDBWithRoots(void** state);
