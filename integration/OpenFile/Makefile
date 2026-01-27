@@ -1,8 +1,8 @@
 BINARY:=open_file_integration.out
-OBJECT_DIR:=./integration_objects
-TEST_CODE_DIR:=./integration_source
+OBJECT_DIR:=./objects
+TEST_CODE_DIR:=./source
 SOURCE_CODE_DIR:=../../source
-INCLUDES:=-I../../includes -I./test_includes
+INCLUDES:=-I../../includes -I./includes
 
 TEST_ENV:=test_env
 TEST_DIR:=test_dir

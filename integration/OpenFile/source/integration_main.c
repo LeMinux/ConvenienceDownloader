@@ -1,4 +1,4 @@
-#include "../integration_includes/open_file_integration.h"
+#include "../includes/open_file_integration.h"
 
 int main(void){
     const struct CMUnitTest dir_input_test[] = {

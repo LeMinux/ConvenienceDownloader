@@ -1,4 +1,4 @@
-#include "../integration_includes/open_file_integration.h"
+#include "../includes/open_file_integration.h"
 
 static void closeFile(FILE* file){
     if(file != NULL){
