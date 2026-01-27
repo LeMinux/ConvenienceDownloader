@@ -5,8 +5,7 @@
 #include "databaseUserInput.h"
 
 
-void testTakeDepthInputEmptyInput(void** state);
-void testTakeDepthInputJustNewline(void** state);
+void testTakeDepthInputSendInvalidOnZeroLength(void** state);
 void testTakeDepthInputNegativeNumber(void** state);
 void testTakeDepthInputZero(void** state);
 void testTakeDepthInputInBoundNumber(void** state);

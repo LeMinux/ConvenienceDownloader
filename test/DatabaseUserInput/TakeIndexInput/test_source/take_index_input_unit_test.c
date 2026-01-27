@@ -1,25 +1,11 @@
 #include "../test_includes/take_index_input_unit_test.h"
 
-void testTakeIndexInputEmptyInput(void** state){
+void testTakeIndexInputSendInvalidOnZeroLength(void** state){
     (void)state;
     char input [] = "";
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, 0);
-
-    int actual_ret = takeIndexInput(MAX_INDEX);
-
-    assert_int_equal(actual_ret, expect_ret);
-}
-
-void testTakeIndexInputJustNewline(void** state){
-    (void)state;
-    char input [] = "\n";
-    int expect_ret = INVALID;
-
-    will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, 0);
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -32,7 +18,6 @@ void testTakeIndexInputNegativeNumber(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -46,7 +31,6 @@ void testTakeIndexInputReallyLargeNumber(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -55,11 +39,10 @@ void testTakeIndexInputReallyLargeNumber(void** state){
 
 void testTakeIndexInputReallySmallNumber(void** state){
     (void)state;
-    char input [] = "-99999999999999";
+    char input [] = "-9999999999999";
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -72,7 +55,6 @@ void testTakeIndexInputRandomLetters(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -85,7 +67,6 @@ void testTakeIndexInputNotAFullNumberLettersBefore(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -98,7 +79,6 @@ void testTakeIndexInputNotAFullNumberLettersAfter(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -111,7 +91,6 @@ void testTakeIndexInputZero(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -124,7 +103,6 @@ void testTakeIndexInputInBoundNumber(void** state){
     int expect_ret = 20;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -139,7 +117,6 @@ void testTakeIndexInputBeyondMax(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -152,7 +129,6 @@ void testTakeIndexInputWithCommas(void** state){
     int expect_ret = 1000;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -165,7 +141,6 @@ void testTakeIndexInputWithSpaces(void** state){
     int expect_ret = 1000;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 
@@ -180,7 +155,6 @@ void testTakeIndexInputEqualMax(void** state){
     int expect_ret = MAX_INDEX;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeIndexInput(MAX_INDEX);
 

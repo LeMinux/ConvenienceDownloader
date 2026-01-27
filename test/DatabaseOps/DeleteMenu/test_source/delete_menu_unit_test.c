@@ -36,71 +36,50 @@ static void assertDeleteData(sqlite3* database, int root_id, int exp_remaining){
 
 void testDeleteEntryCatchesInvalidIndex(void** state){
     (void) state;
-    char edit_select [] = {DEL_OPT, '\0'};
     int index_input = INVALID;
     enum CONFIG config_type = AUDIO_CONFIG;
 
     expect_function_calls(__wrap_takeIndexInput, 2);
-    will_return(__wrap_boundedInput, edit_select);
-    will_return(__wrap_boundedInput, 1);
     will_return(__wrap_takeIndexInput, index_input);
 
-    editMenu(config_type);
+    deleteMenu(config_type);
 }
 
 void testDeleteEntryAudioConfig(void** state){
     sqlite3* database = *state;
-    char edit_select [] = {DEL_OPT, '\0'};
-    char exit_select [] = {EXT_OPT, '\0'};
     int index_input = 1;
     enum CONFIG config_type = AUDIO_CONFIG;
 
     expect_function_calls(__wrap_takeIndexInput, 1);
-    will_return(__wrap_boundedInput, edit_select);
-    will_return(__wrap_boundedInput, 1);
     will_return(__wrap_takeIndexInput, index_input);
-    will_return(__wrap_boundedInput, exit_select);
-    will_return(__wrap_boundedInput, 1);
 
-    editMenu(config_type);
+    deleteMenu(config_type);
 
     assertDeleteData(database, JAZZY_ROOT_ID, TOTAL_ROWS - 3);
 }
 
 void testDeleteEntryVideoConfig(void** state){
     sqlite3* database = *state;
-    char edit_select [] = {DEL_OPT, '\0'};
-    char exit_select [] = {EXT_OPT, '\0'};
     int index_input = 1;
     enum CONFIG config_type = VIDEO_CONFIG;
 
     expect_function_calls(__wrap_takeIndexInput, 1);
-    will_return(__wrap_boundedInput, edit_select);
-    will_return(__wrap_boundedInput, 1);
     will_return(__wrap_takeIndexInput, index_input);
-    will_return(__wrap_boundedInput, exit_select);
-    will_return(__wrap_boundedInput, 1);
 
-    editMenu(config_type);
+    deleteMenu(config_type);
 
     assertDeleteData(database, KEEPS_ROOT_ID, TOTAL_ROWS - 3);
 }
 
 void testDeleteEntryCoverConfig(void** state){
     sqlite3* database = *state;
-    char edit_select [] = {DEL_OPT, '\0'};
-    char exit_select [] = {EXT_OPT, '\0'};
     int index_input = 1;
     enum CONFIG config_type = COVER_CONFIG;
 
     expect_function_calls(__wrap_takeIndexInput, 1);
-    will_return(__wrap_boundedInput, edit_select);
-    will_return(__wrap_boundedInput, 1);
     will_return(__wrap_takeIndexInput, index_input);
-    will_return(__wrap_boundedInput, exit_select);
-    will_return(__wrap_boundedInput, 1);
 
-    editMenu(config_type);
+    deleteMenu(config_type);
     listAllRootWithPaths();
 
     assertDeleteData(database, ARTS_ROOT_ID, TOTAL_ROWS - 3);
@@ -108,19 +87,13 @@ void testDeleteEntryCoverConfig(void** state){
 
 void testDeleteEntryBlackList(void** state){
     sqlite3* database = *state;
-    char edit_select [] = {DEL_OPT, '\0'};
-    char exit_select [] = {EXT_OPT, '\0'};
     int index_input = 1;
     enum CONFIG config_type = BLACK_CONFIG;
 
     expect_function_calls(__wrap_takeIndexInput, 1);
-    will_return(__wrap_boundedInput, edit_select);
-    will_return(__wrap_boundedInput, 1);
     will_return(__wrap_takeIndexInput, index_input);
-    will_return(__wrap_boundedInput, exit_select);
-    will_return(__wrap_boundedInput, 1);
 
-    editMenu(config_type);
+    deleteMenu(config_type);
 
     assertDeleteData(database, PERSONAL_ROOT_ID, TOTAL_ROWS - 1);
 }

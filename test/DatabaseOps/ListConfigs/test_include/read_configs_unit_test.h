@@ -2,6 +2,7 @@
 #define LIST_CONFIG_TEST_H
 
 #include "testGlobals.h"
+#include "testSetups.h"
 #include "databaseOps.h"
 
 //Tests if the printing functions don't return error

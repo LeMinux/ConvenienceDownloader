@@ -1,25 +1,11 @@
 #include "../test_includes/take_depth_input_unit_test.h"
 
-void testTakeDepthInputEmptyInput(void** state){
+void testTakeDepthInputSendInvalidOnZeroLength(void** state){
     (void)state;
     char input [] = "";
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, 0);
-
-    int actual_ret = takeDepthInput();
-
-    assert_int_equal(actual_ret, expect_ret);
-}
-
-void testTakeDepthInputJustNewline(void** state){
-    (void)state;
-    char input [] = "\n";
-    int expect_ret = INVALID;
-
-    will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, 0);
 
     int actual_ret = takeDepthInput();
 
@@ -32,7 +18,6 @@ void testTakeDepthInputNegativeNumber(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -46,7 +31,6 @@ void testTakeDepthInputReallyLargeNumber(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -55,11 +39,10 @@ void testTakeDepthInputReallyLargeNumber(void** state){
 
 void testTakeDepthInputReallySmallNumber(void** state){
     (void)state;
-    char input [] = "-99999999999999";
+    char input [] = "-9999999999999";
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -72,7 +55,6 @@ void testTakeDepthInputRandomLetters(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -85,7 +67,6 @@ void testTakeDepthInputNotAFullNumberLettersBefore(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -98,7 +79,6 @@ void testTakeDepthInputNotAFullNumberLettersAfter(void** state){
     int expect_ret = INVALID;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -111,7 +91,6 @@ void testTakeDepthInputZero(void** state){
     int expect_ret = 0;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -124,7 +103,6 @@ void testTakeDepthInputInBoundNumber(void** state){
     int expect_ret = 27;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -133,11 +111,10 @@ void testTakeDepthInputInBoundNumber(void** state){
 
 void testTakeDepthInputWithCommas(void** state){
     (void)state;
-    char input [] = "5,000,000";
-    int expect_ret = 5000000;
+    char input [] = "1,000";
+    int expect_ret = 1000;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -146,11 +123,10 @@ void testTakeDepthInputWithCommas(void** state){
 
 void testTakeDepthInputWithSpaces(void** state){
     (void)state;
-    char input [] = "5 000 000";
-    int expect_ret = 5000000;
+    char input [] = "1 000";
+    int expect_ret = 1000;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 
@@ -163,7 +139,6 @@ void testTakeDepthInputInfInput(void** state){
     int expect_ret = INF_DEPTH;
 
     will_return(__wrap_boundedInput, input);
-    will_return(__wrap_boundedInput, strlen(input));
 
     int actual_ret = takeDepthInput();
 

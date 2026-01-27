@@ -1,5 +1,7 @@
 #include "../test_include/read_configs_unit_test.h"
 
+const char* init_db_path = "../../../source/initDB.sql";
+
 int main(void){
     #ifndef TESTING
         fprintf(stderr, "Need to define the TESTING conditional compiler flag when compiling\n");
