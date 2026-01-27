@@ -14,6 +14,7 @@
 #include "fileOps.h"
 
 #define INF_STRING "INF"
+#define MAX_DEPTH 2048
 
 /*
 *   Takes input from the user to accept a directory.
