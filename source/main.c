@@ -121,7 +121,11 @@ int main(int argc, char** argv){
             break;
 
             case 'r':
-                refreshDatabase();
+                if(refreshDatabase() == HAD_ERROR){
+                    ADVISE_USER("Failed to refresh the database.\nNo changes have been made.");
+                }else{
+                    ADVISE_USER("Database refreshed!");
+                }
             break;
 
             case 'h':
