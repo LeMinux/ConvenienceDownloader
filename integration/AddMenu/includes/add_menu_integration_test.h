@@ -48,4 +48,6 @@ void testAddMenuDuplicateNameButDiffConfigType(void** state);
 void testAddMenuCatchesDuplicateNameAndType(void** state);
 void testAddMenuCatchesPathInBlackList(void** state);
 
+void testAddMenuPathIsInBlackList(void** state);
+
 #endif

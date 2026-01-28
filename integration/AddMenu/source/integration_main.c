@@ -25,6 +25,7 @@ int main(void){
         cmocka_unit_test_setup_teardown(testAddMenuToVideoConfig, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuToCoverConfig, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuDuplicateNameButDiffConfigType, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testAddMenuPathIsInBlackList, createTestDB, closeDB),
     };
 
     return cmocka_run_group_tests(add_tests, NULL, NULL);

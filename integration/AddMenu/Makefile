@@ -41,19 +41,19 @@ all: $(BINARY)
 $(DIR_ENV):
 	mkdir -p $(ROOT1)
 	touch $(ROOT_FILE)
-	ln -sf ./$(RIGHT_DIR) $(ROOT_LINK)
+	ln -sf ../root2 $(ROOT_LINK)
 
-	mkdir $(LEFT_DIR)
-	mkdir $(LEFT_DIR_LEFT)
-	mkdir $(LEFT_DIR_RIGTH)
-	mkdir $(LEFT_DIR_MOST_INNER)
+	mkdir -p $(LEFT_DIR)
+	mkdir -p $(LEFT_DIR_LEFT)
+	mkdir -p $(LEFT_DIR_RIGHT)
+	mkdir -p $(LEFT_DIR_MOST_INNER)
 
-	mkdir $(RIGHT_DIR)
-	mkdir $(RIGHT_DIR_LEFT)
-	mkdir $(RIGHT_DIR_RIGTH)
-	mkdir $(RIGHT_DIR_MOST_INNER)
+	mkdir -p $(RIGHT_DIR)
+	mkdir -p $(RIGHT_DIR_LEFT)
+	mkdir -p $(RIGHT_DIR_RIGHT)
+	mkdir -p $(RIGHT_DIR_MOST_INNER)
 
-	mkdir $(ROOT2)
+	mkdir -p $(ROOT2)
 
 $(BINARY): $(O_FILES) | $(DIR_ENV)
 	$(CC) -g $(COMPILER_FLAG) $(MOCK_FLAGS) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka -lsqlite3
@@ -75,5 +75,6 @@ clean:
 	rm -f $(OBJECT_DIR)/*.d
 	rm -f ./*.d
 	rm -f $(BINARY)
+	rm -rf $(DIR_ENV)
 
 

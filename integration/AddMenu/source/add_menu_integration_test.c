@@ -42,7 +42,7 @@ static void addExtraEntry(sqlite3* test_db, enum CONFIG config, const char* extr
 }
 
 static void assertRootRow(sqlite3* database, enum CONFIG exp_type, const char* exp_input, size_t exp_input_len, int exp_depth){
-    char sql_check [] = "SELECT root_type, root_name, root_length, root_depth FROM Roots WHERE root_name = ? AND root_type = ?";
+    char sql_check [] = "SELECT root_name, root_length, root_depth FROM Roots WHERE root_name = ? AND root_type = ?";
     sqlite3_stmt* statement = NULL;
     int ret_code = sqlite3_prepare_v2(database, sql_check, -1, &statement, NULL);
 
@@ -57,12 +57,10 @@ static void assertRootRow(sqlite3* database, enum CONFIG exp_type, const char* e
 
     ret_code = sqlite3_step(statement);
     if(ret_code == SQLITE_ROW){
-        enum CONFIG added_type = sqlite3_column_int(statement, 0);
-        char* added_string = (char*)sqlite3_column_text(statement, 1);
-        int root_length = sqlite3_column_int(statement, 2);
-        int root_depth = sqlite3_column_int(statement, 3);
+        char* added_string = (char*)sqlite3_column_text(statement, 0);
+        int root_length = sqlite3_column_int(statement, 1);
+        int root_depth = sqlite3_column_int(statement, 2);
 
-        assert_int_equal(added_type, exp_type);
         assert_string_equal(added_string, exp_input);
         assert_int_equal(root_length, exp_input_len);
         assert_int_equal(root_depth, exp_depth);
@@ -433,11 +431,39 @@ void testAddMenuDuplicateNameButDiffConfigType(void** state){
     enum CONFIG config_type = VIDEO_CONFIG;
 
     setUpStubbedInput(dir_input, depth_input);
-    addExtraEntry(database, AUDIO_CONFIG, dir_input);
+    addExtraEntry(database, AUDIO_CONFIG, exp_root);
 
     addMenu(config_type);
 
     assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
+}
 
+void testAddMenuPathIsInBlackList(void** state){
+    sqlite3* database = *state;
+    call_real_function = CALL;
+    const char dir_input [] = ROOT1;
+    const char black_listed_path [] = ROOT1 LEFT_DIR;
+    PathCheck_t exp_paths [] = {
+        {RIGHT_DIR, sizeof(RIGHT_DIR) - 1},
+        {RIGHT_DIR_LEFT, sizeof(RIGHT_DIR_LEFT) - 1},
+        {RIGHT_DIR_RIGHT, sizeof(RIGHT_DIR_RIGHT) - 1},
+        {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
+    };
+
+    const char depth_input [] = INF_STRING;
+    char exp_root [PATH_MAX];
+    char black_path [PATH_MAX];
+    getRealPath(dir_input, exp_root);
+    getRealPath(black_listed_path, black_path);
+
+    enum CONFIG config_type = VIDEO_CONFIG;
+
+    setUpStubbedInput(dir_input, depth_input);
+    addExtraEntry(database, BLACK_CONFIG, black_path);
+
+    addMenu(config_type);
+
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
+    assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
