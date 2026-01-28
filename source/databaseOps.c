@@ -9,6 +9,7 @@ static void commitTransaction(void);
 static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth);
 static enum ERROR updateRootEntry(int index, const char* new_value, int new_depth);
 static enum ERROR deleteRootEntry(int index);
+static enum ERROR deletePaths(int root_id);
 
 static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size, size_t root_len);
 static enum ERROR addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth);
@@ -334,6 +335,33 @@ static enum ERROR deleteRootEntry(int index){
     return func_return;
 }
 
+static enum ERROR deletePaths(int root_id){
+    assert(single_database_connection != NULL);
+    assert(index > 0);
+
+    const char sql_statement [] = "DELETE FROM Paths WHERE root_id = ?;";
+
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to prepare delete statement: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    sqlite3_bind_int(results, 1, root_id);
+
+    ret_code = sqlite3_step(results);
+    enum ERROR func_return = HAD_ERROR;
+    switch(ret_code){
+        case SQLITE_DONE: func_return = NO_ERROR; break;
+        case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
+        default: PRINT_FORMAT_ERROR("Error in database prevented deleting paths: %s", sqlite3_errmsg(single_database_connection)); break;
+    }
+
+    return func_return;
+}
+
 void addMenu(enum CONFIG config_type){
     assert(single_database_connection != NULL);
     assert(config_type == AUDIO_CONFIG ||
@@ -470,22 +498,22 @@ enum ERROR initDatabase(void){
     uid_t uid;
     struct passwd* passwd_entry;
 
-    uid = getuid( );
+    uid = getuid();
     passwd_entry = getpwuid(uid);
-    if (passwd_entry == NULL){
+    if(passwd_entry == NULL){
         PRINT_ERROR("Could not open user's information to get home directory");
-        endpwent( );
+        endpwent();
         return HAD_ERROR;
     }
 
     char home_db [PATH_MAX];
     if(snprintf(home_db, sizeof(home_db), "%s/%s", passwd_entry->pw_dir, CONFIG_DATABASE) > PATH_MAX){
         PRINT_ERROR("Home directory path is too long to get database. Why is your home path so large though? I mean seriously why is not not just /home/<username>/");
-        endpwent( );
+        endpwent();
         return HAD_ERROR;
     }
 
-    endpwent( );
+    endpwent();
 
     if(sqlite3_open(home_db, &single_database_connection) != SQLITE_OK){
         PRINT_ERROR("Could not open configuration database. Have you done make init?");
@@ -498,8 +526,44 @@ enum ERROR initDatabase(void){
 
 enum ERROR refreshDatabase(void){
     assert(single_database_connection != NULL);
-    
-    return NO_ERROR;
+    const char sql_statement [] = "SELECT root_id, root_name, root_length, root_depth FROM Roots ORDER BY root_type, root_name;";
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to refresh due to %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    beginTransaction();
+    int error_occured = NO_ERROR;
+    while((ret_code = sqlite3_step(results)) == SQLITE_ROW && !error_occured){
+        int id = sqlite3_column_int(results, 0);
+        char* root = (char*)sqlite3_column_text(results, 1);
+
+        //It's a lot easier to just delete everything and fill in what is there.
+        //the database can be thought to hold old data and the file system holds
+        //new data.
+        DIR* dir_stream = opendir(root);
+        if(dir_stream == NULL){
+            error_occured = deleteRootEntry(id);
+        }else{
+            error_occured = deletePaths(id);
+            if(!error_occured){
+                int root_len = sqlite3_column_int(results, 2);
+                int root_depth = sqlite3_column_int(results, 3);
+                error_occured = addSubDirs(id, root, root_len, root_depth);
+            }
+        }
+    }
+
+    if(error_occured){
+        rollbackTransaction();
+    }else{
+        commitTransaction();
+    }
+
+    return error_occured;
 }
 
 
