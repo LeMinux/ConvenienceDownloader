@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define VERSION "2025 9.7"
+#define VERSION "2026 1.28"
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
