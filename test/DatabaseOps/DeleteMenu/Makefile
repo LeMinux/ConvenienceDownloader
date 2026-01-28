@@ -27,9 +27,6 @@ $(BINARY): $(O_FILES)
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
 
-$(OBJECT_DIR)/%.o: $(COMMON_CODE_DIR)/%.c | $(OBJECT_DIR)
-	$(CC) $(COMPILER_FLAG) -c $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) $< -o $@
-
 $(OBJECT_DIR)/%.o: $(TEST_CODE_DIR)/%.c | $(OBJECT_DIR)
 	$(CC) $(COMPILER_FLAG) -c $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) $< -o $@
 
