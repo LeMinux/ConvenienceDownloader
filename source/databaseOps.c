@@ -2,6 +2,39 @@
 
 static sqlite3* single_database_connection = NULL;
 
+static void beginTransaction(void);
+static void rollbackTransaction(void);
+static void commitTransaction(void);
+
+static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth);
+static enum ERROR updateRootEntry(int index, const char* new_value, int new_depth);
+static enum ERROR deleteRootEntry(int index);
+
+static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size, size_t root_len);
+static enum ERROR addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth);
+
+static int getNumOfRowsForConfig(enum CONFIG config);
+static int translateIndexToRow(int user_selection, enum CONFIG config_type);
+
+static void beginTransaction(void){
+    assert(single_database_connection != NULL);
+    const char sql_begin [] = "BEGIN;";
+    (void)sqlite3_exec(single_database_connection, sql_begin, NULL, NULL, NULL);
+}
+
+static void rollbackTransaction(void){
+    assert(single_database_connection != NULL);
+    const char sql_rollback [] = "ROLLBACK;";
+    (void)sqlite3_exec(single_database_connection, sql_rollback, NULL, NULL, NULL);
+}
+
+static void commitTransaction(void){
+    assert(single_database_connection != NULL);
+    const char sql_commit [] = "COMMIT;";
+    (void)sqlite3_exec(single_database_connection, sql_commit, NULL, NULL, NULL);
+}
+
+
 static int getNumOfRowsForConfig(enum CONFIG config){
     assert(single_database_connection != NULL);
     assert(config == AUDIO_CONFIG ||
@@ -18,7 +51,6 @@ static int getNumOfRowsForConfig(enum CONFIG config){
         PRINT_FORMAT_ERROR("Failed to obtain count of rows: %s", sqlite3_errmsg(single_database_connection));
         return HAD_ERROR;
     }
-
 
     if(sqlite3_bind_int(results, 1, config) != SQLITE_OK){
         PRINT_ERROR("Failed to bind config to obtain row count");
@@ -75,6 +107,7 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
     assert(single_database_connection != NULL);
     assert(entry != NULL && entry[0] != '\0');
     assert(path_size <= PATH_MAX);
+    assert(root_len < PATH_MAX);
 
     const char sql_statement [] = "INSERT INTO Paths (root_id, path_name, path_length) VALUES (?, ?, ?)";
     sqlite3_stmt* results = NULL;
@@ -90,7 +123,7 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
         sqlite3_bind_text(results, 2, entry + root_len, path_size - root_len, NULL) != SQLITE_OK ||
         sqlite3_bind_int(results, 3, path_size - root_len) != SQLITE_OK
     ){
-        PRINT_ERROR("Failed to bind parameters. No changes have been made");
+        PRINT_ERROR("Failed to bind path parameters.");
         return HAD_ERROR;
     }
 
@@ -99,20 +132,20 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
     switch(ret_code){
         case SQLITE_DONE: func_return = NO_ERROR; break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not add entry. You can try again."); break;
-        default: PRINT_FORMAT_ERROR("Error in database prevented adding path entry: %s", sqlite3_errmsg(single_database_connection)); break;
+        default: PRINT_FORMAT_ERROR("Error prevented adding path entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
     return func_return;
 }
 
-static void addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth){
+static enum ERROR addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth){
     assert(root_path != NULL);
+    enum ERROR error_status = NO_ERROR;
 
-    if(depth == 0) return;
+    if(depth == 0) return error_status;
 
     DIR* dir_stream = opendir(root_path);
-    if(dir_stream == NULL) return;
+    if(dir_stream == NULL) return error_status;
 
     struct dirent* dir_entry;
     while((dir_entry = readdir(dir_stream)) != NULL){
@@ -127,6 +160,10 @@ static void addSubDirs(const int root_id, const char* root_path, const size_t ro
             continue;
         }
 
+        if(findEntry(BLACK_CONFIG, full_path) == FOUND){
+            continue;
+        }
+
         struct stat file_stat = {0};
         if(lstat(full_path, &file_stat) != 0){
             continue;
@@ -136,12 +173,15 @@ static void addSubDirs(const int root_id, const char* root_path, const size_t ro
             continue;
         }
 
-        addPathEntry(root_id, full_path, path_size, root_len);
-        //check for errors
+        if(addPathEntry(root_id, full_path, path_size, root_len) == HAD_ERROR){
+            error_status = HAD_ERROR;
+            break;
+        }
         addSubDirs(root_id, full_path, root_len, (depth == INF_DEPTH) ? INF_DEPTH : depth - 1);
     }
 
     closedir(dir_stream);
+    return error_status;
 }
 
 static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth){
@@ -173,58 +213,96 @@ static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth)
         return HAD_ERROR;
     }
 
+    beginTransaction();
     ret_code = sqlite3_step(results);
-    int inserted_id = -1;
+    int inserted_id = 0;
     int err_ret = HAD_ERROR;
     switch(ret_code){
         case SQLITE_ROW:
             inserted_id = sqlite3_column_int(results, 0);
-            addSubDirs(inserted_id, entry, entry_size, depth);
-            err_ret = NO_ERROR;
+            if(addSubDirs(inserted_id, entry, entry_size, depth) == NO_ERROR){
+                ADVISE_USER("Added entry and it's paths!");
+                err_ret = NO_ERROR;
+            }
         break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not add entry. You can try again."); break;
         default: PRINT_FORMAT_ERROR("Error in database prevented adding root entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
+    if(err_ret == HAD_ERROR){
+        rollbackTransaction();
+    }else{
+        commitTransaction();
+    }
     return err_ret;
 }
 
-static enum ERROR updateRootEntry(int index, const char* new_value, int new_depth){
+static enum ERROR updateRootEntry(int id, const char* new_entry, int new_depth){
     assert(single_database_connection != NULL);
-    assert(index > 0);
-    assert(new_value != NULL);
+    assert(id > 0);
+    assert(new_entry != NULL);
     assert(new_depth >= 0 || new_depth == INF_DEPTH);
 
-    const char sql_statement [] = "UPDATE Roots SET root_name = ?, root_length = ?, root_depth = ? WHERE root_id = ?;";
+    const char sql_update_statement [] = "UPDATE Roots SET root_name = ?, root_length = ?, root_depth = ? WHERE root_id = ?;";
+    const char sql_delete_children [] = "DELETE FROM Paths WHERE root_id = ?";
 
-    sqlite3_stmt* results = NULL;
-    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
+    sqlite3_stmt* update_results = NULL;
+    sqlite3_stmt* delete_results = NULL;
 
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_update_statement, -1, &update_results, NULL);
     if(ret_code != SQLITE_OK){
         PRINT_FORMAT_ERROR("Failed to prepare updating statement: %s", sqlite3_errmsg(single_database_connection));
         return HAD_ERROR;
     }
 
+    ret_code = sqlite3_prepare_v2(single_database_connection, sql_delete_children, -1, &delete_results, NULL);
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to prepare deletion in updating statement: %s", sqlite3_errmsg(single_database_connection));
+        return HAD_ERROR;
+    }
+
+    int entry_size = strlen(new_entry) + 1;
     if(
-        sqlite3_bind_text(results, 1, new_value, strlen(new_value) + 1, NULL) != SQLITE_OK ||
-        sqlite3_bind_int(results, 2, strlen(new_value)) != SQLITE_OK ||
-        sqlite3_bind_int(results, 3, new_depth) != SQLITE_OK ||
-        sqlite3_bind_int(results, 4, index) != SQLITE_OK
+        sqlite3_bind_text(update_results, 1, new_entry, entry_size, NULL) != SQLITE_OK ||
+        sqlite3_bind_int(update_results, 2, entry_size - 1) != SQLITE_OK ||
+        sqlite3_bind_int(update_results, 3, new_depth) != SQLITE_OK ||
+        sqlite3_bind_int(update_results, 4, id) != SQLITE_OK
     ){
         PRINT_ERROR("Failed to bind update query");
         return HAD_ERROR;
     }
 
-    ret_code = sqlite3_step(results);
+    if(
+        sqlite3_bind_int(delete_results, 1, id) != SQLITE_OK
+    ){
+        PRINT_ERROR("Failed to bind deletion for update query");
+        return HAD_ERROR;
+    }
+
+    beginTransaction();
+    ret_code = sqlite3_step(update_results);
     enum ERROR func_return = HAD_ERROR;
     switch(ret_code){
-        case SQLITE_DONE: ADVISE_USER("Updated entry!"); func_return = NO_ERROR; break;
+        case SQLITE_DONE:
+            ret_code = sqlite3_step(delete_results);
+            if(ret_code == SQLITE_DONE){
+                if(addSubDirs(id, new_entry, entry_size, new_depth) == NO_ERROR){
+                    ADVISE_USER("Updated entry!");
+                    func_return = NO_ERROR;
+                }
+            }else{
+                PRINT_FORMAT_ERROR("Error in database prevented updating the entry: %s", sqlite3_errmsg(single_database_connection));
+            }
+        break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not update the entry. You can try again."); break;
         default: PRINT_FORMAT_ERROR("Error in database prevented updating the entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
+    if(func_return == HAD_ERROR){
+        rollbackTransaction();
+    }else{
+        commitTransaction();
+    }
     return func_return;
 }
 
@@ -250,7 +328,6 @@ static enum ERROR deleteRootEntry(int index){
     switch(ret_code){
         case SQLITE_DONE: ADVISE_USER("Deleted entry and associated rows!"); func_return = NO_ERROR; break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
-        case SQLITE_BUSY: ADVISE_USER("Database was busy. Did not delete the entry. You can try again."); break;
         default: PRINT_FORMAT_ERROR("Error in database prevented deleting the entry: %s", sqlite3_errmsg(single_database_connection)); break;
     }
 
@@ -288,7 +365,10 @@ void addMenu(enum CONFIG config_type){
         while((depth = takeDepthInput()) == INVALID);
     }
 
-    (void)addRootEntry(config_type, path_input, depth);
+    if(addRootEntry(config_type, path_input, depth) == HAD_ERROR){
+        ADVISE_USER("No changes have been made");
+    }
+
     free(path_input);
     path_input = NULL;
 }
@@ -321,6 +401,10 @@ void updateMenu(enum CONFIG config_type){
                 ADVISE_USER("This path for this config already exists.");
                 free(path_input);
                 path_input = NULL;
+            }else if(findEntry(BLACK_CONFIG, path_input) == FOUND){
+                ADVISE_USER("This root path exists in your blacklist.");
+                free(path_input);
+                path_input = NULL;
             }else{
                 valid_path = VALID;
             }
@@ -332,12 +416,10 @@ void updateMenu(enum CONFIG config_type){
     }
 
     int row_id = translateIndexToRow(select_index, config_type);
-    if(row_id == HAD_ERROR){
-        ADVISE_USER("No changes have been made.");
-        return;
+    if(row_id == HAD_ERROR || updateRootEntry(row_id, path_input, depth) == HAD_ERROR){
+        ADVISE_USER("No changes have been made");
     }
-    (void)updateRootEntry(row_id, path_input, depth);
-    //need to then set child paths
+
     free(path_input);
     path_input = NULL;
 }
