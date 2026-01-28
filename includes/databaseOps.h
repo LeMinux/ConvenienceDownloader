@@ -2,6 +2,7 @@
 #define DATABASEOPS_H
 
 #include <sqlite3.h>
+#include <pwd.h>
 
 #include "globals.h"
 #include "userInput.h"
@@ -10,8 +11,8 @@
 enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
 enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
 
-//Probably need to change this because I don't know if ~ will get expanded
-#define CONFIG_DATABASE "~/.config/con-downloader/con-downloader.db"
+//Home path is found at run time
+#define CONFIG_DATABASE ".config/con-downloader/con-downloader.db"
 
 //since the db connection is static to this file inorder to use different
 //connections calls within the file have to be done

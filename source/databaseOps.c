@@ -467,7 +467,27 @@ static void printSectionHeader(enum CONFIG config_type){
 }
 
 enum ERROR initDatabase(void){
-    if(sqlite3_open(CONFIG_DATABASE, &single_database_connection) != SQLITE_OK){
+    uid_t uid;
+    struct passwd* passwd_entry;
+
+    uid = getuid( );
+    passwd_entry = getpwuid(uid);
+    if (passwd_entry == NULL){
+        PRINT_ERROR("Could not open user's information to get home directory");
+        endpwent( );
+        return HAD_ERROR;
+    }
+
+    char home_db [PATH_MAX];
+    if(snprintf(home_db, sizeof(home_db), "%s/%s", passwd_entry->pw_dir, CONFIG_DATABASE) > PATH_MAX){
+        PRINT_ERROR("Home directory path is too long to get database. Why is your home path so large though? I mean seriously why is not not just /home/<username>/");
+        endpwent( );
+        return HAD_ERROR;
+    }
+
+    endpwent( );
+
+    if(sqlite3_open(home_db, &single_database_connection) != SQLITE_OK){
         PRINT_ERROR("Could not open configuration database. Have you done make init?");
         return HAD_ERROR;
     }
@@ -476,7 +496,20 @@ enum ERROR initDatabase(void){
 }
 
 
+enum ERROR refreshDatabase(void){
+    assert(single_database_connection != NULL);
+    
+    return NO_ERROR;
+}
+
+
 enum FIND findEntry(enum CONFIG config_type, const char* entry){
+    assert(entry != NULL);
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
+
     const char sql_statement [] = "SELECT COUNT(root_id) FROM Roots WHERE root_type = ? AND root_name = ?;";
 
     sqlite3_stmt* results = NULL;
