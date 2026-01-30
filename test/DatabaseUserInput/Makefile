@@ -10,6 +10,8 @@ take-clean:
 		$(MAKE) -C $$dir clean;\
 	done
 
+run: take-run
+
 take-run:
 	@for dir in $(SUBDIRS); do\
 		printf "\n%s\n" "Running $$dir\n";\

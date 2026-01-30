@@ -3,8 +3,8 @@
 static void assertDeleteData(sqlite3* database, int root_id, int exp_remaining){
     char sql_check_total [] =
         "SELECT (SELECT COUNT(root_id) FROM Roots WHERE root_id = ?) AS root_count,"
-        "(SELECT COUNT(path_index) FROM Paths WHERE root_id = ?) AS path_count,"
-        "((SELECT COUNT(root_id) FROM Roots) + (SELECT COUNT(path_index) FROM Paths)) AS remaining;";
+        "(SELECT COUNT(path_id) FROM Paths WHERE root_id = ?) AS path_count,"
+        "((SELECT COUNT(root_id) FROM Roots) + (SELECT COUNT(path_id) FROM Paths)) AS remaining;";
 
     sqlite3_stmt* total_statement = NULL;
 

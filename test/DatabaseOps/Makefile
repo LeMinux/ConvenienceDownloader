@@ -10,9 +10,11 @@ ops-clean:
 		$(MAKE) -C $$dir clean;\
 	done
 
+run: ops-run
+
 ops-run:
 	@for dir in $(SUBDIRS); do\
-		printf "\n%s\n" "Running $$dir\n";\
+		printf "\n%s\n" "Running $$dir";\
 		printf "%s\n" "-------------------------";\
 		$(MAKE) -C $$dir run | grep --extended-regexp --ignore-case "FAILED|ERROR";\
 		printf "%s\n" "~~~~~~~~~~~~~~~~~~~~~~~~~";\
@@ -20,7 +22,7 @@ ops-run:
 
 ops-run-no-supress:
 	@for dir in $(SUBDIRS); do\
-		printf "\n%s\n" "Running $$dir\n";\
+		printf "\n%s\n" "Running $$dir";\
 		printf "%s\n" "-------------------------";\
 		$(MAKE) -C $$dir run;\
 		printf "%s\n" "~~~~~~~~~~~~~~~~~~~~~~~~~";\

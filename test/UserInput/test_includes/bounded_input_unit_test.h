@@ -1,6 +1,8 @@
 #ifndef BOUNDED_INPUT_TESTING_H
 #define BOUNDED_INPUT_TESTING_H
 
+#include <stdio.h>
+
 #include "testGlobals.h"
 #include "userInput.h"
 
