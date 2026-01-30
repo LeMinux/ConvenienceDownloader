@@ -110,7 +110,7 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
     assert(path_size <= PATH_MAX);
     assert(root_len < PATH_MAX);
 
-    const char sql_statement [] = "INSERT INTO Paths (root_id, path_name, path_length) VALUES (?, ?, ?)";
+    const char sql_statement [] = "INSERT INTO Paths (root_id, path_name, path_length) VALUES (?, ?, ?);";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -122,7 +122,7 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
     if(
         sqlite3_bind_int(results, 1, root_id) != SQLITE_OK ||
         sqlite3_bind_text(results, 2, entry + root_len, path_size - root_len, NULL) != SQLITE_OK ||
-        sqlite3_bind_int(results, 3, path_size - root_len) != SQLITE_OK
+        sqlite3_bind_int(results, 3, path_size - root_len - 1) != SQLITE_OK
     ){
         PRINT_ERROR("Failed to bind path parameters.");
         return HAD_ERROR;
@@ -155,8 +155,8 @@ static enum ERROR addSubDirs(const int root_id, const char* root_path, const siz
         }
 
         char full_path [PATH_MAX];
-        int path_size = snprintf(full_path, PATH_MAX, "%s/%s", root_path, dir_entry->d_name);
-        if(path_size >= PATH_MAX){
+        int path_len = snprintf(full_path, PATH_MAX, "%s/%s", root_path, dir_entry->d_name);
+        if(path_len >= PATH_MAX){
             ADVISE_USER_FORMAT("Can't add path '%s/%s' because it's too long", full_path, dir_entry->d_name);
             continue;
         }
@@ -174,7 +174,8 @@ static enum ERROR addSubDirs(const int root_id, const char* root_path, const siz
             continue;
         }
 
-        if(addPathEntry(root_id, full_path, path_size, root_len) == HAD_ERROR){
+        //+1 to root_len for the extra '/' added
+        if(addPathEntry(root_id, full_path, path_len + 1, root_len + 1) == HAD_ERROR){
             error_status = HAD_ERROR;
             break;
         }
@@ -194,7 +195,7 @@ static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth)
            config == COVER_CONFIG ||
            config == BLACK_CONFIG);
 
-    const char sql_statement [] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?) RETURNING root_id";
+    const char sql_statement [] = "INSERT INTO Roots (root_type, root_name, root_length, root_depth) VALUES (?, ?, ?, ?) RETURNING root_id;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -221,7 +222,7 @@ static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth)
     switch(ret_code){
         case SQLITE_ROW:
             inserted_id = sqlite3_column_int(results, 0);
-            if(addSubDirs(inserted_id, entry, entry_size, depth) == NO_ERROR){
+            if(addSubDirs(inserted_id, entry, entry_size - 1, depth) == NO_ERROR){
                 ADVISE_USER("Added entry and it's paths!");
                 err_ret = NO_ERROR;
             }
@@ -287,7 +288,7 @@ static enum ERROR updateRootEntry(int id, const char* new_entry, int new_depth){
         case SQLITE_DONE:
             ret_code = sqlite3_step(delete_results);
             if(ret_code == SQLITE_DONE){
-                if(addSubDirs(id, new_entry, entry_size, new_depth) == NO_ERROR){
+                if(addSubDirs(id, new_entry, entry_size - 1, new_depth) == NO_ERROR){
                     ADVISE_USER("Updated entry!");
                     func_return = NO_ERROR;
                 }
@@ -337,7 +338,7 @@ static enum ERROR deleteRootEntry(int index){
 
 static enum ERROR deletePaths(int root_id){
     assert(single_database_connection != NULL);
-    assert(index > 0);
+    assert(root_id > 0);
 
     const char sql_statement [] = "DELETE FROM Paths WHERE root_id = ?;";
 
@@ -507,7 +508,7 @@ enum ERROR initDatabase(void){
     }
 
     char home_db [PATH_MAX];
-    if(snprintf(home_db, sizeof(home_db), "%s/%s", passwd_entry->pw_dir, CONFIG_DATABASE) > PATH_MAX){
+    if(snprintf(home_db, sizeof(home_db), "%s/%s", passwd_entry->pw_dir, CONFIG_DATABASE) >= PATH_MAX){
         PRINT_ERROR("Home directory path is too long to get database. Why is your home path so large though? I mean seriously why is not not just /home/<username>/");
         endpwent();
         return HAD_ERROR;
@@ -526,7 +527,7 @@ enum ERROR initDatabase(void){
 
 enum ERROR refreshDatabase(void){
     assert(single_database_connection != NULL);
-    const char sql_statement [] = "SELECT root_id, root_name, root_length, root_depth FROM Roots ORDER BY root_type, root_name;";
+    const char sql_statement [] = "SELECT root_id, root_type, root_name, root_length, root_depth FROM Roots ORDER BY root_type, root_name;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, -1, &results, NULL);
 
@@ -539,7 +540,8 @@ enum ERROR refreshDatabase(void){
     int error_occured = NO_ERROR;
     while((ret_code = sqlite3_step(results)) == SQLITE_ROW && !error_occured){
         int id = sqlite3_column_int(results, 0);
-        char* root = (char*)sqlite3_column_text(results, 1);
+        enum CONFIG type = sqlite3_column_int(results, 1);
+        char* root = (char*)sqlite3_column_text(results, 2);
 
         //It's a lot easier to just delete everything and fill in what is there.
         //the database can be thought to hold old data and the file system holds
@@ -547,11 +549,11 @@ enum ERROR refreshDatabase(void){
         DIR* dir_stream = opendir(root);
         if(dir_stream == NULL){
             error_occured = deleteRootEntry(id);
-        }else{
+        }else if(type != BLACK_CONFIG){
             error_occured = deletePaths(id);
             if(!error_occured){
-                int root_len = sqlite3_column_int(results, 2);
-                int root_depth = sqlite3_column_int(results, 3);
+                int root_len = sqlite3_column_int(results, 3);
+                int root_depth = sqlite3_column_int(results, 4);
                 error_occured = addSubDirs(id, root, root_len, root_depth);
             }
         }
