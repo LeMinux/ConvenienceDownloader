@@ -1,4 +1,4 @@
-SUBDIRS:=./TakeDepthInput/ ./TakeIndexInput//
+SUBDIRS:=./*/
 
 take-all: $(SUBDIRS)
 	for dir in $(SUBDIRS); do\
