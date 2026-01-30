@@ -1,4 +1,4 @@
-#include "../test_includes/bounded_input_unit_test.h"
+#include "../includes/bounded_input_unit_test.h"
 
 static void assertCorrect(char* test_text, int test_length, const char* act_text, int act_bound, int exp_bound){
 
