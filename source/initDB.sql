@@ -20,38 +20,9 @@ CREATE TABLE IF NOT EXISTS Roots(
 );
 
 CREATE TABLE IF NOT EXISTS Paths(
-    path_index INTEGER PRIMARY KEY,
+    path_id INTEGER PRIMARY KEY,
     root_id INTEGER NOT NULL,
     path_name VARCHAR(4096) NOT NULL,
     path_length INTEGER CHECK (path_length > 0),
     FOREIGN KEY (root_id) REFERENCES Roots (root_id) ON DELETE CASCADE
 );
-
-/*
-CREATE TABLE IF NOT EXISTS Blacklist(
-    black_index INTEGER PRIMARY KEY,
-    black_path VARCHAR(4096) NOT NULL,
-    black_length INTEGER CHECK (black_length > 0 AND black_length < 4096)
-);
-*/
-
---Consider maybe making this inside the code
---as sqlite doesn't have direct support for variables
-/*
-CREATE TRIGGER IF NOT EXISTS checkTotalLength BEFORE INSERT ON Paths
-FOR EACH ROW
-BEGIN
-    CREATE TEMP TABLE IF NOT EXISTS Vars (name TEXT PRIMARY KEY, value INTEGER);
-    INSERT OR REPLACE INTO Vars VALUES("length_of_root", 0);
-
-    DECLARE total_length;
-    DECLARE length_of_root;
-
-    SELECT root_length INTO length_of_root FROM Roots WHERE root_id = NEW.associated_root;
-
-    SET total_length = length_of_root + NEW.length;
-    IF total_length > 4096 THEN
-        RAISE(ABORT, "Path inserting has a length greater than 4096 when accounting for the root");
-    END IF;
-END;
-*/
