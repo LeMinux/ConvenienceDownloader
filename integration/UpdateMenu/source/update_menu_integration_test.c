@@ -85,6 +85,7 @@ static int assertRootRow(sqlite3* database, enum CONFIG exp_type, const char* ex
 static int indexOfExpString(const char* act_string, const PathCheck_t* exp_list, int length){
     int is_found = NOT_FOUND;
     for(int i = 0; i < length && is_found == NOT_FOUND; ++i){
+        puts(exp_list[i].exp_path_name);
         if(strcmp(act_string, exp_list[i].exp_path_name) == 0){
             is_found = i;
         }
@@ -96,7 +97,7 @@ static int indexOfExpString(const char* act_string, const PathCheck_t* exp_list,
 //Using an empty database per test makes it easier by not dealing with obtaining
 //a root ID
 static void assertPaths(sqlite3* database, int exp_id, PathCheck_t* exp_path_names, int exp_count){
-    char sql_count [] = "SELECT COUNT(path_index) FROM Paths WHERE root_id = ?";
+    char sql_count [] = "SELECT COUNT(path_id) FROM Paths WHERE root_id = ?";
     char sql_get_paths [] = "SELECT path_name, path_length FROM Paths WHERE root_id = ?";
     sqlite3_stmt* count_statement = NULL;
     sqlite3_stmt* paths_statement = NULL;

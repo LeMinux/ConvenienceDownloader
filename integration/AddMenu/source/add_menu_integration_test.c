@@ -83,17 +83,10 @@ static int indexOfExpString(const char* act_string, const PathCheck_t* exp_list,
 //Using an empty database per test makes it easier by not dealing with obtaining
 //a root ID
 static void assertPaths(sqlite3* database, PathCheck_t* exp_path_names, int exp_count){
-    char sql_count [] = "SELECT COUNT(path_index) FROM Paths";
-    char sql_get_paths [] = "SELECT path_name, path_length FROM Paths";
+    char sql_count [] = "SELECT COUNT(path_id) FROM Paths";
     sqlite3_stmt* count_statement = NULL;
-    sqlite3_stmt* paths_statement = NULL;
 
-    int ret_code = sqlite3_prepare_v2(database, sql_get_paths, -1, &paths_statement, NULL);
-    if(ret_code != SQLITE_OK){
-        fail_msg("Failed to check data due to %s", sqlite3_errmsg(database));
-    }
-
-    ret_code = sqlite3_prepare_v2(database, sql_count, -1, &count_statement, NULL);
+    int ret_code = sqlite3_prepare_v2(database, sql_count, -1, &count_statement, NULL);
     if(ret_code != SQLITE_OK){
         fail_msg("Failed to check data due to %s", sqlite3_errmsg(database));
     }
@@ -102,6 +95,13 @@ static void assertPaths(sqlite3* database, PathCheck_t* exp_path_names, int exp_
     if(ret_code == SQLITE_ROW){
         int act_count = sqlite3_column_int(count_statement, 0);
         assert_int_equal(act_count, exp_count);
+
+        char sql_get_paths [] = "SELECT path_name, path_length FROM Paths";
+        sqlite3_stmt* paths_statement = NULL;
+        ret_code = sqlite3_prepare_v2(database, sql_get_paths, -1, &paths_statement, NULL);
+        if(ret_code != SQLITE_OK){
+            fail_msg("Failed to check data due to %s", sqlite3_errmsg(database));
+        }
 
         while((ret_code = sqlite3_step(paths_statement)) == SQLITE_ROW){
             char* act_path_name = (char*)sqlite3_column_text(paths_statement, 0);
@@ -463,6 +463,7 @@ void testAddMenuPathIsInBlackList(void** state){
     addExtraEntry(database, BLACK_CONFIG, black_path);
 
     addMenu(config_type);
+    listAllRootWithPaths();
 
     assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
