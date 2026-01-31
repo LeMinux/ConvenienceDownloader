@@ -50,58 +50,12 @@ int boundedInput(FILE* stream, char* dest, size_t dest_size){
     return amount_written;
 }
 
-//This function isn't needed as getLine() exists
-/*
-int unknownInput(FILE* stream, char** dest){
-	char buffer[CHUNK_READ] = "";
-	size_t inputLength = 0;
-	size_t bufferLength = 0;
-	int isEndLine = 0;
-
-	while(!isEndLine){
-		if(fgets(buffer, CHUNK_READ, stream) == NULL){
-			if(ferror(stream)){
-				PRINT_ERROR("File stream error has occured while reading unknown input");
-				exit(EXIT_FAILURE);
-			}
-			isEndLine = 1;
-		}else{
-			bufferLength = strlen(buffer);
-			if(bufferLength == 0){
-				isEndLine = 1;
-			}else{
-				char* temp = strrchr(buffer, '\n');
-				if(temp != NULL){
-					*temp = '\0';
-					bufferLength -= 1;
-					isEndLine = 1;
-				}
-
-				*dest = realloc(*dest, inputLength + bufferLength + 1);
-				if(*dest == NULL){
-					PRINT_ERROR(FAILED_MALLOC_MSG);
-					exit(EXIT_FAILURE);
-				}
-
-				//snprintf would also overwrite all of *dest each time and fgets nul terminates
-				(void)strcpy((*dest)+inputLength, buffer);
-				inputLength += bufferLength;
-			}
-		}
-	}
-
-	return inputLength;
-}
-*/
-
 void getURL(char ret [YT_URL_INPUT_SIZE]){
 	do{
 		(void)printf("Enter the youtube URL that you want to download -> ");
 
-		//fgets is nul terminating so, clearing ret is not necessary
-		//for each invalid attempt
 		if(boundedInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1){
-            PRINT_ERROR("URL is too short! It should look like %s[11 chars]\n");
+            PRINT_FORMAT_ERROR("URL is too short! It should look like %sXXXXXXXXXXX", YOUTUBE_URL);
 		}else if(strstr(ret, YOUTUBE_URL) == NULL){
             PRINT_ERROR("This is not a youtubeURL!");
 		}else{
@@ -177,87 +131,41 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	return retVal;
 }
 
-//helper method for if the user wants to repeat or not
-int askToRepeat(void){
-	char yesNo = '\0';
-	do{
-		(void)printf("Do you want to download again? Y/N: ");
-		yesNo = fgetc(stdin);
-		if(yesNo != '\n') clearLine(stdin);
+enum REPEAT askToRepeat(void){
+    (void)printf("Do you want to download more? Y/N: ");
+    char input_buf [4] = "";
 
-		switch(yesNo){
-			case 'y': case 'Y': return 1; break;
-			case 'n': case 'N': return 0; break;
-			default: puts("~~Invalid input~~"); break;
-		}
-	}while(1);
+    #ifdef WRAPPED_INPUT
+        int user_input_len = __wrap_boundedInput(stdin, input_buf, sizeof(input_buf));
+    #else
+        int user_input_len = boundedInput(stdin, input_buf, sizeof(input_buf));
+    #endif
 
-	//incase of some wack error plus compiler was complaining
-	return HAD_ERROR;
+    enum REPEAT wants_to = ASK_AGAIN;
+    switch(user_input_len){
+        case 1:
+            switch(input_buf[0]){
+                case 'y': case 'Y': wants_to = REPEAT; break;
+                case 'n': case 'N': wants_to = NO_REPEAT; break;
+                default: break;
+            }
+        break;
+        case 2:
+            if(strcasecmp(input_buf, "no") == 0){
+                wants_to = NO_REPEAT;
+            }
+        break;
+        case 3:
+            if(strcasecmp(input_buf, "yes") == 0){
+                wants_to = REPEAT;
+            }
+        break;
+        default: break;
+    }
+
+    return wants_to;
 }
 
-/*
-int appendRootEntry(RootInfoArray* entry_array, const char* new_entry){
-    assert(entry_array != NULL);
-    assert(new_entry != NULL);
-    assert(entry_array->length >= 0);
-
-    //REMEMBER NAME IS MALLOCED
-    long depth = -1;
-    int path_length = 0;
-    char* name = NULL;
-    char* comma = strrchr(new_entry, ','); //last comma found
-    if(comma != NULL){
-        path_length = comma - new_entry;
-
-        errno = 0; //strtol man page says to set errno to zero before handling
-        depth = strtol(comma + 1, NULL, 10);
-        if(errno == ERANGE || depth > INT_MAX){
-            fprintf(stderr, "Depth given is too large\n");
-            return HAD_ERROR;
-        }
-
-        if(depth < 0){
-            fprintf(stderr, "Depth can't be negative\n");
-            return HAD_ERROR;
-        }
-    }else{
-        path_length = strlen(new_entry);
-    }
-
-    if(path_length >= MY_MAX_PATH_SIZE){
-        fprintf(stderr, "File path is too long\n");
-        return HAD_ERROR;
-    }
-
-    if((name = strndup(new_entry, path_length)) == NULL){
-        fprintf(stderr, "Not enough memory\n");
-        return HAD_ERROR;
-    }
-
-    entry_array->dir_entries = realloc(entry_array->dir_entries, sizeof(RootInfo) * (entry_array->length + 1));
-    if(entry_array->dir_entries == NULL){
-        fprintf(stderr, "Not enough memory\n");
-        return HAD_ERROR;
-    }
-
-    openDir(name, &(entry_array->dir_entries[entry_array->length].open_dir));
-
-    if(entry_array->dir_entries[entry_array->length].open_dir == NULL){
-        fprintf(stderr, "Failed to open directory %s.\n", name);
-        return HAD_ERROR;
-    }
-
-    entry_array->dir_entries[entry_array->length].root_name = name;
-    entry_array->dir_entries[entry_array->length].name_length = path_length;
-    entry_array->dir_entries[entry_array->length].depth = depth;
-    ++entry_array->length;
-
-    return NO_ERROR;
-}
-*/
-
-/*
 enum CONFIG getConfigToEdit(const char* input){
     assert(input != NULL);
 
@@ -277,6 +185,8 @@ enum CONFIG getConfigToEdit(const char* input){
             return VIDEO_CONFIG;
         }else if(strcasecmp(input, COVER_STRING) == 0){
             return COVER_CONFIG;
+        }else if(strcasecmp(input, BLACK_STRING) == 0){
+            return BLACK_CONFIG;
         }else{
             return -1;
         }
@@ -284,7 +194,6 @@ enum CONFIG getConfigToEdit(const char* input){
         return -1;
     }
 }
-*/
 
 /*
 //gets from the user what directory they want to download into

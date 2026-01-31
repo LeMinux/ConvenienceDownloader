@@ -9,9 +9,11 @@
 #include <limits.h>
 #include <errno.h>
 
-#include "helpers.h"
-//#include "fileOps.h"
 #include "globals.h"
+
+#ifdef WRAPPED_INPUT
+    #include "testWrapInput.h"
+#endif
 
 //error message defines
 #define DOWNLOAD_FAIL_MSG "\nError DWNF: Failed to download with provided URL"
@@ -25,8 +27,11 @@
 #define AUDIO_STRING "audio"
 #define VIDEO_STRING "video"
 #define COVER_STRING "cover"
+#define BLACK_STRING "black"
 
 #define OPTION_LEN 5
+
+enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
 
 //#define CHUNK_READ 51
 
@@ -53,7 +58,7 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
 *
 *	return: 0 for yes 1 for no
 */
-int askToRepeat(void);
+enum REPEAT askToRepeat(void);
 
 
 char* getUserChoiceForDir(const char* baseDir, const char* prompt);
