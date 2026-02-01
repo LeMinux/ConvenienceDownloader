@@ -4,6 +4,7 @@
 *.txt
 *.copy
 downloader
+new_downloader
 debug
 leak
 Destinations/
