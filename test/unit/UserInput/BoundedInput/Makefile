@@ -1,8 +1,8 @@
 BINARY:=bounded-input-test.out
 OBJECT_DIR:=./objects
 TEST_CODE_DIR:=./source
-SOURCE_CODE_DIR:=../../../source
-INCLUDES:=-I../../../includes -I./includes
+SOURCE_CODE_DIR:=../../../../source
+INCLUDES:=-I../../../../includes -I./includes
 
 CC:=gcc
 DEP_FLAGS :=-MP -MD

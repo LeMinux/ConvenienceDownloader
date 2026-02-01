@@ -1,4 +1,4 @@
-BINARY:=repeat_unit_test.out
+BINARY:=get_id_unit_test.out
 OBJECT_DIR:=./objects
 TEST_CODE_DIR:=./source
 SOURCE_CODE_DIR:=../../../../source
@@ -39,3 +39,4 @@ clean:
 	rm -f $(OBJECT_DIR)/*.o
 	rm -f $(OBJECT_DIR)/*.d
 	rm -f $(BINARY)
+	rm -f ./*.d
