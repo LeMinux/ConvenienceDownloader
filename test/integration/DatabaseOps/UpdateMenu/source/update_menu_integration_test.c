@@ -85,7 +85,6 @@ static int assertRootRow(sqlite3* database, enum CONFIG exp_type, const char* ex
 static int indexOfExpString(const char* act_string, const PathCheck_t* exp_list, int length){
     int is_found = NOT_FOUND;
     for(int i = 0; i < length && is_found == NOT_FOUND; ++i){
-        puts(exp_list[i].exp_path_name);
         if(strcmp(act_string, exp_list[i].exp_path_name) == 0){
             is_found = i;
         }
