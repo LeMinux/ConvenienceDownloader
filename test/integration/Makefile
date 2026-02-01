@@ -22,6 +22,6 @@ run-no-supress:
 	@for dir in $(SUBDIRS); do\
 		printf "\n%s\n" "Running $$dir";\
 		printf "%s\n" "-------------------------";\
-		$(MAKE) -C $$dir run;\
+		$(MAKE) -C $$dir run-no-supress;\
 		printf "%s\n" "~~~~~~~~~~~~~~~~~~~~~~~~~";\
 	done
