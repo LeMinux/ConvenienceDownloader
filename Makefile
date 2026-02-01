@@ -1,39 +1,36 @@
-#note the dot after the period. This is to specify the current directory
-BINARY:=downloader
+BINARY:=new_downloader
+OBJECT_DIR:=./objects
 CODE_DIR:=./source
 INC_DIR:=./includes
+TEST_DIR:=./test
+CONFIG_DIR:=~/.config/con-downloader
+DATABASE_FILE:=$(CONFIG_DIR)/con-downloader.db
 
-CC :=gcc
-DEP_FLAGS :=-MP -MD
-C_FLAGS :=-Wall -Werror -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings -Wconversion $(foreach dir, $(INC_DIR),-I$(dir)) $(DEP_FLAGS)
-DEBUG_FLAGS :=-g -fsanitize=address -fsanitize-recover=address
+CC:=gcc
+DEP_FLAGS:=-MP -MD
+C_FLAGS:=-Wall -Werror -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings -Wconversion -I$(INC_DIR) $(DEP_FLAGS)
+C_END_FLAGS:=-lsqlite3
+DEBUG_FLAGS:=-g -fsanitize=address -fsanitize-recover=address
 
-C_FILES :=$(foreach dir, $(CODE_DIR),$(wildcard $(dir)/*.c))
+C_FILES:=$(filter-out $(CODE_DIR)/test% $(CODE_DIR)/writeArt.c, $(wildcard $(CODE_DIR)/*.c))
+#C_FILES :=$(foreach dir, $(CODE_DIR),$(wildcard $(dir)/*.c))
 O_FILES :=$(patsubst %.c, %.o, $(C_FILES))
 DEP_FILES :=$(patsubst %.c, %.d, $(C_FILES))
-
-#name of directory where destinations will be stored
-DIR :=./Destinations/
 
 #default
 all: $(BINARY)
 
-#create an executable with the name downloader with passed in dependencies
 $(BINARY): $(O_FILES)
-	$(CC) $(C_FLAGS) -o $@ $^
-	@ if [ ! -d "$(DIR)" ]; then \
-		mkdir -p "$(DIR)"; \
-	fi
-	@chmod 700 $(DIR);
+	$(CC) $(C_FLAGS) -o $@ $^ -lsqlite3
 
 #implicitly specify how to turn c files into object files
-%.o : %.c
+$(OBJECT_DIR)/%.o : $(CODE_DIR)/%.c
 	$(CC) -c $(C_FLAGS) $< -o $@
 
 #create database file
 init:
-	mkdir -p ~/.config/con-downloader/
-	sqlite3 ~/.config/con-downloader/con-downloader.db < ./source/initDB.sql
+	mkdir -p $(CONFIG_DIR)
+	sqlite3 $(DATABASE_FILE) < $(CODE_DIR)/initDB.sql
 
 #runs binary
 run:
@@ -47,14 +44,27 @@ leak: $(C_FILES)
 debug: $(C_FILES)
 	$(CC) -g $(C_FLAGS) -o $@ $^
 
-test: $(O_FILES)
-	$(CC) $(C_FLAGS) -o $@ $^
+compile-tests:
+	$(MAKE) -C $(TEST_DIR) compile
+
+run-tests:
+	$(MAKE) -C $(TEST_DIR) run
+
+test-show-all:
+	$(MAKE) -C $(TEST_DIR) run-no-supress
 
 #remove all object files, dependency files, and binary
 clean:
-	rm -rf $(BINARY) $(O_FILES) $(DEP_FILES)
+	rm -f ./$(BINARY)
+	rm -f ./$(OBJECT_DIR)/*.o
+	rm -f ./$(OBJECT_DIR)/*.d
+	rm -f ./*.d
+
+removed-database:
+	rm -f $(DATABASE_FILE)
 
 #include the dependency files
 -include $(DEP_FILES)
 
+.PHONY: test
 
