@@ -50,20 +50,60 @@ int boundedInput(FILE* stream, char* dest, size_t dest_size){
     return amount_written;
 }
 
-void getURL(char ret [YT_URL_INPUT_SIZE]){
-	do{
-		(void)printf("Enter the youtube URL that you want to download -> ");
+static enum INPUT validIDPortion(const char* id_segment){
+    assert(id_segment != NULL);
+    assert(strlen(id_segment) == YT_ID_LEN);
 
-		if(boundedInput(stdin, ret, YT_URL_INPUT_SIZE) != YT_URL_INPUT_SIZE - 1){
-            PRINT_FORMAT_ERROR("URL is too short! It should look like %sXXXXXXXXXXX", YOUTUBE_URL);
-		}else if(strstr(ret, YOUTUBE_URL) == NULL){
-            PRINT_ERROR("This is not a youtubeURL!");
-		}else{
-			return;
-		}
-	}while(1);
+    const char id_white_list [] =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789"
+        "_-";
+
+    enum INPUT is_good;
+    if(strspn(id_segment, id_white_list) != YT_ID_LEN){
+        is_good = INVALID;
+    }else{
+        is_good = VALID;
+    }
+    return is_good;
 }
 
+//YT urls that have stuff like the radio or playlist in the URL is fine
+//since the only important part is the URL and the ID.
+enum INPUT getIDFromURL(char ret_id [YT_ID_SIZE]){
+    assert(ret_id != NULL);
+
+    char input [YT_URL_INPUT_SIZE];
+    (void)printf("Enter the youtube URL that you want to download -> ");
+
+    enum INPUT is_good_input = INVALID;
+    #ifdef WRAPPED_INPUT
+    if(__wrap_boundedInput(stdin, input, sizeof(input)) != YT_URL_INPUT_SIZE - 1){
+    #else
+    if(boundedInput(stdin, input, sizeof(input)) != YT_URL_INPUT_SIZE - 1){
+    #endif
+        ADVISE_USER_FORMAT("URL is too short! It should look like %sXXXXXXXXXXX", YOUTUBE_URL);
+    }else if(strstr(input, YOUTUBE_URL) == NULL){
+        ADVISE_USER("This is not a youtubeURL!");
+    }else{
+        char id [YT_ID_SIZE];
+        memcpy(id, input + LEN_BEFORE_ID, YT_ID_LEN);
+        id[YT_ID_LEN] = '\0';
+        puts(id);
+        if(validIDPortion(id) == INVALID){
+            ADVISE_USER("URL doesn't point to a valid youtube video");
+        }else{
+            is_good_input = VALID;
+        }
+
+        memcpy(ret_id, id, YT_ID_SIZE);
+    }
+
+    return is_good_input;
+}
+
+/*
 int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	//--restrict-filenames makes it so escape characters don't need to be added
 	//-f bestvideo to force as .mp4
@@ -130,6 +170,7 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	downloadCommand = NULL;
 	return retVal;
 }
+*/
 
 enum REPEAT askToRepeat(void){
     (void)printf("Do you want to download more? Y/N: ");

@@ -11,34 +11,43 @@
 
 #include "globals.h"
 
+
+//Another NASA sin :(
 #ifdef WRAPPED_INPUT
     #include "testWrapInput.h"
 #endif
-
-//error message defines
-#define DOWNLOAD_FAIL_MSG "\nError DWNF: Failed to download with provided URL"
-#define TEMP_FILE_FAIL_MSG "\nERROR READ: Error in reading temporary file"
-#define FILE_FAIL_MSG  "\nERROR GVFL: Error in reading given file. File does not exist"
-#define DIR_FAIL_MSG  "\nERROR GVDR: Error in reading given directory. Directory does not exist"
-#define MP4_FAIL_MSG "\nERROR MVP4: Error in moving video file to desired directory"
-#define MP3_FAIL_MSG "\nERROR MVP3: Error in moving audio file to desired directory"
-#define SKIP_VALID_MSG "\nERROR INVD: Error in user skipping selecting a directory"
 
 #define AUDIO_STRING "audio"
 #define VIDEO_STRING "video"
 #define COVER_STRING "cover"
 #define BLACK_STRING "black"
 
+#define YOUTUBE_URL "https://www.youtube.com/watch?v="
+
+#define LEN_BEFORE_ID 32
+#define YT_ID_LEN 11
+
+#define YT_URL_INPUT_SIZE (LEN_BEFORE_ID + YT_ID_LEN + 1)
+#define YT_ID_SIZE 12
+
 #define OPTION_LEN 5
 
 enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
 
-//#define CHUNK_READ 51
-
-//gets the URL from the user
-//the parameter is an array of YT_URL_BUFFER size since
-//the only required part needed is the base URL and the video ID parameter
-void getURL(char [YT_URL_INPUT_SIZE]);
+/*
+*	gets the URL from the user.
+*	the parameter is a passed by reference string to place the ID into
+*	It's not necessary to carry around the entire string as sometimes there can
+*	be really long youtube URLs, and the only thing that's really needed to get
+*	to a youtube video is the beginning youtube.com protion and the video ID parameter
+*
+*	return:
+*    VALID for a valid URL INVALID to prompt input again.
+*    If input is VALID the video ID is placed into the parameter.
+*    Don't try to use the ID if INVALID is passed as this method won't overwrite
+*    previous contents so you will use what ever was in ret_id before calling.
+*/
+enum INPUT getIDFromURL(char ret_id [YT_ID_SIZE]);
 
 /*
 *	downloads a song given the URL for it
@@ -56,7 +65,7 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
 /*
 *	asks the user if they would like to continue downloading
 *
-*	return: 0 for yes 1 for no
+*	return: REPEAT for yes NO_REPEAT for no ASK_AGAIN if input is invalid
 */
 enum REPEAT askToRepeat(void);
 
@@ -92,7 +101,6 @@ int boundedInput(FILE* stream, char* dest, size_t size);
 
 //int appendRootEntry(RootInfoArray* entry_array, const char* new_entry);
 //
-
 
 enum CONFIG getConfigToEdit(const char* input);
 
