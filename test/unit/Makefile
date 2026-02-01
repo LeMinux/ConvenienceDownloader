@@ -1,6 +1,6 @@
 SUBDIRS:=./*/
 
-compile: $(SUBDIRS)
+all: $(SUBDIRS)
 	for dir in $(SUBDIRS); do\
 		$(MAKE) -C $$dir;\
 	done
