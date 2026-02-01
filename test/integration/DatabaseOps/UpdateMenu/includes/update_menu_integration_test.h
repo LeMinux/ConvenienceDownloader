@@ -34,6 +34,7 @@ void testUpdateMenuCatchesInvalidDepth(void** state);
 void testUpdateMenuCatchesInvalidIndex(void** state);
 void testUpdateMenuCatchesPathInBlackList(void** state);
 void testUpdateMenuCatchesDuplicateNameAndType(void** state);
+void testUpdateMenuCatchesNoRows(void** state);
 
 void testUpdateMenuEnterInfInputOnRootDir(void** state);
 void testUpdateMenuLargerDepthThanWhatRootHas(void** state);

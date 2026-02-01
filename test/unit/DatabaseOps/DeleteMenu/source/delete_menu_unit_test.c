@@ -34,6 +34,15 @@ static void assertDeleteData(sqlite3* database, int root_id, int exp_remaining){
     }
 }
 
+void testDeleteMenuCatchesNoRows(void** state){
+    (void) state;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 0);
+
+    deleteMenu(config_type);
+}
+
 void testDeleteEntryCatchesInvalidIndex(void** state){
     (void) state;
     int index_input = INVALID;

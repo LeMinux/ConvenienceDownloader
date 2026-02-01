@@ -137,6 +137,16 @@ static void assertPaths(sqlite3* database, int exp_id, PathCheck_t* exp_path_nam
     }
 }
 
+void testUpdateMenuCatchesNoRows(void** state){
+    (void) state;
+    call_real_function = NO_CALL;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 0);
+
+    updateMenu(config_type);
+}
+
 void testUpdateMenuCatchesInvalidIndex(void** state){
     (void) state;
     call_real_function = NO_CALL;

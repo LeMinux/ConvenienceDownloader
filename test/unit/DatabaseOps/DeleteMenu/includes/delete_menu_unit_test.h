@@ -11,6 +11,8 @@
 #define PERSONAL_ROOT_ID 7
 
 void testDeleteEntryCatchesInvalidIndex(void** state);
+void testDeleteMenuCatchesNoRows(void** state);
+
 void testDeleteEntryAudioConfig(void** state);
 void testDeleteEntryVideoConfig(void** state);
 void testDeleteEntryCoverConfig(void** state);
