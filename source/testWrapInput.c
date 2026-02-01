@@ -17,11 +17,19 @@ int __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size){
 
     const char* stubbed_string = mock_type(char*);
     size_t write_len = strlen(stubbed_string);
-    assert(write_len < dest_size);
 
-    memcpy(dest, stubbed_string, write_len);
-    dest[write_len] = '\0';
-    return write_len;
+    int written_amt = 0;
+    if(write_len < dest_size){
+        memcpy(dest, stubbed_string, write_len);
+        dest[write_len] = '\0';
+        written_amt = write_len;
+    }else{
+        memcpy(dest, stubbed_string, dest_size - 1);
+        dest[dest_size - 1] = '\0';
+        written_amt = dest_size - 1;
+    }
+
+    return written_amt;
 }
 
 //If a mock is available it will return the mock first.
