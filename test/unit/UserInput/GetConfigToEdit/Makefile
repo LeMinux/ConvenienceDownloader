@@ -19,7 +19,7 @@ O_FILES := \
 all: $(BINARY)
 
 $(BINARY): $(O_FILES)
-	$(CC) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka
+	$(CC) -o $@ $^ -lcmocka
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
