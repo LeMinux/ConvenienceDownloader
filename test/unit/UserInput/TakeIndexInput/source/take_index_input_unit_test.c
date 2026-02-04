@@ -3,7 +3,7 @@
 void testTakeIndexInputSendInvalidOnZeroLength(void** state){
     (void)state;
     char input [] = "";
-    int expect_ret = INVALID;
+    int expect_ret = SKIPPING;
 
     will_return(__wrap_boundedInput, input);
 

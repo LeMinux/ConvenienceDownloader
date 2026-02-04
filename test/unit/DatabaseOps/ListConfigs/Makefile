@@ -11,7 +11,7 @@ C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 		  -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings
 
 TEST_C_FILES:=$(wildcard $(TEST_CODE_DIR)/*.c)
-SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseOps.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/databaseUserInput.c $(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/testSetups.c
+SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseOps.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/testSetups.c
 
 O_FILES := \
   $(patsubst $(TEST_CODE_DIR)/%.c,$(OBJECT_DIR)/%.o,$(TEST_C_FILES)) \
