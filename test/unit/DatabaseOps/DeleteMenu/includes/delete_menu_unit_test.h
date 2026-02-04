@@ -12,6 +12,7 @@
 
 void testDeleteEntryCatchesInvalidIndex(void** state);
 void testDeleteMenuCatchesNoRows(void** state);
+void testDeleteMenuCatchesSkipping(void** state);
 
 void testDeleteEntryAudioConfig(void** state);
 void testDeleteEntryVideoConfig(void** state);

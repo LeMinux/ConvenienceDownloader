@@ -11,6 +11,7 @@ int main(void){
     const struct CMUnitTest delete_tests[] = {
         cmocka_unit_test_setup_teardown(testDeleteEntryCatchesInvalidIndex, createTestDBWithRootsAndPaths, closeDB),
         cmocka_unit_test_setup_teardown(testDeleteMenuCatchesNoRows, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testDeleteMenuCatchesSkipping, createTestDBWithRootsAndPaths, closeDB),
         cmocka_unit_test_setup_teardown(testDeleteEntryAudioConfig, createTestDBWithRootsAndPaths, closeDB),
         cmocka_unit_test_setup_teardown(testDeleteEntryVideoConfig, createTestDBWithRootsAndPaths, closeDB),
         cmocka_unit_test_setup_teardown(testDeleteEntryCoverConfig, createTestDBWithRootsAndPaths, closeDB),

@@ -54,6 +54,22 @@ void testDeleteEntryCatchesInvalidIndex(void** state){
     deleteMenu(config_type);
 }
 
+
+//uses the asserts to its advantage
+//maybe not the most maintainable, but
+//if implementation were to change it would need to change anyway
+void testDeleteMenuCatchesSkipping(void** state){
+    (void) state;
+    call_real_function = NO_CALL;
+    int index_input = SKIPPING;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 1);
+    will_return(__wrap_takeIndexInput, index_input);
+
+    deleteMenu(config_type);
+}
+
 void testDeleteEntryAudioConfig(void** state){
     sqlite3* database = *state;
     int index_input = 1;
@@ -89,7 +105,6 @@ void testDeleteEntryCoverConfig(void** state){
     will_return(__wrap_takeIndexInput, index_input);
 
     deleteMenu(config_type);
-    listAllRootWithPaths();
 
     assertDeleteData(database, ARTS_ROOT_ID, TOTAL_ROWS - 3);
 }
