@@ -20,7 +20,7 @@ O_FILES := \
 all: $(BINARY)
 
 $(BINARY): $(O_FILES)
-	$(CC) -g $(COMPILER_FLAG) $(MOCK_FLAGS) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka -lsqlite3
+	$(CC) -g $(MOCK_FLAGS) -o $@ $^ -lcmocka -lsqlite3
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
