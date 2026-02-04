@@ -13,8 +13,10 @@ int main(void){
         cmocka_unit_test_setup_teardown(testAddMenuCatchesInvalidDepth, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuCatchesPathInBlackList, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuCatchesDuplicateNameAndType, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuEnterInfInputOnRootDir, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesSkippingPath, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesSkippingDepth, createTestDB, closeDB),
 
+        cmocka_unit_test_setup_teardown(testAddMenuEnterInfInputOnRootDir, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuMaxDepth, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuLargerDepthThanWhatRootHas, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testAddMenuSmallerDepthThanWhatRootHas, createTestDB, closeDB),

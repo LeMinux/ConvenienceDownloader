@@ -172,11 +172,42 @@ void testAddMenuCatchesDuplicateNameAndType(void** state){
     addMenu(config_type);
 }
 
+void testAddMenuCatchesSkippingPath(void** state){
+    (void) state;
+    call_real_function = NO_CALL;
+    char dir_input [] = "";
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 0);
+
+    will_return(__wrap_takeDirectoryInput, dir_input);
+
+    addMenu(config_type);
+}
+
+void testAddMenuCatchesSkippingDepth(void** state){
+    (void) state;
+    call_real_function = NO_CALL;
+    char dir_input [] = "TotallyRealPath";
+    int depth_input = SKIPPING;
+    enum CONFIG config_type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeDirectoryInput, 1);
+    expect_function_calls(__wrap_takeDepthInput, 1);
+
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
+
+    addMenu(config_type);
+}
+
 void testAddMenuEnterInfInputOnRootDir(void** state){
     sqlite3* database = *state;
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -206,6 +237,7 @@ void testAddMenuLargerDepthThanWhatRootHas(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -235,6 +267,7 @@ void testAddMenuMaxDepth(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -270,6 +303,7 @@ void testAddMenuSmallerDepthThanWhatRootHas(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -296,6 +330,9 @@ void testAddMenuZeroDepthOnRoot(void** state){
     sqlite3* database = *state;
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
+    };
 
     const char depth_input [] = "0";
     char exp_root [PATH_MAX];
@@ -308,7 +345,7 @@ void testAddMenuZeroDepthOnRoot(void** state){
     addMenu(config_type);
 
     assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
-    assertPaths(database, NULL, 0);
+    assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuOneDepthOnRoot(void** state){
@@ -316,6 +353,7 @@ void testAddMenuOneDepthOnRoot(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {RIGHT_DIR, sizeof(RIGHT_DIR) - 1},
     };
@@ -359,6 +397,7 @@ void testAddMenuToVideoConfig(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -388,6 +427,7 @@ void testAddMenuToCoverConfig(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -416,6 +456,7 @@ void testAddMenuDuplicateNameButDiffConfigType(void** state){
     call_real_function = CALL;
     const char dir_input [] = ROOT1;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {LEFT_DIR_LEFT, sizeof(LEFT_DIR_LEFT) - 1},
         {LEFT_DIR_RIGHT, sizeof(LEFT_DIR_RIGHT) - 1},
@@ -445,6 +486,7 @@ void testAddMenuPathIsInBlackList(void** state){
     const char dir_input [] = ROOT1;
     const char black_listed_path [] = ROOT1 LEFT_DIR;
     PathCheck_t exp_paths [] = {
+        {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {RIGHT_DIR, sizeof(RIGHT_DIR) - 1},
         {RIGHT_DIR_LEFT, sizeof(RIGHT_DIR_LEFT) - 1},
         {RIGHT_DIR_RIGHT, sizeof(RIGHT_DIR_RIGHT) - 1},
@@ -463,7 +505,6 @@ void testAddMenuPathIsInBlackList(void** state){
     addExtraEntry(database, BLACK_CONFIG, black_path);
 
     addMenu(config_type);
-    listAllRootWithPaths();
 
     assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
