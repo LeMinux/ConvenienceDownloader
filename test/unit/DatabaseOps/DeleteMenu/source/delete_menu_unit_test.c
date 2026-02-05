@@ -30,8 +30,10 @@ static void assertDeleteData(sqlite3* database, int root_id, int exp_remaining){
         assert_int_equal(total_path_rows, 0);
         assert_int_equal(total_remaining, exp_remaining);
     }else{
+        sqlite3_finalize(total_statement);
         fail_msg("Could not determine total delete count");
     }
+    sqlite3_finalize(total_statement);
 }
 
 void testDeleteMenuCatchesNoRows(void** state){
