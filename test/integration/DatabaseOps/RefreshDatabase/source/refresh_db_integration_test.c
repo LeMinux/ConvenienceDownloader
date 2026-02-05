@@ -1,9 +1,12 @@
 #include "../includes/refresh_db_integration_test.h"
 
-//based on what the Makefile added
-static const char* constant_paths [] = {"1", "2", "3"};
-static const char* added_paths [] = {"1", "2", "3", "4"};
-static const char* removed_paths [] = {"1", "2"};
+static const char* constant_paths [] = {"/", "/1/", "/2/", "/3/"};
+static const char* added_paths [] = {"/", "/1/", "/2/", "/3/", "/4/"};
+static const char* removed_paths [] = {"/", "/1/", "/2/"};
+
+static const int constant_size = sizeof(constant_paths)/sizeof(constant_paths[0]);
+static const int added_size = sizeof(added_paths)/sizeof(added_paths[0]);
+static const int removed_size =  sizeof(removed_paths)/sizeof(removed_paths[0]);
 
 static const Root_Init_t ROOTS [] = {
     {AUDIO_CONFIG, "constant"},
@@ -15,14 +18,17 @@ static const Root_Init_t ROOTS [] = {
 };
 
 static const Exp_Root_Info_t EXP_RESULTS []= {
-    {ROOTS[0], 3, constant_paths},
-    {ROOTS[1], 4, added_paths},
-    {ROOTS[2], 2, removed_paths},
+    {ROOTS[0], constant_size, constant_paths},
+    {ROOTS[1], added_size, added_paths},
+    {ROOTS[2], removed_size, removed_paths},
     {ROOTS[3], 0, NULL},
 };
 
-static const int NUM_OLD_ROOTS = 6;
+static const int NUM_OLD_ROOTS = sizeof(ROOTS)/sizeof(ROOTS[0]);
 static int root_len = 0;
+
+static const int EXP_PATH_COUNT = constant_size + added_size + removed_size;
+static const int EXP_ROOT_COUNT = sizeof(EXP_RESULTS)/sizeof(EXP_RESULTS[0]);
 
 static int findExpPath(const char* act_string, const Exp_Root_Info_t* exp_info){
     int is_found = NOT_FOUND;
@@ -81,6 +87,7 @@ static void assertRows(sqlite3* database){
             assert_int_not_equal(findExpPath(act_path_name, &EXP_RESULTS[index]), NOT_FOUND);
         }
     }
+    sqlite3_finalize(roots_statement);
 }
 
 static void assertCount(sqlite3* database){
@@ -100,8 +107,10 @@ static void assertCount(sqlite3* database){
         assert_int_equal(act_root_count, EXP_ROOT_COUNT);
         assert_int_equal(act_path_count, EXP_PATH_COUNT);
     }else{
+        sqlite3_finalize(count_statement);
         fail_msg("No count information available");
     }
+    sqlite3_finalize(count_statement);
 }
 
 static void setUpData(sqlite3* database){
@@ -169,7 +178,9 @@ static void setUpData(sqlite3* database){
             if(sqlite3_step(insert_path_statement) != SQLITE_DONE){
                 fail_msg("Failed to add path due to %s", sqlite3_errmsg(database));
             }
+            sqlite3_finalize(insert_path_statement);
         }
+        sqlite3_finalize(insert_root_statement);
     }
 }
 

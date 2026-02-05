@@ -12,9 +12,6 @@
 
 #define DIR_ENV "./dir_env"
 
-#define EXP_PATH_COUNT 9
-#define EXP_ROOT_COUNT 4
-
 typedef struct Root_Init{
     enum CONFIG type;
     const char* dir_name;

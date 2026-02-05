@@ -18,7 +18,7 @@ REMOVED_CONTENT_ROOT:=$(DIR_ENV)/removed_stuff
 BLACK_ROOT:=$(DIR_ENV)/blacklist
 
 TEST_C_FILES:=$(wildcard $(TEST_CODE_DIR)/*.c)
-SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseUserInput.c $(SOURCE_CODE_DIR)/databaseOps.c $(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/testWrapInput.c $(SOURCE_CODE_DIR)/testSetups.c
+SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/databaseOps.c $(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/testSetups.c
 
 O_FILES := \
   $(patsubst $(TEST_CODE_DIR)/%.c,$(OBJECT_DIR)/%.o,$(TEST_C_FILES)) \
@@ -46,7 +46,7 @@ $(DIR_ENV):
 	mkdir -p $(BLACK_ROOT)/1
 
 $(BINARY): $(O_FILES) | $(DIR_ENV)
-	$(CC) -g $(COMPILER_FLAG) $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka -lsqlite3
+	$(CC) -g -o $@ $^ -lcmocka -lsqlite3
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
