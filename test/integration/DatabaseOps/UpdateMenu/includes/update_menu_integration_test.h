@@ -12,29 +12,30 @@ typedef struct PathCheck{
 
 #define NOT_FOUND -1
 
-#define ROOT1 "./dir_env/root1/"
-#define ROOT2 "./dir_env/root2/"
+#define ROOT1 "./dir_env/root1"
+#define ROOT2 "./dir_env/root2"
 
-#define LEFT_DIR "left_dir"
-#define LEFT_DIR_LEFT "left_dir/inner_left"
-#define LEFT_DIR_RIGHT "left_dir/inner_right"
-#define LEFT_DIR_MOST_INNER "left_dir/inner_right/inner_inner_dir"
+#define LEFT_DIR "/left_dir/"
+#define LEFT_DIR_LEFT "/left_dir/inner_left/"
+#define LEFT_DIR_RIGHT "/left_dir/inner_right/"
+#define LEFT_DIR_MOST_INNER "/left_dir/inner_right/inner_inner_dir/"
 
 
-#define RIGHT_DIR "right_dir"
-#define RIGHT_DIR_LEFT "right_dir/inner_left"
-#define RIGHT_DIR_RIGHT "right_dir/inner_right"
-#define RIGHT_DIR_MOST_INNER "right_dir/inner_left/inner_inner_dir"
+#define ROOT_ITSELF "/"
+#define RIGHT_DIR "/right_dir/"
+#define RIGHT_DIR_LEFT "/right_dir/inner_left/"
+#define RIGHT_DIR_RIGHT "/right_dir/inner_right/"
+#define RIGHT_DIR_MOST_INNER "/right_dir/inner_left/inner_inner_dir/"
 
 #define DUPLICATE_ENTRY RIGHT_DIR
 #define IN_BLACK_LIST RIGHT_DIR
 
-void testUpdateMenuCatchesInvalidPath(void** state);
+void testUpdateMenuCatchesNoRows(void** state);
 void testUpdateMenuCatchesInvalidDepth(void** state);
 void testUpdateMenuCatchesInvalidIndex(void** state);
-void testUpdateMenuCatchesPathInBlackList(void** state);
-void testUpdateMenuCatchesDuplicateNameAndType(void** state);
-void testUpdateMenuCatchesNoRows(void** state);
+void testUpdateMenuCatchesSkippingIndex(void** state);
+
+void testUpdateMenuSkippingDepth(void** state);
 
 void testUpdateMenuEnterInfInputOnRootDir(void** state);
 void testUpdateMenuLargerDepthThanWhatRootHas(void** state);
@@ -46,8 +47,6 @@ void testUpdateMenuMaxDepth(void** state);
 void testUpdateMenuToBlackList(void** state);
 void testUpdateMenuToVideoConfig(void** state);
 void testUpdateMenuToCoverConfig(void** state);
-
-void testUpdateMenuDuplicateNameButDiffConfigType(void** state);
 void testUpdateMenuPathIsInBlackList(void** state);
 
 #endif
