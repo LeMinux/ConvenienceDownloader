@@ -1,15 +1,5 @@
 #include "../includes/testWrapInput.h"
 
-enum CALL call_real_function = NO_CALL;
-
-//really here just so the compiler doesn't say undefiend references to the __real_
-//functions that aren't wrapped
-//If there is no corresponding __real_ then that function hasn't been wrapped
-//, and neither __wrap_ nor __real_ will be called because they don't exist.
-int __real_takeDepthInput(void) __attribute__((weak));
-int __real_takeIndexInput(int) __attribute__((weak));
-char* __real_takeDirectoryInput(void) __attribute__((weak));
-
 int __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size){
     //don't care about these just want to return a string
     (void) stream;
@@ -39,17 +29,14 @@ int __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size){
 //the actual behavior of these functions are wanted it can be tested.
 
 int __wrap_takeIndexInput(int max){
+    (void) max;
     function_called();
     int ret_int = 0;
 
     if(has_mock()){
         ret_int = mock_type(int);
     }else{
-        if(call_real_function == CALL){
-            ret_int = __real_takeIndexInput(max);
-        }else{
-            stop();
-        }
+        stop();
     }
     return ret_int;
 }
@@ -67,11 +54,7 @@ char* __wrap_takeDirectoryInput(void){
             memcpy(ret_string, stubbed_string, stubbed_size);
         }
     }else{
-        if(call_real_function == CALL){
-            ret_string = __real_takeDirectoryInput();
-        }else{
-            stop();
-        }
+        stop();
     }
 
     return ret_string;
@@ -84,11 +67,7 @@ int __wrap_takeDepthInput(void){
     if(has_mock()){
         ret_int = mock_type(int);
     }else{
-        if(call_real_function == CALL){
-            ret_int = __real_takeDepthInput();
-        }else{
-            stop();
-        }
+        stop();
     }
 
     return ret_int;
