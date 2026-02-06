@@ -30,7 +30,7 @@ O_FILES := \
 all: $(BINARY) | $(TEST_ENV)
 
 $(BINARY): $(O_FILES)
-	$(CC) $(C_FLAGS) $(MOCK_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka
+	$(CC) -o $@ $^ -lcmocka
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)

@@ -12,8 +12,8 @@ typedef struct PathCheck{
 
 #define NOT_FOUND -1
 
-#define ROOT1 "./dir_env/root1/"
-#define ROOT2 "./dir_env/root2/"
+#define ROOT1 "./dir_env/root1"
+#define ROOT2 "./dir_env/root2"
 
 #define ROOT_ITSELF "/"
 #define LEFT_DIR "/left_dir/"

@@ -5,11 +5,11 @@ SOURCE_CODE_DIR:=../../../../source
 INCLUDES:=-I../../../../includes -I./includes
 
 CC:=gcc
-COMPILER_FLAG:=-DPREVENT_INTERNAL_LINKAGE -DTESTING
+COMPILER_FLAG:=-DTESTING
 DEP_FLAGS :=-MP -MD
 C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 		  -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings
-MOCK_FLAGS:=-Wl,--wrap=boundedInput,--wrap=takeDirectoryInput,--wrap=takeDepthInput
+MOCK_FLAGS:=-Wl,--wrap=takeDirectoryInput,--wrap=takeDepthInput
 
 DIR_ENV:=./dir_env
 ROOT1:=$(DIR_ENV)/root1

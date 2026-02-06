@@ -1,19 +1,17 @@
 #include "../includes/add_menu_integration_test.h"
 
-extern enum CALL call_real_function;
-
 static void getRealPath(const char* input, char result [PATH_MAX]){
     if(realpath(input, result) == NULL){
         fail_msg("Could not create real path");
     }
 }
 
-static void setUpStubbedInput(const char* dir_input, const char* depth_input){
+static void setUpStubbedInput(const char* dir_input, int depth_input){
     expect_function_calls(__wrap_takeDirectoryInput, 1);
     expect_function_calls(__wrap_takeDepthInput, 1);
 
-    will_return(__wrap_boundedInput, dir_input);
-    will_return(__wrap_boundedInput, depth_input);
+    will_return(__wrap_takeDirectoryInput, dir_input);
+    will_return(__wrap_takeDepthInput, depth_input);
 }
 
 static void assertRootRow(sqlite3* database, enum CONFIG exp_type, const char* exp_input, size_t exp_input_len, int exp_depth){
@@ -97,7 +95,6 @@ static void assertPaths(sqlite3* database, PathCheck_t* exp_path_names, int exp_
 
 void testAddMenuCatchesInvalidPath(void** state){
     (void) state;
-    call_real_function = NO_CALL;
     char* dir_input = NULL;
     enum CONFIG config_type = AUDIO_CONFIG;
 
@@ -109,7 +106,7 @@ void testAddMenuCatchesInvalidPath(void** state){
 
 void testAddMenuCatchesInvalidDepth(void** state){
     (void) state;
-    call_real_function = NO_CALL;
+    
     char dir_input [] = "TotallyRealPath";
     int depth_input = INVALID;
     enum CONFIG config_type = AUDIO_CONFIG;
@@ -125,7 +122,6 @@ void testAddMenuCatchesInvalidDepth(void** state){
 
 void testAddMenuCatchesPathInBlackList(void** state){
     sqlite3* database = *state;
-    call_real_function = NO_CALL;
     const char* dir_input = IN_BLACK_LIST;
     enum CONFIG config_type = AUDIO_CONFIG;
 
@@ -139,7 +135,6 @@ void testAddMenuCatchesPathInBlackList(void** state){
 
 void testAddMenuCatchesDuplicateNameAndType(void** state){
     sqlite3* database = *state;
-    call_real_function = NO_CALL;
     const char dir_input [] = DUPLICATE_ENTRY;
     enum CONFIG config_type = AUDIO_CONFIG;
 
@@ -153,7 +148,7 @@ void testAddMenuCatchesDuplicateNameAndType(void** state){
 
 void testAddMenuCatchesSkippingPath(void** state){
     (void) state;
-    call_real_function = NO_CALL;
+    
     char dir_input [] = "";
     enum CONFIG config_type = AUDIO_CONFIG;
 
@@ -167,7 +162,7 @@ void testAddMenuCatchesSkippingPath(void** state){
 
 void testAddMenuCatchesSkippingDepth(void** state){
     (void) state;
-    call_real_function = NO_CALL;
+    
     char dir_input [] = "TotallyRealPath";
     int depth_input = SKIPPING;
     enum CONFIG config_type = AUDIO_CONFIG;
@@ -183,8 +178,8 @@ void testAddMenuCatchesSkippingDepth(void** state){
 
 void testAddMenuEnterInfInputOnRootDir(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = INF_DEPTH;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -197,24 +192,23 @@ void testAddMenuEnterInfInputOnRootDir(void** state){
         {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
     };
 
-    const char depth_input [] = INF_STRING;
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = AUDIO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuLargerDepthThanWhatRootHas(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = 27;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -227,24 +221,23 @@ void testAddMenuLargerDepthThanWhatRootHas(void** state){
         {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
     };
 
-    const char depth_input [] = "27";
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = AUDIO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuMaxDepth(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = MAX_DEPTH;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -257,19 +250,12 @@ void testAddMenuMaxDepth(void** state){
         {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
     };
 
-    //set up input for MAX_DEPTH
-    int size = snprintf(NULL, 0, "%d", MAX_DEPTH);
-    char* depth_input = malloc(size + 1);
-    if(depth_input == NULL){
-        fail_msg("Not enough memory to allocate depth_input for MAX_DEPTH");
-    }
-    snprintf(depth_input, size + 1, "%d", MAX_DEPTH);
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = AUDIO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
@@ -279,8 +265,8 @@ void testAddMenuMaxDepth(void** state){
 
 void testAddMenuSmallerDepthThanWhatRootHas(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = 2;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -291,70 +277,66 @@ void testAddMenuSmallerDepthThanWhatRootHas(void** state){
         {RIGHT_DIR_RIGHT, sizeof(RIGHT_DIR_RIGHT) - 1},
     };
 
-    const char depth_input [] = "2";
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = AUDIO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuZeroDepthOnRoot(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = 0;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
     };
 
-    const char depth_input [] = "0";
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = AUDIO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuOneDepthOnRoot(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = 1;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
         {RIGHT_DIR, sizeof(RIGHT_DIR) - 1},
     };
 
-    const char depth_input [] = "1";
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = AUDIO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 
 void testAddMenuToBlackList(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT2;
     int exp_depth = 0;
 
@@ -363,7 +345,7 @@ void testAddMenuToBlackList(void** state){
     enum CONFIG config_type = BLACK_CONFIG;
 
     expect_function_calls(__wrap_takeDirectoryInput, 1);
-    will_return(__wrap_boundedInput, dir_input);
+    will_return(__wrap_takeDirectoryInput, exp_root);
 
     addMenu(config_type);
 
@@ -373,8 +355,8 @@ void testAddMenuToBlackList(void** state){
 
 void testAddMenuToVideoConfig(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = INF_DEPTH;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -387,24 +369,23 @@ void testAddMenuToVideoConfig(void** state){
         {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
     };
 
-    const char depth_input [] = INF_STRING;
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = VIDEO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuToCoverConfig(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = INF_DEPTH;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -417,23 +398,23 @@ void testAddMenuToCoverConfig(void** state){
         {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
     };
 
-    const char depth_input [] = INF_STRING;
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = COVER_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
-    assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));}
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
+    assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
+}
 
 void testAddMenuDuplicateNameButDiffConfigType(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = 2;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
         {LEFT_DIR, sizeof(LEFT_DIR) - 1},
@@ -444,25 +425,24 @@ void testAddMenuDuplicateNameButDiffConfigType(void** state){
         {RIGHT_DIR_RIGHT, sizeof(RIGHT_DIR_RIGHT) - 1},
     };
 
-    const char depth_input [] = "2";
     char exp_root [PATH_MAX];
     getRealPath(dir_input, exp_root);
 
     enum CONFIG config_type = VIDEO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
     addExtraRootEntry(database, AUDIO_CONFIG, exp_root, 5);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), atoi(depth_input));
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
 
 void testAddMenuPathIsInBlackList(void** state){
     sqlite3* database = *state;
-    call_real_function = CALL;
     const char dir_input [] = ROOT1;
+    const int depth_input = INF_DEPTH;
     const char black_listed_path [] = ROOT1 LEFT_DIR;
     PathCheck_t exp_paths [] = {
         {ROOT_ITSELF, sizeof(ROOT_ITSELF) - 1},
@@ -472,7 +452,6 @@ void testAddMenuPathIsInBlackList(void** state){
         {RIGHT_DIR_MOST_INNER, sizeof(RIGHT_DIR_MOST_INNER) - 1},
     };
 
-    const char depth_input [] = INF_STRING;
     char exp_root [PATH_MAX];
     char black_path [PATH_MAX];
     getRealPath(dir_input, exp_root);
@@ -480,11 +459,11 @@ void testAddMenuPathIsInBlackList(void** state){
 
     enum CONFIG config_type = VIDEO_CONFIG;
 
-    setUpStubbedInput(dir_input, depth_input);
+    setUpStubbedInput(exp_root, depth_input);
     addExtraRootEntry(database, BLACK_CONFIG, black_path, 0);
 
     addMenu(config_type);
 
-    assertRootRow(database, config_type, exp_root, strlen(exp_root), INF_DEPTH);
+    assertRootRow(database, config_type, exp_root, strlen(exp_root), depth_input);
     assertPaths(database, exp_paths, sizeof(exp_paths)/sizeof(exp_paths[0]));
 }
