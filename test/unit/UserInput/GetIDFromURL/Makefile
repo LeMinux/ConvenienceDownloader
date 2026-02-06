@@ -21,7 +21,7 @@ O_FILES := \
 all: $(BINARY)
 
 $(BINARY): $(O_FILES)
-	$(CC) -g $(C_FLAGS) $(MOCK_FLAGS) $(DEP_FLAGS) $(INCLUDES) -o $@ $^ -lcmocka
+	$(CC) -g $(MOCK_FLAGS) -o $@ $^ -lcmocka
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
