@@ -1,8 +1,7 @@
 #include "../includes/take_depth_input_unit_test.h"
-
 int main(void){
     const struct CMUnitTest take_depth_input_group [] = {
-        cmocka_unit_test(testTakeDepthInputSendInvalidOnZeroLength),
+        cmocka_unit_test(testTakeDepthInputSendSkippingOnZeroLength),
         cmocka_unit_test(testTakeDepthInputNegativeNumber),
         cmocka_unit_test(testTakeDepthInputZero),
         cmocka_unit_test(testTakeDepthInputInBoundNumber),

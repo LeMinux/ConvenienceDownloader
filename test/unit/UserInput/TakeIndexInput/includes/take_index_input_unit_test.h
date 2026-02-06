@@ -6,7 +6,7 @@
 
 #define MAX_INDEX 2000
 
-void testTakeIndexInputSendInvalidOnZeroLength(void** state);
+void testTakeIndexInputSendSkippingOnZeroLength(void** state);
 void testTakeIndexInputJustNewline(void** state);
 void testTakeIndexInputNegativeNumber(void** state);
 void testTakeIndexInputZero(void** state);

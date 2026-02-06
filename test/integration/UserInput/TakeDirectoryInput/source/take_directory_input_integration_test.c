@@ -1,7 +1,16 @@
 #include "../includes/take_directory_input_integration_test.h"
 
-enum ACCEPTING_TRAILING_SLASH {NO = 0, YES};
-enum ACCEPTING_TRAILING_SLASH want_slash = NO;
+void testTakeDirectoryInputEmptyInputGivesEmptyResult(void** state){
+    (void) state;
+    char directory_input [] = "";
+
+    will_return(__wrap_boundedInput, directory_input);
+
+    char* act_result = takeDirectoryInput();
+
+    assert_string_equal(act_result, "");
+    free(act_result);
+}
 
 void testTakeDirectoryInputAbsolutePathToDirWithTrailingSlash(void** state){
     (void) state;
@@ -12,6 +21,7 @@ void testTakeDirectoryInputAbsolutePathToDirWithTrailingSlash(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_string_equal(act_result, "/tmp");
+    free(act_result);
 }
 
 void testTakeDirectoryInputAbsolutePathToDirWithoutTrailingSlash(void** state){
@@ -23,6 +33,7 @@ void testTakeDirectoryInputAbsolutePathToDirWithoutTrailingSlash(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_string_equal(act_result, "/tmp");
+    free(act_result);
 }
 
 void testTakeDirectoryInputRelativePathToDirWithTrailingSlash(void** state){
@@ -34,6 +45,7 @@ void testTakeDirectoryInputRelativePathToDirWithTrailingSlash(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_string_equal(act_result, "/tmp");
+    free(act_result);
 }
 
 void testTakeDirectoryInputRelativePathToDirWithoutTrailingSlash(void** state){
@@ -45,6 +57,7 @@ void testTakeDirectoryInputRelativePathToDirWithoutTrailingSlash(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_string_equal(act_result, "/tmp");
+    free(act_result);
 }
 
 void testTakeDirectoryInputAbsolutePathToNonDir(void** state){
@@ -56,6 +69,7 @@ void testTakeDirectoryInputAbsolutePathToNonDir(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputRelativePathToNonDir(void** state){
@@ -67,6 +81,7 @@ void testTakeDirectoryInputRelativePathToNonDir(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputTildePathToDir(void** state){
@@ -78,6 +93,7 @@ void testTakeDirectoryInputTildePathToDir(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputTildePathToFile(void** state){
@@ -89,6 +105,7 @@ void testTakeDirectoryInputTildePathToFile(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputPathToNonExist(void** state){
@@ -100,6 +117,7 @@ void testTakeDirectoryInputPathToNonExist(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputLinkToDir(void** state){
@@ -111,6 +129,7 @@ void testTakeDirectoryInputLinkToDir(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 //For what ever reason at least for my system, if lstat encounters a link
@@ -127,6 +146,7 @@ void testTakeDirectoryInputLinkToDirWithTrailingSlash(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputLinkToFile(void** state){
@@ -138,6 +158,7 @@ void testTakeDirectoryInputLinkToFile(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputPathToBrokenLink(void** state){
@@ -149,6 +170,7 @@ void testTakeDirectoryInputPathToBrokenLink(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 
@@ -161,6 +183,7 @@ void testTakeDirectoryInputLinkToNoPerms(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 
@@ -173,6 +196,7 @@ void testTakeDirectoryInputNoPermsAbsolutePath(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputNoPermsRelativePath(void** state){
@@ -184,6 +208,7 @@ void testTakeDirectoryInputNoPermsRelativePath(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 void testTakeDirectoryInputNoWritePerms(void** state){
@@ -195,12 +220,14 @@ void testTakeDirectoryInputNoWritePerms(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_null(act_result);
+    free(act_result);
 }
 
 
 void testTakeDirectoryInputPathHasSpaces(void** state){
     (void) state;
     //mkdtemp doesn't want const char
+    //mkdtemp is used since there isn't a standard file that contains spaces
     char dir_template [] = "/tmp/some dir haXXXXXX";
 
     char* directory_input = mkdtemp(dir_template);
@@ -211,5 +238,6 @@ void testTakeDirectoryInputPathHasSpaces(void** state){
     char* act_result = takeDirectoryInput();
 
     assert_string_equal(act_result, exp_result);
+    free(act_result);
     rmdir(directory_input);
 }

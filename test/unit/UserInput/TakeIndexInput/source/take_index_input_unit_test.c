@@ -1,6 +1,6 @@
 #include "../includes/take_index_input_unit_test.h"
 
-void testTakeIndexInputSendInvalidOnZeroLength(void** state){
+void testTakeIndexInputSendSkippingOnZeroLength(void** state){
     (void)state;
     char input [] = "";
     int expect_ret = SKIPPING;

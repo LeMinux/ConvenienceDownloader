@@ -2,6 +2,7 @@
 
 int main(void){
     const struct CMUnitTest dir_input_test[] = {
+        cmocka_unit_test(testTakeDirectoryInputEmptyInputGivesEmptyResult),
         cmocka_unit_test(testTakeDirectoryInputAbsolutePathToDirWithTrailingSlash),
         cmocka_unit_test(testTakeDirectoryInputAbsolutePathToDirWithoutTrailingSlash),
 

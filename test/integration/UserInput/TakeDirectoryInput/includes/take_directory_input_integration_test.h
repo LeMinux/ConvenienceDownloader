@@ -3,11 +3,13 @@
 
 #include <unistd.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include "testWrapInput.h"
 #include "testGlobals.h"
 #include "userInput.h"
 
+void testTakeDirectoryInputEmptyInputGivesEmptyResult(void** state);
 
 //trailing slashes
 void testTakeDirectoryInputAbsolutePathToDirWithTrailingSlash(void** state);

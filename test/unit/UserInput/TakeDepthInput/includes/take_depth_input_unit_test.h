@@ -4,8 +4,7 @@
 #include "testWrapInput.h"
 #include "userInput.h"
 
-
-void testTakeDepthInputSendInvalidOnZeroLength(void** state);
+void testTakeDepthInputSendSkippingOnZeroLength(void** state);
 void testTakeDepthInputNegativeNumber(void** state);
 void testTakeDepthInputZero(void** state);
 void testTakeDepthInputInBoundNumber(void** state);

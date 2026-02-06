@@ -2,7 +2,7 @@
 
 int main(void){
     const struct CMUnitTest take_index_input_group [] = {
-        cmocka_unit_test(testTakeIndexInputSendInvalidOnZeroLength),
+        cmocka_unit_test(testTakeIndexInputSendSkippingOnZeroLength),
         cmocka_unit_test(testTakeIndexInputNegativeNumber),
         cmocka_unit_test(testTakeIndexInputZero),
         cmocka_unit_test(testTakeIndexInputInBoundNumber),
