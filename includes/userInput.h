@@ -1,19 +1,20 @@
 #ifndef USERINPUT_H
 #define USERINPUT_H
 
+#include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <limits.h>
-#include <errno.h>
 
 #include "globals.h"
-
+#include "fileOps.h"
 
 //Another NASA sin :(
-#ifdef WRAPPED_INPUT
+#ifdef PREVENT_INTERNAL_LINKAGE
     #include "testWrapInput.h"
 #endif
 
@@ -21,6 +22,9 @@
 #define VIDEO_STRING "video"
 #define COVER_STRING "cover"
 #define BLACK_STRING "black"
+#define INF_STRING "INF"
+
+#define MAX_DEPTH 2048
 
 #define YOUTUBE_URL "https://www.youtube.com/watch?v="
 
@@ -33,6 +37,8 @@
 #define OPTION_LEN 5
 
 enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
+
+#include <stdio.h>
 
 /*
 *	gets the URL from the user.
@@ -59,8 +65,8 @@ enum INPUT getIDFromURL(char ret_id [YT_ID_SIZE]);
 *	downloadCoverArt: 0 to for not downloading thumbnails and 1 to download thumbnails
 *
 *	return: success or failure
-*/
 int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
+*/
 
 /*
 *	asks the user if they would like to continue downloading
@@ -88,20 +94,41 @@ char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
 */
 int boundedInput(FILE* stream, char* dest, size_t size);
 
+
 /*
-*	helper method to read a line in a file of an unknown length
-*	returns the length of the amount read
-*
-*	stream: File stream to take input from
-*	dest: address to string which can be NULL
-*
-*	return: returns how much was read excluding nul byte
-*/
-//int unknownInput(FILE* stream, char** dest);
-
-//int appendRootEntry(RootInfoArray* entry_array, const char* new_entry);
-//
-
+ * Translate the user's command line argument into a config option
+ *
+ * input: User's command line input for the -e option
+ *
+ * return: AUDIO, VIDEO, COVER, BLACK, or NOT_A_CONFIG
+ */
 enum CONFIG getConfigToEdit(const char* input);
+
+//these below used to be in their own separate file,
+//but now they are here
+
+/*
+*   Takes input from the user to accept a directory.
+*
+*   return: NULL on error or a malloced absolute path
+*/
+char* takeDirectoryInput(void);
+
+/*
+*   Function for taking in input for what depth a root path should have.
+*   There is no index 0, so index 1 is the first index.
+*
+*   return: returns a value < INT_MAX or the value of INF_DEPTH or INVALID
+*/
+int takeDepthInput(void);
+
+/*
+*   Function for taking in input for what index a root path is.
+*
+*   param: max_index specifies what is the maximum index allowed
+*
+*   return: returns a value < max_index or INVALID
+*/
+int takeIndexInput(int max_index);
 
 #endif
