@@ -62,7 +62,6 @@ void testDeleteEntryCatchesInvalidIndex(void** state){
 //if implementation were to change it would need to change anyway
 void testDeleteMenuCatchesSkipping(void** state){
     (void) state;
-    call_real_function = NO_CALL;
     int index_input = SKIPPING;
     enum CONFIG config_type = AUDIO_CONFIG;
 
