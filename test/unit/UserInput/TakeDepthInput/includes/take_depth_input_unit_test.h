@@ -2,7 +2,7 @@
 #define DEPTH_INPUT_TESTING_H
 
 #include "testWrapInput.h"
-#include "databaseUserInput.h"
+#include "userInput.h"
 
 
 void testTakeDepthInputSendInvalidOnZeroLength(void** state);

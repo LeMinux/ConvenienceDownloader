@@ -2,7 +2,7 @@
 #define INDEX_INPUT_TESTING_H
 
 #include "testWrapInput.h"
-#include "databaseUserInput.h"
+#include "userInput.h"
 
 #define MAX_INDEX 2000
 

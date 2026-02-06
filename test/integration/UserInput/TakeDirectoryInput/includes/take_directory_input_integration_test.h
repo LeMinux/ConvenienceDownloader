@@ -6,7 +6,7 @@
 
 #include "testWrapInput.h"
 #include "testGlobals.h"
-#include "databaseUserInput.h"
+#include "userInput.h"
 
 
 //trailing slashes

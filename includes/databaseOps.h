@@ -6,7 +6,6 @@
 
 #include "globals.h"
 #include "userInput.h"
-#include "databaseUserInput.h"
 
 enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
 enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
@@ -56,6 +55,11 @@ void deleteMenu(enum CONFIG config_type);
 enum FIND findEntry(enum CONFIG config_type, const char* entry);
 
 /*
+ * returns how many root entries there are for a config
+ */
+//int getNumOfRootRowsForConfig(enum CONFIG config);
+
+/*
 *   Lists every root from every config
 *
 */
@@ -78,6 +82,11 @@ enum ERROR listConfigRoots(enum CONFIG config_type);
 *
 */
 enum ERROR listConfigRootsWithPaths(enum CONFIG config_type);
+
+
+int getNumOfPathRowsForConfig(enum CONFIG config);
+
+int translatePathIndexToRow(int user_selection, enum CONFIG config_type);
 
 #endif
 
