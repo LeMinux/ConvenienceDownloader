@@ -45,14 +45,17 @@ leak: $(C_FILES)
 debug: $(C_FILES)
 	$(CC) -g $(C_FLAGS) -o $@ $^
 
-compile-tests:
+test-compile:
 	$(MAKE) -C $(TEST_DIR) compile
 
-run-tests:
+test-run:
 	$(MAKE) -C $(TEST_DIR) run
 
 test-show-all:
 	$(MAKE) -C $(TEST_DIR) run-no-supress
+
+test-clean:
+	$(MAKE) -C $(TEST_DIR) clean
 
 #remove all object files, dependency files, and binary
 clean:
