@@ -52,7 +52,8 @@ extern const char* init_db_path;
 
 int createTestDB(void** state);
 int createTestDBWithRoots(void** state);
-int createTestDBWithRootsAndPaths(void** state);
 int closeDB(void** state);
+int createTestDBWithRootsAndPaths(void** state);
+void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_name, int depth);
 
 #endif

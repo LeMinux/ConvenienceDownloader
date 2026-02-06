@@ -13,7 +13,7 @@ static const char SQL_ROOT_FORMAT [] =
     "(8, %d, '%s', %d, 0);";
 
 static const char SQL_PATH_FORMAT [] =
-    "INSERT INTO Paths (path_index, root_id, path_name, path_length)"
+    "INSERT INTO Paths (path_id, root_id, path_name, path_length)"
     "VALUES"
     "(1, 1, '%s', %d),"
     "(2, 1, '%s', %d),"
@@ -29,8 +29,8 @@ static const char SQL_PATH_FORMAT [] =
     "(12, 6, '%s', %d);";
 
 
-static void readScript(const char* file_path, char** sql_init){
-    FILE* init_script = fopen(file_path, "rb");
+static void readScript(char** sql_init){
+    FILE* init_script = fopen(init_db_path, "rb");
     if(init_script == NULL){
         fail_msg("Could not open initDB.sql\n");
     }
@@ -70,8 +70,41 @@ static void executeQuery(sqlite3* test_db, const char* sql_statement){
     char* error_msg = NULL;
     sqlite3_exec(test_db, sql_statement, NULL, NULL, &error_msg);
     if(error_msg){
-        fail_msg("Failed to add entries for in memory database:%s\n", error_msg);
+        fail_msg("Failed to execute query:%s\n", error_msg);
+        sqlite3_free(error_msg);
     }
+}
+
+void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_name, int depth){
+    static int some_root_id = 90;
+    static const char add_dup_format [] =
+        "INSERT INTO Roots (root_id, root_type, root_name, root_length, root_depth) VALUES"
+        "(?, ?, ?, ?, ?)";
+
+    sqlite3_stmt* statement = NULL;
+    int ret_code = sqlite3_prepare_v2(test_db, add_dup_format, -1, &statement, NULL);
+
+    if(ret_code != SQLITE_OK){
+        fail_msg("Failed to add extra entry due to %s", sqlite3_errmsg(test_db));
+    }
+
+    if(
+        sqlite3_bind_int(statement, 1, some_root_id++) != SQLITE_OK ||
+        sqlite3_bind_int(statement, 2, config) != SQLITE_OK ||
+        sqlite3_bind_text(statement, 3, extra_name, strlen(extra_name) + 1, NULL) != SQLITE_OK ||
+        sqlite3_bind_int(statement, 4, strlen(extra_name)) != SQLITE_OK ||
+        sqlite3_bind_int(statement, 5, depth) != SQLITE_OK
+    )
+    {
+        fail_msg("Failed to bind data for extra entry due to %s", sqlite3_errmsg(test_db));
+    }
+
+    ret_code = sqlite3_step(statement);
+    if(ret_code != SQLITE_DONE){
+        sqlite3_finalize(statement);
+        fail_msg("Did not add extra entry %s", extra_name);
+    }
+    sqlite3_finalize(statement);
 }
 
 static void setUpRoots(sqlite3* database){
@@ -129,7 +162,7 @@ int createTestDB(void** state){
     }
 
     if(sql_init == NULL){
-        readScript(INIT_DB_PATH, &sql_init);
+        readScript(&sql_init);
     }
 
     char* error_msg = NULL;
