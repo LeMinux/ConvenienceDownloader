@@ -12,6 +12,7 @@
 
 #include "globals.h"
 #include "fileOps.h"
+#include "databaseOps.h"
 
 //Another NASA sin :(
 #ifdef PREVENT_INTERNAL_LINKAGE
@@ -76,9 +77,11 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
 enum REPEAT askToRepeat(void);
 
 
+/*
 char* getUserChoiceForDir(const char* baseDir, const char* prompt);
 
 char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
+*/
 
 /*
 *	method for obtaining user input where size is bounded
@@ -130,5 +133,14 @@ int takeDepthInput(void);
 *   return: returns a value < max_index or INVALID
 */
 int takeIndexInput(int max_index);
+
+
+/*
+*   Presents the user with an indexed selection for what path to send stuff to
+*   The selection is for paths and not roots.
+*
+*   return: path_id associate with the selection
+*/
+int getUserChoiceForDir(enum CONFIG type);
 
 #endif

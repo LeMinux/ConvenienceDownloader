@@ -8,12 +8,12 @@ int main(void){
         exit(EXIT_FAILURE);
     #endif
 
-    const struct CMUnitTest read_tests[] = {
+    const struct CMUnitTest list_tests[] = {
         cmocka_unit_test(testListAllRoots),
         cmocka_unit_test(testListAllRootsWithPaths),
         cmocka_unit_test(testListRootsForConfig),
         cmocka_unit_test(testListRootAndPathsForConfig),
     };
 
-    return cmocka_run_group_tests(read_tests, createTestDBWithRootsAndPaths, closeDB);
+    return cmocka_run_group_tests(list_tests, createTestDBWithRootsAndPaths, closeDB);
 }

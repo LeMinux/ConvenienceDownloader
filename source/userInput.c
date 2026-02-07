@@ -63,10 +63,11 @@ static void normalizeNumericInput(char* input){
 *
 *   return: absolute path without a trailing slash that is allocated on the heap
 */
-static char* canonizePath(const char* input){
+static char* canonizePath(const char* input, char* result){
     assert(input != NULL);
+    assert(result != NULL);
 
-    char* absolute_path = realpath(input, NULL);
+    char* absolute_path = realpath(input, result);
 
     if(absolute_path == NULL){
         int error = errno;
@@ -83,7 +84,6 @@ static char* canonizePath(const char* input){
     return absolute_path;
 }
 
-/*
 static void printQuestion(enum CONFIG type){
     assert(type == AUDIO_CONFIG ||
            type == VIDEO_CONFIG ||
@@ -96,7 +96,6 @@ static void printQuestion(enum CONFIG type){
         default: exit(EXIT_FAILURE); break;
     }
 }
-*/
 
 /*
  * The condional compiler flag is here since --wrap won't work on internal linkage
@@ -136,7 +135,6 @@ int boundedInput(FILE* stream, char* dest, size_t dest_size){
     dest[amount_written] = '\0';
     return amount_written;
 }
-
 #else
 int boundedInput(FILE* stream, char* dest, size_t dest_size){
     return __wrap_boundedInput(stream, dest, dest_size);
@@ -146,18 +144,24 @@ int boundedInput(FILE* stream, char* dest, size_t dest_size){
 char* takeDirectoryInput(void){
     //realpath uses PATH_MAX
     char input [PATH_MAX];
+    char* absolute_path = calloc(sizeof(char), PATH_MAX);
     size_t length = 0;
 
     puts("Enter the path you want:");
     length = boundedInput(stdin, input, sizeof(input));
 
     if(length == 0){
-        ADVISE_USER("You need to enter something\n");
-        return NULL;
+        //a string literal of "" could be returned, but that would mean this
+        //method has two different behaviors with one potentially leading to
+        //modifying a string literal by casting away the const
+        //for consistency a heap allocated string is returned that'll need to be freed
+        return absolute_path;
     }
 
     if(input[0] == '~'){
         ADVISE_USER("Sorry, usage of ~ is a shell expansion");
+        free(absolute_path);
+        absolute_path = NULL;
         return NULL;
     }
 
@@ -168,13 +172,17 @@ char* takeDirectoryInput(void){
     }
 
     if(checkDirPath(input) == INVALID){
+        free(absolute_path);
+        absolute_path = NULL;
         return NULL;
     }
 
-    char* absolute_path = canonizePath(input);
-
-    if(absolute_path == NULL){
+    //For secure input canonicalization should be the first step
+    //but here I don't want to canonize end point links
+    if(canonizePath(input, absolute_path) == NULL){
         PRINT_ERROR("Couldn't make an absolute path:");
+        free(absolute_path);
+        absolute_path = NULL;
     }
 
     return absolute_path;
@@ -228,16 +236,15 @@ int takeDepthInput(void){
     char depth_input [15] = "";
     long depth = 0;
 
-    printf("What depth do you want for the path? If depth is not a concern enter %s:", INF_STRING);
+    printf("What depth do you want for the path? If depth is not a concern enter %s:\n", INF_STRING);
 
     if(boundedInput(stdin, depth_input, sizeof(depth_input)) == 0){
-        ADVISE_USER("Enter something");
-        depth = INVALID;
+        depth = SKIPPING;
     }
 
     normalizeNumericInput(depth_input);
 
-    if(depth != INVALID){
+    if(depth != SKIPPING){
         errno = 0;
         char* non_digit = NULL;
         depth = strtol(depth_input, &non_digit, 10);
@@ -354,7 +361,6 @@ enum CONFIG getConfigToEdit(const char* input){
     }
 }
 
-/*
 int getUserChoiceForDir(enum CONFIG type){
     assert(type == AUDIO_CONFIG ||
            type == VIDEO_CONFIG ||
@@ -370,17 +376,20 @@ int getUserChoiceForDir(enum CONFIG type){
     while(take_input){
         listConfigRootsWithPaths(type);
         printQuestion(type);
+
+        //Dirty but it'll have to do for now
+        #ifndef PREVENT_INTERNAL_LINKAGE
         index = takeIndexInput(num_of_rows);
+        #else
+        index = __wrap_takeIndexInput(num_of_rows);
+        #endif
         if(index != INVALID) take_input = 0;
     }
 
-    if(index != SKIPPING){
-        translatePathIndexToRow(index);
-    }
+    int path_id = (index != SKIPPING) ? translatePathIndexToRow(index, type) : SKIPPING;
 
-    return index;
+    return path_id;
 }
-*/
 
 /*
 int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){

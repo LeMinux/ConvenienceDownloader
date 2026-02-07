@@ -24,7 +24,7 @@ C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 MOCK_FLAGS:=-Wl,--wrap=boundedInput
 
 TEST_C_FILES:=$(wildcard $(TEST_CODE_DIR)/*.c)
-SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/testWrapInput.c
+SOURCE_C_FILES:=$(SOURCE_CODE_DIR)/userInput.c $(SOURCE_CODE_DIR)/fileOps.c $(SOURCE_CODE_DIR)/testWrapInput.c $(SOURCE_CODE_DIR)/databaseOps.c
 
 O_FILES := \
   $(patsubst $(TEST_CODE_DIR)/%.c,$(OBJECT_DIR)/%.o,$(TEST_C_FILES)) \
@@ -33,7 +33,7 @@ O_FILES := \
 all: $(BINARY) | $(TEST_ENV)
 
 $(BINARY): $(O_FILES)
-	$(CC) $(MOCK_FLAGS) -o $@ $^ -lcmocka
+	$(CC) $(MOCK_FLAGS) -o $@ $^ -lcmocka -lsqlite3
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)

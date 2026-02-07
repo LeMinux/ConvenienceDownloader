@@ -359,7 +359,6 @@ static enum ERROR deleteRootEntry(int index){
     ret_code = sqlite3_step(results);
     switch(ret_code){
         case SQLITE_DONE:
-            ADVISE_USER("Deleted entry and associated rows!");
             func_return = NO_ERROR;
         break;
         case SQLITE_MISUSE: PRINT_ERROR("Dumb idiot programmer made a mistake"); break;
@@ -432,8 +431,8 @@ void addMenu(enum CONFIG config_type){
     }
 
     if(path_input[0] == '\0'){
-        ADVISE_USER("Returning to menu");
-        return;
+        ADVISE_USER("Returning to menu. No changes done");
+        goto finished;
     }
 
     if(config_type != BLACK_CONFIG){
@@ -441,8 +440,8 @@ void addMenu(enum CONFIG config_type){
     }
 
     if(depth == SKIPPING){
-        ADVISE_USER("Returning to menu");
-        return;
+        ADVISE_USER("Returning to menu. No changes done");
+        goto finished;
     }
 
     beginTransaction();
@@ -454,6 +453,7 @@ void addMenu(enum CONFIG config_type){
         ADVISE_USER("No changes have been made");
     }
 
+    finished:
     free(path_input);
     path_input = NULL;
 }
@@ -482,7 +482,10 @@ void updateMenu(enum CONFIG config_type){
     int select_index = INVALID;
     while((select_index = takeIndexInput(max_index)) == INVALID){}
 
-    if(select_index == SKIPPING) return;
+    if(select_index == SKIPPING){
+        ADVISE_USER("Returning to menu. No changes done");
+        return;
+    }
 
     int depth = 0;
     while((depth = takeDepthInput()) == INVALID);
@@ -512,7 +515,7 @@ void deleteMenu(enum CONFIG config_type){
     while((select_index = takeIndexInput(max_index)) == INVALID){}
 
     if(select_index == SKIPPING){
-        ADVISE_USER("Returning to menu");
+        ADVISE_USER("Returning to menu. No changes done");
         return;
     }
 
@@ -523,7 +526,7 @@ void deleteMenu(enum CONFIG config_type){
         ADVISE_USER("No changes have been made");
     }else{
         commitTransaction();
-        ADVISE_USER("Deleted entry and paths!");
+        ADVISE_USER("Deleted entry and associated paths!");
     }
 }
 
@@ -676,7 +679,7 @@ int getNumOfPathRowsForConfig(enum CONFIG config){
            config == BLACK_CONFIG);
 
     //root_id is indexed so the count should be faster
-    const char sql_statement [] = "SELECT COUNT(path_id) FROM Paths WHERE root_type = ?;";
+    const char sql_statement [] = "SELECT COUNT(p.path_id) FROM Paths p RIGHT JOIN Roots r WHERE r.root_type = ?;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
 
@@ -706,7 +709,7 @@ int getNumOfPathRowsForConfig(enum CONFIG config){
 
 int translatePathIndexToRow(int user_selection, enum CONFIG config_type){
     assert(user_selection > 0);
-    assert(user_selection <= getNumOfRootRowsForConfig(config_type));
+    assert(user_selection <= getNumOfPathRowsForConfig(config_type));
     assert(config_type == AUDIO_CONFIG ||
            config_type == VIDEO_CONFIG ||
            config_type == COVER_CONFIG ||
@@ -715,8 +718,9 @@ int translatePathIndexToRow(int user_selection, enum CONFIG config_type){
     const char sql_statement [] =
              "SELECT p.path_id FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
-             "WHERE r.root_type == ? "
-             "ORDER BY r.root_name, p.path_name;";
+             "WHERE r.root_type = ? "
+             "ORDER BY r.root_name, p.path_name "
+             "LIMIT 1 OFFSET ?;";
 
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
@@ -766,7 +770,7 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
         return NO_ERROR;
     }
 
-    const char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type == ? ORDER BY root_name;";
+    const char sql_statement [] = "SELECT root_name, root_depth FROM Roots WHERE root_type = ? ORDER BY root_name;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
 

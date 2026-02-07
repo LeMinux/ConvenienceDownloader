@@ -81,7 +81,7 @@ void testDeleteEntryAudioConfig(void** state){
 
     deleteMenu(config_type);
 
-    assertDeleteData(database, JAZZY_ROOT_ID, TOTAL_ROWS - 3);
+    assertDeleteData(database, JAZZ_ROOT_ID, TOTAL_ROWS - 4);
 }
 
 void testDeleteEntryVideoConfig(void** state){
@@ -94,7 +94,7 @@ void testDeleteEntryVideoConfig(void** state){
 
     deleteMenu(config_type);
 
-    assertDeleteData(database, KEEPS_ROOT_ID, TOTAL_ROWS - 3);
+    assertDeleteData(database, KEEPS_ROOT_ID, TOTAL_ROWS - 4);
 }
 
 void testDeleteEntryCoverConfig(void** state){
@@ -107,7 +107,7 @@ void testDeleteEntryCoverConfig(void** state){
 
     deleteMenu(config_type);
 
-    assertDeleteData(database, ARTS_ROOT_ID, TOTAL_ROWS - 3);
+    assertDeleteData(database, ARTS_ROOT_ID, TOTAL_ROWS - 4);
 }
 
 void testDeleteEntryBlackList(void** state){

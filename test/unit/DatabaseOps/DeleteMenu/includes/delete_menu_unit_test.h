@@ -5,11 +5,6 @@
 #include "testSetups.h"
 #include "databaseOps.h"
 
-#define JAZZY_ROOT_ID 2
-#define KEEPS_ROOT_ID 3
-#define ARTS_ROOT_ID 6
-#define PERSONAL_ROOT_ID 7
-
 void testDeleteEntryCatchesInvalidIndex(void** state);
 void testDeleteMenuCatchesNoRows(void** state);
 void testDeleteMenuCatchesSkipping(void** state);

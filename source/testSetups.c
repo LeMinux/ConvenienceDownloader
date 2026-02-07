@@ -3,8 +3,8 @@
 static const char SQL_ROOT_FORMAT [] =
     "INSERT INTO Roots (root_id, root_type, root_name, root_length, root_depth)"
     "VALUES"
-    "(1, %d, '%s', %d, %d),"    //audio
-    "(2, %d, '%s', %d, %d),"
+    "(1, %d, '%s', %d, 5),"    //audio
+    "(2, %d, '%s', %d, 5),"
     "(3, %d, '%s', %d, 5),"     //video
     "(4, %d, '%s', %d, 5),"
     "(5, %d, '%s', %d, 1),"     //covers
@@ -15,18 +15,24 @@ static const char SQL_ROOT_FORMAT [] =
 static const char SQL_PATH_FORMAT [] =
     "INSERT INTO Paths (path_id, root_id, path_name, path_length)"
     "VALUES"
-    "(1, 1, '%s', %d),"
+    "(1, 1, '/', 1),"
     "(2, 1, '%s', %d),"
-    "(3, 2, '%s', %d),"
-    "(4, 2, '%s', %d),"
-    "(5, 3, '%s', %d),"
-    "(6, 3, '%s', %d),"
-    "(7, 4, '%s', %d),"
-    "(8, 4, '%s', %d),"
-    "(9, 5, '%s', %d),"
-    "(10, 5, '%s', %d),"
-    "(11, 6, '%s', %d),"
-    "(12, 6, '%s', %d);";
+    "(3, 1, '%s', %d),"
+    "(4, 2, '/', 1),"
+    "(5, 2, '%s', %d),"
+    "(6, 2, '%s', %d),"
+    "(7, 3, '/', 1),"
+    "(8, 3, '%s', %d),"
+    "(9, 3, '%s', %d),"
+    "(10, 4, '/', 1),"
+    "(11, 4, '%s', %d),"
+    "(12, 4, '%s', %d),"
+    "(13, 5, '/', 1),"
+    "(14, 5, '%s', %d),"
+    "(15, 5, '%s', %d),"
+    "(16, 6, '/', 1),"
+    "(17, 6, '%s', %d),"
+    "(18, 6, '%s', %d);";
 
 
 static void readScript(char** sql_init){
@@ -109,17 +115,17 @@ void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_n
 
 static void setUpRoots(sqlite3* database){
     char* sql_string = sqlite3_mprintf(SQL_ROOT_FORMAT,
-        AUDIO_CONFIG, AUDIO_ROOT_1, sizeof(AUDIO_ROOT_1) - 1, AUDIO_DEPTH_1,
-        AUDIO_CONFIG, AUDIO_ROOT_2, sizeof(AUDIO_ROOT_2) - 1, AUDIO_DEPTH_2,
+        AUDIO_CONFIG, ROCK_ROOT, sizeof(ROCK_ROOT) - 1,
+        AUDIO_CONFIG, JAZZ_ROOT, sizeof(JAZZ_ROOT) - 1,
 
-        VIDEO_CONFIG, VIDEO_ROOT_3, sizeof(VIDEO_ROOT_3) - 1,
-        VIDEO_CONFIG, VIDEO_ROOT_4, sizeof(VIDEO_ROOT_4) - 1,
+        VIDEO_CONFIG, KEEPS_ROOT, sizeof(KEEPS_ROOT) - 1,
+        VIDEO_CONFIG, MVS_ROOT, sizeof(MVS_ROOT) - 1,
 
-        COVER_CONFIG, COVER_ROOT_5, sizeof(COVER_ROOT_5) - 1,
-        COVER_CONFIG, COVER_ROOT_6, sizeof(COVER_ROOT_6) - 1,
+        COVER_CONFIG, CVS_ROOT, sizeof(CVS_ROOT) - 1,
+        COVER_CONFIG, ARTS_ROOT, sizeof(ARTS_ROOT) - 1,
 
-        BLACK_CONFIG, BLACK_ROOT_7, sizeof(BLACK_ROOT_7) - 1,
-        BLACK_CONFIG, BLACK_ROOT_8, sizeof(BLACK_ROOT_8) - 1
+        BLACK_CONFIG, BLACK_ROOT_1, sizeof(BLACK_ROOT_1) - 1,
+        BLACK_CONFIG, BLACK_ROOT_2, sizeof(BLACK_ROOT_2) - 1
     );
 
     executeQuery(database, sql_string);
@@ -128,20 +134,23 @@ static void setUpRoots(sqlite3* database){
 
 static void setUpPaths(sqlite3* database){
     char* sql_string = sqlite3_mprintf(SQL_PATH_FORMAT,
-        AUDIO_PATH_1, sizeof(AUDIO_PATH_1) - 1,
-        AUDIO_PATH_2, sizeof(AUDIO_PATH_2) - 1,
-        AUDIO_PATH_3, sizeof(AUDIO_PATH_3) - 1,
-        AUDIO_PATH_4, sizeof(AUDIO_PATH_4) - 1,
+        ROCK_PATH_1, sizeof(ROCK_PATH_1) - 1,
+        ROCK_PATH_2, sizeof(ROCK_PATH_2) - 1,
 
-        VIDEO_PATH_1, sizeof(VIDEO_PATH_1) - 1,
-        VIDEO_PATH_2, sizeof(VIDEO_PATH_2) - 1,
-        VIDEO_PATH_3, sizeof(VIDEO_PATH_3) - 1,
-        VIDEO_PATH_4, sizeof(VIDEO_PATH_4) - 1,
+        JAZZ_PATH_1, sizeof(JAZZ_PATH_1) - 1,
+        JAZZ_PATH_2, sizeof(JAZZ_PATH_2) - 1,
 
-        COVER_PATH_1, sizeof(COVER_PATH_1) - 1,
-        COVER_PATH_2, sizeof(COVER_PATH_2) - 1,
-        COVER_PATH_3, sizeof(COVER_PATH_3) - 1,
-        COVER_PATH_4, sizeof(COVER_PATH_4) - 1
+        KEEPS_PATH_1, sizeof(KEEPS_PATH_1) - 1,
+        KEEPS_PATH_2, sizeof(KEEPS_PATH_2) - 1,
+
+        MVS_PATH_1, sizeof(MVS_PATH_1) - 1,
+        MVS_PATH_2, sizeof(MVS_PATH_2) - 1,
+
+        CVS_PATH_1, sizeof(CVS_PATH_1) - 1,
+        CVS_PATH_2, sizeof(CVS_PATH_2) - 1,
+
+        ARTS_PATH_1, sizeof(ARTS_PATH_1) - 1,
+        ARTS_PATH_2, sizeof(ARTS_PATH_2) - 1
     );
 
     executeQuery(database, sql_string);
