@@ -61,8 +61,8 @@
 #define JAZZ_PATH_FUNKY_ID 6
 
 #define KEEPS_PATH_ITSELF_ID 7
-#define KEEPS_PATH_DOCUMENTARY_ID 8
-#define KEEPS_PATH_YOUTUBE_ID 9
+#define KEEPS_PATH_YOUTUBE_ID 8
+#define KEEPS_PATH_DOCUMENTARY_ID 9
 
 #define MVS_PATH_ITSELF_ID 10
 #define MVS_PATH_OTHERS_ID 11
@@ -119,10 +119,37 @@
 //Of course where the makefile is ran determines relative positioning
 extern const char* init_db_path;
 
+/*
+* Creates an in memory database with tables setup.
+* the main of the test should declare init_db_path with a path to initDB.sql
+*
+*/
 int createTestDB(void** state);
+
+/*
+* Creates an in memory database with tables setup and root paths.
+* the main of the test should declare init_db_path with a path to initDB.sql
+*
+*/
 int createTestDBWithRoots(void** state);
-int closeDB(void** state);
+
+/*
+* Creates an in memory database with tables setup, root paths, and path paths.
+* the main of the test should declare init_db_path with a path to initDB.sql
+*
+*/
 int createTestDBWithRootsAndPaths(void** state);
+
+/*
+* closes in memory database
+*/
+int closeDB(void** state);
+
+/*
+* Helper function to add an extra root entry into the database.
+* This may be useful for testing duplication handling, finding, or other stuff.
+* This only adds a root entry. There are no paths added.
+*/
 void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_name, int depth);
 
 #endif
