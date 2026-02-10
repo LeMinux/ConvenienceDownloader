@@ -1,4 +1,4 @@
-SUBDIRS:=./DeleteMenu ./ListConfigs/
+SUBDIRS:=./*/
 
 compile: $(SUBDIRS)
 	for dir in $(SUBDIRS); do\
