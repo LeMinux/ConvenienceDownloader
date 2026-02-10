@@ -14,6 +14,7 @@ static enum ERROR deletePaths(int root_id);
 static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size, size_t root_len);
 static enum ERROR addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth);
 
+static enum FIND findEntry(enum CONFIG config_type, const char* entry);
 static int getNumOfRootRowsForConfig(enum CONFIG config);
 static int translateRootIndexToRow(int user_selection, enum CONFIG config_type);
 
@@ -632,7 +633,7 @@ enum ERROR refreshDatabase(void){
 }
 
 
-enum FIND findEntry(enum CONFIG config_type, const char* entry){
+static enum FIND findEntry(enum CONFIG config_type, const char* entry){
     assert(entry != NULL);
     assert(config_type == AUDIO_CONFIG ||
            config_type == VIDEO_CONFIG ||
@@ -752,6 +753,46 @@ int translatePathIndexToRow(int user_selection, enum CONFIG config_type){
     return path_id;
 }
 
+enum ERROR pathIDToPath(int path_id, char* full_path){
+    assert(single_database_connection != NULL);
+    assert(path_id >= 0);
+
+    const char sql_statement [] =
+             "SELECT concat(r.root_name, p.path_name), (r.root_length + p.path_length) FROM Paths p "
+             "RIGHT JOIN Roots r USING (root_id) "
+             "WHERE p.path_id = ?";
+
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
+
+    enum ERROR err_ret = HAD_ERROR;
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to prepare path id to path due to %s", sqlite3_errmsg(single_database_connection));
+        goto failed;
+    }
+
+    if(sqlite3_bind_int(results, 1, path_id) != SQLITE_OK){
+        PRINT_ERROR("Could not bind parameter for listing roots with paths in config");
+        goto failed;
+    }
+
+    ret_code = sqlite3_step(results);
+    if(ret_code != SQLITE_ROW){
+        PRINT_FORMAT_ERROR("Could not obtain path name from path id: %s", sqlite3_errmsg(single_database_connection));
+        goto failed;
+    }
+
+    char* path = (char*)sqlite3_column_text(results, 0);
+    int total_len = sqlite3_column_int(results, 1);
+    memcpy(full_path, path, total_len);
+    full_path[total_len] = '\0';
+    err_ret = NO_ERROR;
+
+    failed:
+    sqlite3_finalize(results);
+    return err_ret;
+}
+
 //Figure out how you want to figure out the index once a user inputs
 //returning the statement might be easier
 enum ERROR listConfigRoots(enum CONFIG config_type){
@@ -813,7 +854,7 @@ enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
     const char sql_statement [] =
              "SELECT r.root_id, r.root_name, p.path_name FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
-             "WHERE r.root_type == ? "
+             "WHERE r.root_type = ? "
              "ORDER BY r.root_name, p.path_name;";
 
     sqlite3_stmt* results = NULL;
