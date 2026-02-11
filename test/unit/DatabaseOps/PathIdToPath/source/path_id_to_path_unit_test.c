@@ -8,7 +8,7 @@ void testPathIdToPathRootItself(void** state){
 
     int act_ret = pathIDToPath(path_id, act_result);
 
-    assert_true(act_ret == NO_ERROR);
+    assert_true(act_ret == strlen(exp_result));
     assert_string_equal(act_result, exp_result);
 }
 
@@ -20,7 +20,7 @@ void testPathIdToPathAudioPath(void** state){
 
     int act_ret = pathIDToPath(path_id, act_result);
 
-    assert_true(act_ret == NO_ERROR);
+    assert_true(act_ret == strlen(exp_result));
     assert_string_equal(act_result, exp_result);
 }
 
@@ -32,7 +32,7 @@ void testPathIdToPathVideoPath(void** state){
 
     int act_ret = pathIDToPath(path_id, act_result);
 
-    assert_true(act_ret == NO_ERROR);
+    assert_true(act_ret == strlen(exp_result));
     assert_string_equal(act_result, exp_result);
 }
 
@@ -44,6 +44,6 @@ void testPathIdToPathCoverPath(void** state){
 
     int act_ret = pathIDToPath(path_id, act_result);
 
-    assert_true(act_ret == NO_ERROR);
+    assert_true(act_ret == strlen(exp_result));
     assert_string_equal(act_result, exp_result);
 }

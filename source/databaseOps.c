@@ -278,6 +278,8 @@ static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth)
     return err_ret;
 }
 
+//If new_depth is SKIPPING then that means to simply update the root
+//It'll basically be like refreshDatabase, but only for one entry instead of all.
 static enum ERROR updateRootEntry(int id, int new_depth){
     assert(single_database_connection != NULL);
     assert(id > 0);
@@ -371,7 +373,6 @@ static enum ERROR deleteRootEntry(int index){
     return func_return;
 }
 
-//transaction control not done here because it is an inner portion of work
 static enum ERROR deletePaths(int root_id){
     assert(single_database_connection != NULL);
     assert(root_id > 0);
@@ -753,7 +754,7 @@ int translatePathIndexToRow(int user_selection, enum CONFIG config_type){
     return path_id;
 }
 
-enum ERROR pathIDToPath(int path_id, char* full_path){
+int pathIDToPath(int path_id, char* full_path){
     assert(single_database_connection != NULL);
     assert(path_id >= 0);
 
@@ -765,7 +766,7 @@ enum ERROR pathIDToPath(int path_id, char* full_path){
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
 
-    enum ERROR err_ret = HAD_ERROR;
+    int written_len = HAD_ERROR;
     if(ret_code != SQLITE_OK){
         PRINT_FORMAT_ERROR("Failed to prepare path id to path due to %s", sqlite3_errmsg(single_database_connection));
         goto failed;
@@ -786,11 +787,11 @@ enum ERROR pathIDToPath(int path_id, char* full_path){
     int total_len = sqlite3_column_int(results, 1);
     memcpy(full_path, path, total_len);
     full_path[total_len] = '\0';
-    err_ret = NO_ERROR;
+    written_len = total_len;
 
     failed:
     sqlite3_finalize(results);
-    return err_ret;
+    return written_len;
 }
 
 //Figure out how you want to figure out the index once a user inputs
@@ -986,4 +987,3 @@ void __testingSetDB(sqlite3* testing_db){
 }
 
 #endif
-

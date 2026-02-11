@@ -148,10 +148,10 @@ int translatePathIndexToRow(int user_selection, enum CONFIG config_type);
 *   full_path: A string of at least PATH_MAX size that will be written into
 *
 *   return:
-*   NO_ERROR if could create name
+*   length of what was written to full_path
 *   HAD_ERROR if name is too long, or if database had an error
 */
-enum ERROR pathIDToPath(int path_id, char* full_path);
+int pathIDToPath(int path_id, char* full_path);
 
 #endif
 
