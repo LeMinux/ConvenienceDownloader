@@ -273,8 +273,8 @@ int takeDepthInput(void){
 
 //YT urls that have stuff like the radio or playlist in the URL is fine
 //since the only important part is the URL and the ID.
-enum INPUT getIDFromURL(char ret_id [YT_ID_SIZE]){
-    assert(ret_id != NULL);
+enum INPUT getIDFromURL(char* ret_url){
+    assert(ret_url != NULL);
 
     char input [YT_URL_INPUT_SIZE];
     (void)printf("Enter the youtube URL that you want to download -> ");
@@ -288,14 +288,13 @@ enum INPUT getIDFromURL(char ret_id [YT_ID_SIZE]){
         char id [YT_ID_SIZE];
         memcpy(id, input + LEN_BEFORE_ID, YT_ID_LEN);
         id[YT_ID_LEN] = '\0';
-        puts(id);
         if(validIDPortion(id) == INVALID){
             ADVISE_USER("URL doesn't point to a valid youtube video");
         }else{
             is_good_input = VALID;
+            memcpy(ret_url, input, YT_URL_INPUT_SIZE - 1);
+            ret_url[YT_URL_INPUT_SIZE - 1] = '\0';
         }
-
-        memcpy(ret_id, id, YT_ID_SIZE);
     }
 
     return is_good_input;

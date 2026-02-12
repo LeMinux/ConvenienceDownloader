@@ -27,14 +27,6 @@
 
 #define MAX_DEPTH 2048
 
-#define YOUTUBE_URL "https://www.youtube.com/watch?v="
-
-#define LEN_BEFORE_ID 32
-#define YT_ID_LEN 11
-
-#define YT_URL_INPUT_SIZE (LEN_BEFORE_ID + YT_ID_LEN + 1)
-#define YT_ID_SIZE 12
-
 #define OPTION_LEN 5
 
 enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
@@ -54,7 +46,7 @@ enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
 *    Don't try to use the ID if INVALID is passed as this method won't overwrite
 *    previous contents so you will use what ever was in ret_id before calling.
 */
-enum INPUT getIDFromURL(char ret_id [YT_ID_SIZE]);
+enum INPUT getIDFromURL(char* ret_id);
 
 /*
 *	downloads a song given the URL for it
@@ -133,7 +125,6 @@ int takeDepthInput(void);
 *   return: returns a value < max_index or INVALID
 */
 int takeIndexInput(int max_index);
-
 
 /*
 *   Presents the user with an indexed selection for what path to send stuff to
