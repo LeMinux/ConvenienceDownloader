@@ -134,4 +134,18 @@ int takeIndexInput(int max_index);
 */
 int getUserChoiceForDir(enum CONFIG type);
 
+/*
+*   Sanitization is needed due to how yt-dlp handles reading OUTPUT TEMPLATES.
+*   They have a format of %(<all the options>)s and if the user inputs
+*   an output template then yt-dlp crashes trying to double interpret.
+*   My guess to why it crashes is because it's trying to access a JSON key:value
+*   from a non-JSON such as just the variable or someting.
+*   A % is fine to include it's mostly the () that cause problems.
+*   semicolons do need to be escaped, but I'm just not going to worry about it and remove them.
+*
+*   return:
+*   meta_arg in-place replaced data removing potentially bad characters
+*   size_t return of the new length of meta_arg
+*/
+size_t sanitizeMetaString(char* meta_arg);
 #endif

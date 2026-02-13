@@ -390,6 +390,29 @@ int getUserChoiceForDir(enum CONFIG type){
     return path_id;
 }
 
+size_t sanitizeMetaString(char* meta_arg){
+    assert(meta_arg != NULL);
+
+    //not really sure of every character that can cause issues,
+    //, but you know that's the point of a white list.
+    static const char white_list [] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789"
+        " ?!@#$%^&*_-~+=.<>|";
+
+    int inplace_insert = 0;
+    for(int i = 0; meta_arg[i] != '\0'; ++i){
+        if(strchr(white_list, meta_arg[i]) != NULL){
+            meta_arg[inplace_insert++] = meta_arg[i];
+        }else{
+            ADVISE_USER_FORMAT("Detected invalid character for meta data: '%c'. This will be removed.", meta_arg[i]);
+        }
+    }
+    meta_arg[inplace_insert] = '\0';
+    return inplace_insert;
+}
+
 /*
 int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
 	//--restrict-filenames makes it so escape characters don't need to be added
