@@ -6,6 +6,8 @@ static void getRealPath(const char* input, char result [PATH_MAX]){
     }
 }
 
+//only the db really needs the real path
+//testing can use a relative path
 static void addEntry(sqlite3* database){
     char test_path [PATH_MAX];
     getRealPath(AUDIO_ROOT, test_path);
@@ -15,6 +17,7 @@ static void addEntry(sqlite3* database){
     addExtraPathEntry(database, 1, PATH_2);
     addExtraPathEntry(database, 1, PATH_3);
     addExtraPathEntry(database, 1, PATH_4);
+    addExtraPathEntry(database, 1, PATH_5);
 }
 
 static void assertDownloaded(const char* path){
@@ -38,7 +41,7 @@ static void assertDownloaded(const char* path){
 
 static void assertMetaData(const char* path, const char* meta_content, int exp_ret){
     char command [100];
-    size_t len = snprintf(command, sizeof(command), "exiftool %s/* | grep \"%s\"", path, meta_content);
+    size_t len = snprintf(command, sizeof(command), "exiftool '%s'* | grep --fixed-strings '%s'", path, meta_content);
     if(len >= sizeof(command)){
         fail_msg("command buffer is too short you need to extend it");
     }
@@ -49,7 +52,7 @@ static void assertMetaData(const char* path, const char* meta_content, int exp_r
 
 static void assertCover(const char* path, int exp_ret){
     char command [100];
-    size_t len = snprintf(command, sizeof(command), "exiftool %s/* | grep Picture", path);
+    size_t len = snprintf(command, sizeof(command), "exiftool '%s'* | grep Picture", path);
     if(len >= sizeof(command)){
         fail_msg("command buffer is too short you need to extend it");
     }
@@ -115,4 +118,22 @@ void testDownloadAudioEmbedsNoCoverArt(void** state){
 
     assertDownloaded(exp_path);
     assertCover(exp_path, GREP_NO_FOUND);
+}
+
+void testDownloadAudioWeirdMetaData(void** state){
+    sqlite3* database = *state;
+    const char genre [] = "%titles.%exts";
+    const char artist [] = "?P<meta_synopsis>";
+    const char album [] = " ?!@#$%^&*_-~+=.<>|";
+    const char* exp_path = AUDIO_ROOT PATH_5;
+    MetaData_t data = {.genre=genre, .artist=artist, .album=album};
+
+    addEntry(database);
+
+    downloadAudio("https://www.youtube.com/watch?v=SaoT_ULWJZk", PATH_5_ID, &data, NO_ART);
+
+    assertDownloaded(exp_path);
+    assertMetaData(exp_path, data.genre,  GREP_FOUND);
+    assertMetaData(exp_path, data.artist, GREP_FOUND);
+    assertMetaData(exp_path, data.album, GREP_FOUND);
 }

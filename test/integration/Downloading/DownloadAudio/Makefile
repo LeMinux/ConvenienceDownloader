@@ -26,6 +26,7 @@ $(DIR_ENV):
 	mkdir -p $(DIR_ENV)/2
 	mkdir -p $(DIR_ENV)/3
 	mkdir -p $(DIR_ENV)/4
+	mkdir -p $(DIR_ENV)/5
 
 $(BINARY): $(O_FILES) | $(DIR_ENV)
 	$(CC) -g -o $@ $^ -lcmocka -lsqlite3
@@ -44,6 +45,7 @@ run:
 	rm -f $(DIR_ENV)/2/*
 	rm -f $(DIR_ENV)/3/*
 	rm -f $(DIR_ENV)/4/*
+	rm -f $(DIR_ENV)/5/*
 	./$(BINARY)
 
 clean:
