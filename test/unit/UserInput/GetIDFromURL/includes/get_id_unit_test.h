@@ -1,5 +1,5 @@
-#ifndef BOUNDED_INPUT_TESTING_H
-#define BOUNDED_INPUT_TESTING_H
+#ifndef GET_ID_TESTING_H
+#define GET_ID_TESTING_H
 
 #include "testGlobals.h"
 #include "testWrapInput.h"
