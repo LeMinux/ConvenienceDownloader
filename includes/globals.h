@@ -12,14 +12,20 @@
 #define GREEN   "\033[32m"
 #define CYAN    "\033[36m"
 
-#define BUFFER_SIZE 101
-#define LARGER_BUFFER_SIZE 201
-
 #define INF_DEPTH -5
+
+#define YOUTUBE_URL "https://www.youtube.com/watch?v="
+
+#define LEN_BEFORE_ID 32
+#define YT_ID_LEN 11
+
+#define YT_URL_INPUT_SIZE (LEN_BEFORE_ID + YT_ID_LEN + 1)
+#define YT_ID_SIZE 12
 
 enum ERROR {HAD_ERROR = -1, NO_ERROR = 0};
 enum CONFIG {NOT_A_CONFIG = -1, AUDIO_CONFIG = 1, VIDEO_CONFIG, COVER_CONFIG, BLACK_CONFIG};
 enum INPUT {SKIPPING = -2, INVALID, VALID};
+enum COVERS {THUMB_ART = 0, GIVEN_ART, NO_ART};
 
 #define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET"\n", stderr))
 

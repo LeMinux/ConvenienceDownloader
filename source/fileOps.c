@@ -78,109 +78,6 @@ void convertToMp3(const char* songName){
 }
 */
 
-/*
-int checkIfExists(const char* check){
-	if(access(check, F_OK) == -1)
-		return HAD_ERROR;
-	else
-		return NO_ERROR;
-}
-*/
-
-/*
-int validateDirPath(const char* path){
-	//path doesn't exist
-	struct stat checkStat;
-	if(stat(path, &checkStat) == -1){
-		PRINT_FORMAT_ERROR(RED "Path \"%s\" does not exist\n" RESET, path);
-		return HAD_ERROR;
-	}
-
-	if(S_ISDIR(checkStat.st_mode) == NOT_A_DIR) {
-		PRINT_FORMAT_ERROR(RED "Path \"%s\" is not a directory\n" RESET, path);
-		return HAD_ERROR;
-	}
-
-	//checks if the effective user id matches the directory
-	if(geteuid() != checkStat.st_uid){
-		PRINT_FORMAT_ERROR(RED "The user does not own the directory \"%s\"\n" RESET, path);
-		return HAD_ERROR;
-	}
-
-	//S_I*USR only checks if user bits are set
-	//this does not check if the user owns it hence the check above
-	if((checkStat.st_mode & (S_IRUSR | S_IWUSR | S_IXUSR)) != (S_IRUSR | S_IWUSR | S_IXUSR)) {
-		PRINT_FORMAT_ERROR(RED "Directory \"%s\" needs read, write, and execution privledges" RESET, path);
-		return HAD_ERROR;
-	}
-
-	return NO_ERROR;
-}
-*/
-
-/*
-dirent openDir(const char* dir_name){
-    //Don't care about symlinks, so stat is used to resolve symlinks even if chained.
-    //Plus the user may want a symlink to a directory in the file.
-    struct stat dir_stat = {0};
-    if(stat(dir_name, &dir_stat) != 0){
-        PRINT_FORMAT_ERROR("Couldn't get dir information\n");
-        return NULL;
-    }
-
-    //Directories and other kinds of files though are checked since those aren't regular files.
-    FILE* open_file = NULL;
-    if(S_ISDIR(dir_stat.st_mode)){
-        open_file = fopen(file_name, "r");
-        if(open_file == NULL){
-            PRINT_FORMAT_ERROR("Failed to open file: %s", file_name);
-        }
-    }else{
-        PRINT_FORMAT_ERROR("File name given is not a regular file: %s", file_name);
-    }
-
-    return open_file;
-}
-*/
-
-/*
-//This does create a race condition, but it's a simple check for
-//when the user wants to save directories
-//better checks are done when it will be used
-int checkIsDir(const char* dir_name){
-    assert(dir_name != NULL || dir_name[0] != '\0');
-
-    //once again dont' care if it's a link
-    struct stat dir_stat = {0};
-    if(stat(dir_name, &dir_stat) != 0){
-        PRINT_FORMAT_ERROR("Couldn't get directory information\n");
-        return -1;
-    }
-
-    if(!S_ISDIR(dir_stat.st_mode)){
-        PRINT_FORMAT_ERROR("Directory path given is not a directory: %s", dir_name);
-        return -1;
-    }
-
-    return 0;
-}
-*/
-
-/*
-void openDir(const char* dir_path, DIR** stream_result){
-    assert(dir_path != NULL);
-    assert(stream_result != NULL);
-
-    DIR* dir_stream = opendir(dir_path);
-    if(dir_stream == NULL){
-        PRINT_FORMAT_ERROR("Failed to open directory: %s\n", dir_path);
-        *stream_result = NULL;
-    }else{
-        *stream_result = dir_stream;
-    }
-}
-*/
-
 enum INPUT checkDirPath(const char* dir_path){
     assert(dir_path != NULL);
 
@@ -197,9 +94,8 @@ enum INPUT checkDirPath(const char* dir_path){
         return INVALID;
     }
 
-    printf("%d\n", file_stat.st_mode);
     if(S_ISLNK(file_stat.st_mode)){
-        ADVISE_USER("This program doesn't deal with links");
+        ADVISE_USER("The end point can't be a link");
         return INVALID;
     }
 
