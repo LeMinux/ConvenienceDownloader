@@ -156,8 +156,6 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
         goto failed;
     }
 
-    //in this case no transaction is made because this should be used within a larger context
-    //of addRootEntry
     ret_code = sqlite3_step(results);
     switch(ret_code){
         case SQLITE_DONE:err_ret = NO_ERROR; break;
@@ -759,7 +757,7 @@ int pathIDToPath(int path_id, char* full_path){
     assert(path_id >= 0);
 
     const char sql_statement [] =
-             "SELECT concat(r.root_name, p.path_name), (r.root_length + p.path_length) FROM Paths p "
+             "SELECT r.root_name, p.path_name, r.root_length, p.path_length FROM Paths p "
              "RIGHT JOIN Roots r USING (root_id) "
              "WHERE p.path_id = ?";
 
@@ -783,11 +781,17 @@ int pathIDToPath(int path_id, char* full_path){
         goto failed;
     }
 
-    char* path = (char*)sqlite3_column_text(results, 0);
-    int total_len = sqlite3_column_int(results, 1);
-    memcpy(full_path, path, total_len);
-    full_path[total_len] = '\0';
-    written_len = total_len;
+    //there is sqlite3 concat, but it seems to also include the nul byte
+    //so something like concat(a\0, b\0) creates a\0b\0 making printf operations at the first \0
+    //testing should have caught this, but I guess sqlite3_mprintf does something about the nul byte
+    char* root_path = (char*)sqlite3_column_text(results, 0);
+    char* path_path = (char*)sqlite3_column_text(results, 1);
+    int root_len = sqlite3_column_int(results, 2);
+    int path_len = sqlite3_column_int(results, 3);
+    memcpy(full_path, root_path, root_len);
+    memcpy(full_path + root_len, path_path, path_len);
+    written_len = root_len + path_len;
+    full_path[written_len] = '\0';
 
     failed:
     sqlite3_finalize(results);
