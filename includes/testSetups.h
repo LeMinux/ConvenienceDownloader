@@ -152,4 +152,11 @@ int closeDB(void** state);
 */
 void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_name, int depth);
 
+/*
+* Helper function to add an extra path entry into the database.
+* Useful if there needs to be consistency in selecting a path, or
+* if you don't need so many paths to test.
+*/
+void addExtraPathEntry(sqlite3* test_db, int root_id, const char* extra_path);
+
 #endif
