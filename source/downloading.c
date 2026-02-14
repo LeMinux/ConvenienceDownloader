@@ -89,6 +89,9 @@ static enum ERROR useYtdlp(char* const* command_args){
 }
 
 static enum ERROR createOutputTemplate(int path_id, char* output_template){
+    assert(output_template != NULL);
+    assert(path_id > 0);
+
     int length = pathIDToPath(path_id, output_template);
     enum ERROR status = HAD_ERROR;
     if(length != HAD_ERROR){
@@ -125,6 +128,7 @@ char* createMetaArg(const char* data, enum META_TYPE type){
     return argument;
 }
 
+//want to add album name, artist name, genre, id, perhaps yt url
 enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     assert(yt_url != NULL);
     assert(v_id != SKIPPING || v_id == INVALID);
@@ -139,43 +143,43 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     //To avoid needing to realloc a bunch this will be a set size filled with NULLS at the end
     //the command line arg needs to end with a NULL anyway, so just like how a nul byte
     //would stop strlen early this will do the same.
+    //Do need to figure out how to get rid of all those warnings though
     char* command_arguments [] ={
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
         "-o", output_template,
-        "-P", "temp:/tmp",
         "-t", "mp4",
+        "--embed-metadata",
         NULL, NULL,
         NULL, NULL,
         NULL, NULL,
         NULL,
         NULL,
     };
-
     //the size of the pointer array not all the elements
-    size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 7;
+    size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 7 - 1;
 
     char* genre_meta = NULL;
     char* artist_meta = NULL;
     char* album_meta = NULL;
     enum ERROR error_status = HAD_ERROR;
     if(meta->genre != NULL){
-        genre_meta = createMetaArg(meta->artist, GENRE);
+        genre_meta = createMetaArg(meta->genre, GENRE);
         if(genre_meta == NULL) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = genre_meta;
     }
 
     if(meta->artist != NULL){
-        artist_meta = createMetaArg(meta->genre, ARTIST);
+        artist_meta = createMetaArg(meta->artist, ARTIST);
         if(artist_meta == NULL) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = artist_meta;
     }
 
     if(meta->album != NULL){
-        album_meta = createMetaArg(meta->genre, ARTIST);
+        album_meta = createMetaArg(meta->album, ALBUM);
         if(album_meta == NULL) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = album_meta;
@@ -192,12 +196,14 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     return error_status;
 }
 
+
 //want to add album name, artist name, genre, id, perhaps yt url
 enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, enum COVERS wants_cover){
     assert(yt_url != NULL);
     assert(a_id != SKIPPING || a_id == INVALID);
     assert(meta != NULL);
     assert(wants_cover == THUMB_ART || wants_cover == GIVEN_ART || wants_cover == NO_ART);
+
     char output_template [PATH_MAX + sizeof(TEMPLATE) - 1];
     if(createOutputTemplate(a_id, output_template) == HAD_ERROR){
         PRINT_ERROR("Couldn't create output template");
@@ -213,7 +219,6 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
         "--restrict-filenames",
         "--retries", "4",
         "-o", output_template,
-        "-P", "temp:/tmp",
         "--extract-audio",
         "--audio-format", "mp3",
         "--audio-quality", "256K",
@@ -281,13 +286,14 @@ enum ERROR downloadCover(const char* yt_url, int c_id){
     char* command_arguments [] ={
         "yt-dlp",
         "--restrict-filenames",
+        "--verbose",
         "--retries", "4",
         "--skip-download",
         "-o", output_template,
-        "-P", "temp:/tmp",
         "--write-thumbnail",
         "--convert-thumbnails", "jpg",
-        yt_url
+        yt_url,
+        NULL
     };
 
     useYtdlp(command_arguments);

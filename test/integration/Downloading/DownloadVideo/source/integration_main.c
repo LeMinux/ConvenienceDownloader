@@ -8,11 +8,11 @@ int main(void){
         exit(EXIT_FAILURE);
     #endif
 
-    const struct CMUnitTest download_audio_tests[] = {
+    const struct CMUnitTest download_video_tests[] = {
         cmocka_unit_test_setup_teardown(testDownloadVideoNoMetaData, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testDownloadVideoAllMetaData, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testDownloadVideoWeirdMetaData, createTestDB, closeDB),
     };
 
-    return cmocka_run_group_tests(download_audio_tests, NULL, NULL);
+    return cmocka_run_group_tests(download_video_tests, NULL, NULL);
 }

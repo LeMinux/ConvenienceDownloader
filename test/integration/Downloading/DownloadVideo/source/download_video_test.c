@@ -16,8 +16,6 @@ static void addEntry(sqlite3* database){
     addExtraPathEntry(database, 1, PATH_1);
     addExtraPathEntry(database, 1, PATH_2);
     addExtraPathEntry(database, 1, PATH_3);
-    addExtraPathEntry(database, 1, PATH_4);
-    addExtraPathEntry(database, 1, PATH_5);
 }
 
 static void assertDownloaded(const char* path){

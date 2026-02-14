@@ -39,6 +39,8 @@ static void assertDownloaded(const char* path){
     }
 }
 
+//Don't like the usage of system, but I am in control of what is executed
+//Assuming that I don't change PATH, IFS, or what ever werid shell stuff
 static void assertMetaData(const char* path, const char* meta_content, int exp_ret){
     char command [100];
     size_t len = snprintf(command, sizeof(command), "exiftool '%s'* | grep --fixed-strings '%s'", path, meta_content);
