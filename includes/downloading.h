@@ -15,7 +15,7 @@ typedef struct MetaData{
 }MetaData_t;
 
 enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta);
-enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, enum COVERS wants_cover);
+enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, enum COVERS wants_cover, const char* cover_path);
 enum ERROR downloadCover(const char* yt_url, int c_id);
 
 #endif

@@ -64,7 +64,15 @@ static const char ARTIST_FORMAT [] = "%%(zqqjxvy|%s)s:%%(meta_artist)s";
 static const char ALBUM_FORMAT [] =  "%%(zqjjxvvy|%s)s:%%(meta_album)s";
 static const int META_SIZE = sizeof(GENRE_FORMAT) - 2;
 
-char* createMetaArg(const char* data, enum META_TYPE type);
+static const char POST_PROCESSOR [] = "--postprocessor-args";
+static const char GIVEN_ART_FORMAT [] = "EmbedThumbnail+ffmpeg_i1:-i %s";
+static const char NO_DONWLOAD_ART [] = "--no-write-thumbnail";
+static const int GIVEN_ART_SIZE = sizeof(GIVEN_ART_FORMAT) - 2;
+
+static enum ERROR useYtdlp(char* const* command_args);
+static enum ERROR createOutputTemplate(int path_id, char* output_template);
+static char* createMetaArg(const char* data, enum META_TYPE type);
+static char* createPostArg(const char* cover_path);
 
 static enum ERROR useYtdlp(char* const* command_args){
     assert(command_args != NULL);
@@ -101,7 +109,7 @@ static enum ERROR createOutputTemplate(int path_id, char* output_template){
     return status;
 }
 
-char* createMetaArg(const char* data, enum META_TYPE type){
+static char* createMetaArg(const char* data, enum META_TYPE type){
     assert(data != NULL);
     assert(type == GENRE || type == ARTIST || type == ALBUM);
 
@@ -122,10 +130,29 @@ char* createMetaArg(const char* data, enum META_TYPE type){
     }
 
     if(len < 0 || len >= size){
+        free(argument);
         return NULL;
     }
 
     return argument;
+}
+
+static char* createPostArg(const char* cover_path){
+    assert(cover_path != NULL);
+
+
+    int size = strlen(cover_path) + GIVEN_ART_SIZE;
+    char* full_arg = malloc(size);
+    if(full_arg == NULL) return NULL;
+
+    int len = snprintf(full_arg, size, GIVEN_ART_FORMAT, cover_path);
+
+    if(len < 0 || len >= size){
+        free(full_arg);
+        return NULL;
+    }
+
+    return full_arg;
 }
 
 //want to add album name, artist name, genre, id, perhaps yt url
@@ -151,11 +178,11 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
         "-o", output_template,
         "-t", "mp4",
         "--embed-metadata",
-        NULL, NULL,
-        NULL, NULL,
-        NULL, NULL,
-        NULL,
-        NULL,
+        NULL, NULL,     //meta argument
+        NULL, NULL,     //meta argument
+        NULL, NULL,     //meta argument
+        NULL,           //URL
+        NULL,           //ending NULL
     };
     //the size of the pointer array not all the elements
     size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 7 - 1;
@@ -198,7 +225,7 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
 
 
 //want to add album name, artist name, genre, id, perhaps yt url
-enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, enum COVERS wants_cover){
+enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, enum COVERS wants_cover, const char* cover_path){
     assert(yt_url != NULL);
     assert(a_id != SKIPPING || a_id == INVALID);
     assert(meta != NULL);
@@ -223,18 +250,33 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
         "--audio-format", "mp3",
         "--audio-quality", "256K",
         "--embed-metadata",
-        NULL,
-        NULL, NULL,
-        NULL, NULL,
-        NULL, NULL,
-        NULL,
-        NULL
+        NULL,           //--embed-thumbnail
+        NULL,           //potential no download art
+        NULL, NULL,     //potential postprocessor-args
+        NULL, NULL,     //meta argument
+        NULL, NULL,     //meta argument
+        NULL, NULL,     //meta argument
+        NULL,           //URL
+        NULL            //ending NULL for arg list
     };
-    //the size of the pointer array not all the elements
-    size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 8 - 1;
 
-    if(wants_cover == THUMB_ART){
-        command_arguments[append_index++] = ADD_COVER;
+    //the size of the pointers in the array not the elements themeselves
+    size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 11 - 1;
+
+    char* cover_arg = NULL;
+    switch(wants_cover){
+        case THUMB_ART:
+            command_arguments[append_index++] = ADD_COVER;
+        break;
+        case GIVEN_ART:
+            command_arguments[append_index++] = ADD_COVER;
+            command_arguments[append_index++] = NO_DONWLOAD_ART;
+            command_arguments[append_index++] = POST_PROCESSOR;
+            cover_arg = createPostArg(cover_path);
+            if(cover_arg == NULL) goto failed;
+            command_arguments[append_index++] = cover_arg;
+        break;
+        default: break;
     }
 
     char* genre_meta = NULL;
@@ -263,10 +305,14 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     }
 
     command_arguments[append_index] = yt_url;
+    for(int i = 0; i < 23; ++i){
+        printf("%s ", command_arguments[i]);
+    }
 
     error_status = useYtdlp(command_arguments);
 
     failed:
+    free(cover_arg);
     free(genre_meta);
     free(artist_meta);
     free(album_meta);
