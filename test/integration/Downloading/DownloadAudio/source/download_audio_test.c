@@ -18,6 +18,7 @@ static void addEntry(sqlite3* database){
     addExtraPathEntry(database, 1, PATH_3);
     addExtraPathEntry(database, 1, PATH_4);
     addExtraPathEntry(database, 1, PATH_5);
+    addExtraPathEntry(database, 1, PATH_6);
 }
 
 static void assertDownloaded(const char* path){
@@ -65,12 +66,12 @@ static void assertCover(const char* path, int exp_ret){
 
 void testDownloadAudioNoMetaData(void** state){
     sqlite3* database = *state;
-    const char* exp_path = AUDIO_ROOT PATH_1;
+    const char exp_path [] = AUDIO_ROOT PATH_1;
     MetaData_t data = {NULL, NULL, NULL};
 
     addEntry(database);
 
-    downloadAudio("https://www.youtube.com/watch?v=iic-mhXFZic", PATH_1_ID, &data, NO_ART);
+    downloadAudio("https://www.youtube.com/watch?v=iic-mhXFZic", PATH_1_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
     assertMetaData(exp_path, data.genre,  GREP_NO_FOUND);
@@ -83,12 +84,12 @@ void testDownloadAudioAllMetaData(void** state){
     const char genre [] = "Mine Craft";
     const char artist [] = "C418";
     const char album [] = "Ocean";
-    const char* exp_path = AUDIO_ROOT PATH_2;
+    const char exp_path [] = AUDIO_ROOT PATH_2;
     MetaData_t data = {.genre=genre, .artist=artist, .album=album};
 
     addEntry(database);
 
-    downloadAudio("https://www.youtube.com/watch?v=HvdP87eDasE", PATH_2_ID, &data, NO_ART);
+    downloadAudio("https://www.youtube.com/watch?v=HvdP87eDasE", PATH_2_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
     assertMetaData(exp_path, data.genre,  GREP_FOUND);
@@ -98,12 +99,26 @@ void testDownloadAudioAllMetaData(void** state){
 
 void testDownloadAudioEmbedsCoverArt(void** state){
     sqlite3* database = *state;
-    const char* exp_path = AUDIO_ROOT PATH_3;
+    const char exp_path [] = AUDIO_ROOT PATH_3;
     MetaData_t data = {NULL, NULL, NULL};
 
     addEntry(database);
 
-    downloadAudio("https://www.youtube.com/watch?v=iic-mhXFZic", PATH_3_ID, &data, THUMB_ART);
+    downloadAudio("https://www.youtube.com/watch?v=iic-mhXFZic", PATH_3_ID, &data, THUMB_ART, NULL);
+
+    assertDownloaded(exp_path);
+    assertCover(exp_path, GREP_FOUND);
+}
+
+void testDownloadAudioEmbedsGivenCoverArt(void** state){
+    sqlite3* database = *state;
+    const char exp_path [] = AUDIO_ROOT PATH_6;
+    const char cover_path [] = "./purple-frog.jpg";
+    MetaData_t data = {NULL, NULL, NULL};
+
+    addEntry(database);
+
+    downloadAudio("https://www.youtube.com/watch?v=k85mRPqvMbE", PATH_6_ID, &data, GIVEN_ART, cover_path);
 
     assertDownloaded(exp_path);
     assertCover(exp_path, GREP_FOUND);
@@ -111,12 +126,12 @@ void testDownloadAudioEmbedsCoverArt(void** state){
 
 void testDownloadAudioEmbedsNoCoverArt(void** state){
     sqlite3* database = *state;
-    const char* exp_path = AUDIO_ROOT PATH_4;
+    const char exp_path [] = AUDIO_ROOT PATH_4;
     MetaData_t data = {NULL, NULL, NULL};
 
     addEntry(database);
 
-    downloadAudio("https://www.youtube.com/watch?v=wMIWqUPlEtE", PATH_4_ID, &data, NO_ART);
+    downloadAudio("https://www.youtube.com/watch?v=wMIWqUPlEtE", PATH_4_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
     assertCover(exp_path, GREP_NO_FOUND);
@@ -127,12 +142,12 @@ void testDownloadAudioWeirdMetaData(void** state){
     const char genre [] = "%titles.%exts";
     const char artist [] = "?P<meta_synopsis>";
     const char album [] = " ?!@#$%^&*_-~+=.<>|";
-    const char* exp_path = AUDIO_ROOT PATH_5;
+    const char exp_path [] = AUDIO_ROOT PATH_5;
     MetaData_t data = {.genre=genre, .artist=artist, .album=album};
 
     addEntry(database);
 
-    downloadAudio("https://www.youtube.com/watch?v=SaoT_ULWJZk", PATH_5_ID, &data, NO_ART);
+    downloadAudio("https://www.youtube.com/watch?v=SaoT_ULWJZk", PATH_5_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
     assertMetaData(exp_path, data.genre,  GREP_FOUND);
