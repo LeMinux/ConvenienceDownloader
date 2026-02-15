@@ -53,8 +53,6 @@
 
 enum META_TYPE {GENRE = 0, ARTIST, ALBUM};
 
-static enum ERROR useYtdlp(char* const* command_args);
-static enum ERROR createOutputTemplate(int path_id, char* output_template);
 static const char TEMPLATE [] = "%(title)s.%(ext)s";
 static const char META_ARG [] = "--parse-metadata";
 static const char ADD_COVER [] = "--embed-thumbnail";
@@ -64,37 +62,13 @@ static const char ARTIST_FORMAT [] = "%%(zqqjxvy|%s)s:%%(meta_artist)s";
 static const char ALBUM_FORMAT [] =  "%%(zqjjxvvy|%s)s:%%(meta_album)s";
 static const int META_SIZE = sizeof(GENRE_FORMAT) - 2;
 
-static const char POST_PROCESSOR [] = "--postprocessor-args";
-static const char GIVEN_ART_FORMAT [] = "EmbedThumbnail+ffmpeg_i1:-i %s";
-static const char NO_DONWLOAD_ART [] = "--no-write-thumbnail";
-static const int GIVEN_ART_SIZE = sizeof(GIVEN_ART_FORMAT) - 2;
+static const char PRINT_TO_FILE [] = "--print-to-file";
+static const char WHAT_TO_PRINT [] = "after_move:filepath";
+static const char FILE_NAME [] = "/tmp/add_cover_to.txt";
 
-static enum ERROR useYtdlp(char* const* command_args);
 static enum ERROR createOutputTemplate(int path_id, char* output_template);
 static char* createMetaArg(const char* data, enum META_TYPE type);
 static char* createPostArg(const char* cover_path);
-
-static enum ERROR useYtdlp(char* const* command_args){
-    assert(command_args != NULL);
-
-    pid_t pid = fork();
-    if(pid < 0){
-        PRINT_ERROR("failed to fork");
-        return HAD_ERROR;
-    }
-
-    if(pid == 0){
-        execv("/usr/bin/yt-dlp", command_args);
-    }else{
-        int child_ret = 0;
-        waitpid(pid, &child_ret, 0);
-        if(child_ret < 0){
-            return HAD_ERROR;
-        }
-    }
-
-    return NO_ERROR;
-}
 
 static enum ERROR createOutputTemplate(int path_id, char* output_template){
     assert(output_template != NULL);
@@ -135,24 +109,6 @@ static char* createMetaArg(const char* data, enum META_TYPE type){
     }
 
     return argument;
-}
-
-static char* createPostArg(const char* cover_path){
-    assert(cover_path != NULL);
-
-
-    int size = strlen(cover_path) + GIVEN_ART_SIZE;
-    char* full_arg = malloc(size);
-    if(full_arg == NULL) return NULL;
-
-    int len = snprintf(full_arg, size, GIVEN_ART_FORMAT, cover_path);
-
-    if(len < 0 || len >= size){
-        free(full_arg);
-        return NULL;
-    }
-
-    return full_arg;
 }
 
 //want to add album name, artist name, genre, id, perhaps yt url
@@ -214,7 +170,7 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
 
     command_arguments[append_index] = yt_url;
 
-    error_status = useYtdlp(command_arguments);
+    error_status = execProgram("/usr/bin/yt-dlp", command_arguments);
 
     failed:
     free(genre_meta);
@@ -250,9 +206,9 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
         "--audio-format", "mp3",
         "--audio-quality", "256K",
         "--embed-metadata",
+        "--replace-in-metadata", "title", "_-_", "-",
         NULL,           //--embed-thumbnail
-        NULL,           //potential no download art
-        NULL, NULL,     //potential postprocessor-args
+        NULL, NULL, NULL, //potential after print
         NULL, NULL,     //meta argument
         NULL, NULL,     //meta argument
         NULL, NULL,     //meta argument
@@ -263,18 +219,14 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     //the size of the pointers in the array not the elements themeselves
     size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 11 - 1;
 
-    char* cover_arg = NULL;
     switch(wants_cover){
         case THUMB_ART:
             command_arguments[append_index++] = ADD_COVER;
         break;
         case GIVEN_ART:
-            command_arguments[append_index++] = ADD_COVER;
-            command_arguments[append_index++] = NO_DONWLOAD_ART;
-            command_arguments[append_index++] = POST_PROCESSOR;
-            cover_arg = createPostArg(cover_path);
-            if(cover_arg == NULL) goto failed;
-            command_arguments[append_index++] = cover_arg;
+            command_arguments[append_index++] = PRINT_TO_FILE;
+            command_arguments[append_index++] = WHAT_TO_PRINT;
+            command_arguments[append_index++] = FILE_NAME;
         break;
         default: break;
     }
@@ -305,14 +257,13 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     }
 
     command_arguments[append_index] = yt_url;
-    for(int i = 0; i < 23; ++i){
-        printf("%s ", command_arguments[i]);
+    error_status = execProgram("/usr/bin/yt-dlp", command_arguments);
+
+    if(wants_cover == GIVEN_ART && error_status == NO_ERROR){
+        error_status = writeCover(FILE_NAME, cover_path);
     }
 
-    error_status = useYtdlp(command_arguments);
-
     failed:
-    free(cover_arg);
     free(genre_meta);
     free(artist_meta);
     free(album_meta);
@@ -332,7 +283,6 @@ enum ERROR downloadCover(const char* yt_url, int c_id){
     char* command_arguments [] ={
         "yt-dlp",
         "--restrict-filenames",
-        "--verbose",
         "--retries", "4",
         "--skip-download",
         "-o", output_template,
@@ -342,6 +292,6 @@ enum ERROR downloadCover(const char* yt_url, int c_id){
         NULL
     };
 
-    useYtdlp(command_arguments);
+    execProgram("/usr/bin/yt-dlp", command_arguments);
     return NO_ERROR;
 }

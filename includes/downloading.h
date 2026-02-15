@@ -2,11 +2,11 @@
 #define DOWNLOADING_H
 
 #include <string.h>
-#include <unistd.h>
-#include <wait.h>
 
 #include "globals.h"
 #include "databaseOps.h"
+#include "execOthers.h"
+#include "writeArt.h"
 
 typedef struct MetaData{
     const char* genre;
