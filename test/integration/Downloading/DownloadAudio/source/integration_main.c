@@ -15,6 +15,7 @@ int main(void){
         cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsNoCoverArt, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testDownloadAudioWeirdMetaData, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsGivenCoverArt, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsGivenCoverArtAndAllMetaData, createTestDB, closeDB),
     };
 
     return cmocka_run_group_tests(download_audio_tests, NULL, NULL);
