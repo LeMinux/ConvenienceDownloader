@@ -1,5 +1,5 @@
-#ifndef GET_ID_TESTING_H
-#define GET_ID_TESTING_H
+#ifndef GET_URL_TESTING_H
+#define GET_URL_TESTING_H
 
 #include "testGlobals.h"
 #include "testWrapInput.h"

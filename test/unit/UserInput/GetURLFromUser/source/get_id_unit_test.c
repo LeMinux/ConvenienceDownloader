@@ -1,4 +1,4 @@
-#include "../includes/get_id_unit_test.h"
+#include "../includes/get_url_unit_test.h"
 
 void testGetIDFromURLValidSimpleURL(void** state){
     (void) state;
@@ -8,7 +8,7 @@ void testGetIDFromURLValidSimpleURL(void** state){
     will_return(__wrap_boundedInput, input);
 
     char act_id_result [YT_URL_INPUT_SIZE] = "";
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
 
     assert_int_equal(act_result, VALID);
     assert_int_equal(act_id_result[YT_URL_INPUT_SIZE - 1], '\0');
@@ -23,7 +23,7 @@ void testGetIDFromURLValidLongURLWithPlayList(void** state){
     will_return(__wrap_boundedInput, input);
 
     char act_id_result [YT_URL_INPUT_SIZE] = "";
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
 
     assert_int_equal(act_result, VALID);
     assert_int_equal(act_id_result[YT_URL_INPUT_SIZE - 1], '\0');
@@ -38,7 +38,7 @@ void testGetIDFromURLValidLongURLWithRadio(void** state){
     will_return(__wrap_boundedInput, input);
 
     char act_id_result [YT_URL_INPUT_SIZE] = "";
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
 
     assert_int_equal(act_result, VALID);
     assert_int_equal(act_id_result[YT_URL_INPUT_SIZE - 1], '\0');
@@ -53,7 +53,7 @@ void testGetIDFromURLValidURLWithDash(void** state){
     will_return(__wrap_boundedInput, input);
 
     char act_id_result [YT_URL_INPUT_SIZE] = "";
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
 
     assert_int_equal(act_result, VALID);
     assert_int_equal(act_id_result[YT_URL_INPUT_SIZE - 1], '\0');
@@ -68,7 +68,7 @@ void testGetIDFromURLValidURLWithUnderscore(void** state){
 
     will_return(__wrap_boundedInput, input);
 
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
     assert_int_equal(act_result, VALID);
     assert_int_equal(act_id_result[YT_URL_INPUT_SIZE - 1], '\0');
     assert_string_equal(act_id_result, exp_result);
@@ -81,7 +81,7 @@ void testGetIDFromURLInvalidShortURL(void** state){
 
     will_return(__wrap_boundedInput, input);
 
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
     assert_int_equal(act_result, INVALID);
 }
 
@@ -92,7 +92,7 @@ void testGetIDFromURLInvalidNotAYTURL(void** state){
 
     will_return(__wrap_boundedInput, input);
 
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
     assert_int_equal(act_result, INVALID);
 }
 
@@ -103,6 +103,6 @@ void testGetIDFromURLInvalidIDPortion(void** state){
 
     will_return(__wrap_boundedInput, input);
 
-    int act_result = getIDFromURL(act_id_result);
+    int act_result = getURLFromUser(act_id_result);
     assert_int_equal(act_result, INVALID);
 }
