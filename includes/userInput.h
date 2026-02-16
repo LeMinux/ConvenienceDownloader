@@ -46,7 +46,7 @@ enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
 *    Don't try to use the ID if INVALID is passed as this method won't overwrite
 *    previous contents so you will use what ever was in ret_id before calling.
 */
-enum INPUT getIDFromURL(char* ret_id);
+enum INPUT getURLFromUser(char* ret_url);
 
 /*
 *	downloads a song given the URL for it
@@ -68,12 +68,6 @@ int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
 */
 enum REPEAT askToRepeat(void);
 
-
-/*
-char* getUserChoiceForDir(const char* baseDir, const char* prompt);
-
-char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
-*/
 
 /*
 *	method for obtaining user input where size is bounded
@@ -129,8 +123,12 @@ int takeIndexInput(int max_index);
 /*
 *   Presents the user with an indexed selection for what path to send stuff to
 *   The selection is for paths and not roots.
+*   The user can opt to skip this choice if they don't need it.
 *
-*   return: path_id associate with the selection
+*   return:
+*       path_id associate with the selection
+*       OR
+*       SKIPPING if the user wants to skip
 */
 int getUserChoiceForDir(enum CONFIG type);
 

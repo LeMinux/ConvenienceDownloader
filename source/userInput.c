@@ -273,7 +273,7 @@ int takeDepthInput(void){
 
 //YT urls that have stuff like the radio or playlist in the URL is fine
 //since the only important part is the URL and the ID.
-enum INPUT getIDFromURL(char* ret_url){
+enum INPUT getURLFromUser(char* ret_url){
     assert(ret_url != NULL);
 
     char input [YT_URL_INPUT_SIZE];
@@ -376,7 +376,7 @@ int getUserChoiceForDir(enum CONFIG type){
         listConfigRootsWithPaths(type);
         printQuestion(type);
 
-        //Dirty but it'll have to do for now
+        //Dirty but it'll have to do
         #ifndef PREVENT_INTERNAL_LINKAGE
         index = takeIndexInput(num_of_rows);
         #else
@@ -412,72 +412,3 @@ size_t sanitizeMetaString(char* meta_arg){
     meta_arg[inplace_insert] = '\0';
     return inplace_insert;
 }
-
-/*
-int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt){
-	//--restrict-filenames makes it so escape characters don't need to be added
-	//-f bestvideo to force as .mp4
-	//--write-thumbnail to get thumnail
-	//--convert-thumbnail since the default is webp
-	//--audio-quality 256K for a 256K bitrate and better quality audio and save a little on space
-	//--audio-format to specify as mp3
-	//-R to specify 4 retries
-	const char* youtubeDL = NULL;
-	switch(mode){
-		case 3:
-			if(downloadCoverArt){
-				youtubeDL = "yt-dlp"
-					" --restrict-filenames"
-					" --write-thumbnail "
-					" --convert-thumbnails jpg "
-					" --extract-audio"
-					" --audio-format mp3"
-					" --audio-quality 256K"
-					" -R 4 ";
-			}else{
-				youtubeDL = "yt-dlp"
-					" --restrict-filenames"
-					" --extract-audio"
-					" --audio-format mp3"
-					" --audio-quality 256K"
-					" -R 4 ";
-			}
-		break;
-		case 4:
-			if(downloadCoverArt){
-				youtubeDL = "yt-dlp"
-					" -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-					" --restrict-filenames"
-					" --write-thumbnail"
-					" --convert-thumbnails jpg"
-					" -R 4 ";
-			}else{
-				youtubeDL = "yt-dlp"
-					" -f bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-					" --restrict-filenames"
-					" -R 4 ";
-			}
-		break;
-		default: PRINT_ERROR("Client passed an unknown mode for downloading URL"); return HAD_ERROR; break;
-	}
-
-	//nul byte count is included in YT_URL_INPUT_SIZE
-	int length = strlen(youtubeDL) + YT_URL_INPUT_SIZE;
-	char* downloadCommand = malloc(length);
-	if(downloadCommand == NULL){
-		PRINT_ERROR(FAILED_MALLOC_MSG);
-		exit(EXIT_FAILURE);
-	}
-	(void)snprintf(downloadCommand, length + 1, "%s%s", youtubeDL, youtubeURL);
-    puts(downloadCommand);
-	//(void)printf(PNT_GREEN "%s\n" PNT_RESET, downloadCommand);
-	int retVal = NO_ERROR;
-	if(system(downloadCommand) > 0){
-		PRINT_ERROR(DOWNLOAD_FAIL_MSG);
-		retVal = HAD_ERROR;
-	}
-	free(downloadCommand);
-	downloadCommand = NULL;
-	return retVal;
-}
-*/
