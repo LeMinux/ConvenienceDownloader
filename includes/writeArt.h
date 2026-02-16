@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "execOthers.h"
+#include "fileOps.h"
 
 #define TEMP_FILE "/tmp/newly_added_art.mp3"
 

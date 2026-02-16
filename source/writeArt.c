@@ -4,7 +4,7 @@ enum ERROR writeCover(const char* file_with_path, const char* cover_path){
     assert(file_with_path != NULL);
     assert(cover_path != NULL);
 
-    FILE* file = fopen(file_with_path, "r");
+    FILE* file = openFile(file_with_path, "r");
     if(file == NULL){
         PRINT_ERROR("Could not open temp file to get file name");
         return HAD_ERROR;

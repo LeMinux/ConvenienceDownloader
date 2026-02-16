@@ -260,6 +260,7 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     error_status = execProgram("/usr/bin/yt-dlp", command_arguments);
 
     if(wants_cover == GIVEN_ART && error_status == NO_ERROR){
+        assert(cover_path != NULL);
         error_status = writeCover(FILE_NAME, cover_path);
     }
 

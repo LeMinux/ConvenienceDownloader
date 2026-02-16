@@ -1,6 +1,7 @@
 #ifndef FILEOPS_H
 #define FILEOPS_H
 
+#include <errno.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
@@ -13,15 +14,19 @@
 #define CONVERT_FAIL_MSG "\nERROR CNVT: Error in converting from .mp4 to .mp3"
 
 /*
-int moveFile(const char* fileName, const char* destination);
-void getFileNameByID(const char* id, const char* extension, char* outString, int length);
-void convertToMp3(const char* songName);
-
-int checkIfExists(const char*);
-
-*/
-//wrapper function to check file
-FILE* openFile(const char*, const char* mode);
+ *  Wrapper of fopen to check additonal properties.
+ *  These extra checks are for if the file is an actual file and not a directory as fopen won't NULL on directories.
+ *  Mostly this is for paths given from a user.
+ *
+ *  param:
+ *      file_path: path to the file
+ *      mode: same mode you would give to fopen()
+ *
+ *  return:
+ *      NULL if couldn't open file or file is not a file
+ *      a FILE* if it could
+ */
+FILE* openFile(const char* file_path, const char* mode);
 
 /*
  *  Check if a path given is a directory, and exists.
