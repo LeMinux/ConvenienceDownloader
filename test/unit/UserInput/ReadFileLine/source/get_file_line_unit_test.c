@@ -763,7 +763,9 @@ void testReadFileLineMoreSeperatorsThanNeeded(void** state){
     const MetaData_t exp_meta = {.genre="Neon", .artist="Argon", .album="Radeon"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
-    writeData(test_file, "%s|%s:%s:%s:%s:%s",  exp_url, exp_meta.genre, exp_meta.artist, exp_meta.album, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
+    writeData(test_file, "%s|%s:%s:%s:%s:%s",  exp_url, exp_meta.genre, exp_meta.artist, exp_meta.album,
+              "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
 
     char act_url [YT_URL_INPUT_SIZE];
     MetaData_t act_meta = {NULL, NULL, NULL};
