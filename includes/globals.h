@@ -20,6 +20,7 @@
 #define YT_ID_LEN 11
 
 #define YT_URL_INPUT_SIZE (LEN_BEFORE_ID + YT_ID_LEN + 1)
+#define YT_URL_INPUT_LEN YT_URL_INPUT_SIZE - 1
 #define YT_ID_SIZE 12
 
 enum ERROR {HAD_ERROR = -1, NO_ERROR = 0};

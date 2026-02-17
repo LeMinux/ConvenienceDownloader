@@ -13,6 +13,7 @@
 #include "globals.h"
 #include "fileOps.h"
 #include "databaseOps.h"
+#include "downloading.h"
 
 //Another NASA sin :(
 #ifdef PREVENT_INTERNAL_LINKAGE
@@ -30,6 +31,7 @@
 #define OPTION_LEN 5
 
 enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
+enum FILE_INPUT {BAD_LINE = -1, DONE, GOOD_LINE};
 
 #include <stdio.h>
 
@@ -70,16 +72,19 @@ enum REPEAT askToRepeat(void);
 
 
 /*
-*	method for obtaining user input where size is bounded
-*   returns how many characters were read excluding newlines and the nul byte.
-*   The amount returned is able to be used to determine the position of the nul byte.
-*   The bound is meant for c_strings, so the bound must be at least 1 so a nul byte can be inserted at the end, and at least 2 for actual input.
+*	method for obtaining user input where size is bounded.
+*	Best used for strings on the stack where bounds is known.
+*	Input is read until it encounters a newline or EOF.
+*	If a newline is encountered it's replaced with a nul byte and length is adjusted.
+*	This is meant for c-strings, so a bound of 1 isn't useful as that'll just give you a nul byte.
 *
-*	stream: file stream which can include stdin*
+*	stream: file stream which can include stdin
 *	dest: destination string and should not be NULL
-*	buffer: size of input expected. This should account for the nul byte like you would for fgets.
+*	buffer: size of input buffer. This should account for the nul byte like you would for fgets.
 *
-*	return: returns how much was read
+*   return:
+*   length of what was read excluding the nul byte.
+*   The amount returned is able to be used to determine the position of the nul byte.
 */
 int boundedInput(FILE* stream, char* dest, size_t size);
 
@@ -146,4 +151,7 @@ int getUserChoiceForDir(enum CONFIG type);
 *   size_t return of the new length of meta_arg
 */
 size_t sanitizeMetaString(char* meta_arg);
+
+
+enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data);
 #endif

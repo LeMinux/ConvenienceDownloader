@@ -10,7 +10,6 @@
 
 #include "globals.h"
 
-
 #define CONVERT_FAIL_MSG "\nERROR CNVT: Error in converting from .mp4 to .mp3"
 
 /*

@@ -38,6 +38,29 @@ static enum INPUT validIDPortion(const char* id_segment){
     return is_good;
 }
 
+static enum INPUT validateURL(const char* url, int url_len){
+    char* begin_point = NULL;
+    if((begin_point = strstr(url, YOUTUBE_URL)) == NULL || begin_point - url != 0){
+        ADVISE_USER_FORMAT("'%s' is not a youtube URL. It should look like %sXXXXXXXXXXX", url, YOUTUBE_URL);
+        return INVALID;
+    }
+
+    if(url_len < YT_URL_INPUT_LEN){
+        ADVISE_USER_FORMAT("'%s' Id segement should have 11 characters (?v=XXXXXXXXXXX)", url);
+        return INVALID;
+    }
+
+    char id [YT_ID_SIZE];
+    memcpy(id, url + LEN_BEFORE_ID, YT_ID_LEN);
+    id[YT_ID_LEN] = '\0';
+    if(validIDPortion(id) == INVALID){
+        ADVISE_USER_FORMAT("%s doesn't have a proper youtube ID", url);
+        return INVALID;
+    }
+
+    return VALID;
+}
+
 /*
 *   Takes a depth input and removes white space and commas.
 *   I dunno what crazy person would need a depth of 1,000, but if they need it
@@ -165,8 +188,7 @@ char* takeDirectoryInput(void){
         return NULL;
     }
 
-    //traling slashes can apparenlty mask a link if it points to a dir
-    //due to POSIX
+    //traling slashes can apparenlty mask a link if it points to a dir due to POSIX
     if(input[length - 1] == '/'){
         input[length - 1] = '\0';
     }
@@ -236,7 +258,7 @@ int takeDepthInput(void){
     char depth_input [15] = "";
     long depth = 0;
 
-    printf("What depth do you want for the path? If depth is not a concern enter %s:\n", INF_STRING);
+    (void)printf("What depth do you want for the path? If depth is not a concern enter %s:\n", INF_STRING);
 
     if(boundedInput(stdin, depth_input, sizeof(depth_input)) == 0){
         depth = SKIPPING;
@@ -276,26 +298,11 @@ int takeDepthInput(void){
 enum INPUT getURLFromUser(char* ret_url){
     assert(ret_url != NULL);
 
-    char input [YT_URL_INPUT_SIZE];
     (void)printf("Enter the youtube URL that you want to download -> ");
 
     enum INPUT is_good_input = INVALID;
-    if(boundedInput(stdin, input, sizeof(input)) != YT_URL_INPUT_SIZE - 1){
-        ADVISE_USER_FORMAT("URL is too short! It should look like %sXXXXXXXXXXX", YOUTUBE_URL);
-    }else if(strstr(input, YOUTUBE_URL) == NULL){
-        ADVISE_USER("This is not a youtubeURL!");
-    }else{
-        char id [YT_ID_SIZE];
-        memcpy(id, input + LEN_BEFORE_ID, YT_ID_LEN);
-        id[YT_ID_LEN] = '\0';
-        if(validIDPortion(id) == INVALID){
-            ADVISE_USER("URL doesn't point to a valid youtube video");
-        }else{
-            is_good_input = VALID;
-            memcpy(ret_url, input, YT_URL_INPUT_SIZE - 1);
-            ret_url[YT_URL_INPUT_SIZE - 1] = '\0';
-        }
-    }
+    int len = boundedInput(stdin, ret_url, YT_URL_INPUT_SIZE);
+    is_good_input = validateURL(ret_url, len);
 
     return is_good_input;
 }
@@ -411,4 +418,57 @@ size_t sanitizeMetaString(char* meta_arg){
     }
     meta_arg[inplace_insert] = '\0';
     return inplace_insert;
+}
+
+enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
+    //going to keep this as a purposeful memory leak
+    //this way each line isn't freed and then reallocated
+    static char* file_line = NULL;
+    static size_t longest_size_found = 0;
+
+    ssize_t line_len = getline(&file_line, &longest_size_found, list);
+    if(line_len < 0){
+        if(errno){
+            PRINT_ERROR("Ran out of memory for reading the file");
+            free(file_line);
+            file_line = NULL;
+        }
+        return DONE;
+    }
+
+    if(file_line[line_len - 1] == '\n'){
+        file_line[line_len - 1] = '\0';
+        --line_len;
+    }
+
+    enum FILE_INPUT is_valid = BAD_LINE;
+    if(validateURL(file_line, line_len) == VALID){
+        memcpy(url_buffer, file_line, YT_URL_INPUT_LEN);
+        url_buffer[YT_URL_INPUT_LEN] = '\0';
+        enum OPTIONS {GENRE = 1, ARTIST, ALBUM};
+        enum OPTIONS separator_count = 1;
+        char* separator_pos = strchrnul(file_line, '|');
+        while(*separator_pos != '\0' && separator_count <= ALBUM){
+            char* colon_pos = strchrnul(separator_pos + 1, ':');
+            size_t separation_len = colon_pos - separator_pos;
+            if(separation_len > 1){
+                --separation_len;
+                char* new_meta = NULL;
+                new_meta = malloc(separation_len);
+                memcpy(new_meta, separator_pos + 1, separation_len);
+                new_meta[separation_len] = '\0';
+                switch(separator_count){
+                    case GENRE: data->genre = new_meta; break;
+                    case ARTIST: data->artist = new_meta; break;
+                    case ALBUM: data->album = new_meta; break;
+                }
+            }
+            ++separator_count;
+            separator_pos = colon_pos;
+
+        }
+        is_valid = GOOD_LINE;
+    }
+
+    return is_valid;
 }
