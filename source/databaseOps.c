@@ -1,6 +1,7 @@
 #include "../includes/databaseOps.h"
 
 static sqlite3* single_database_connection = NULL;
+enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
 
 static void beginTransaction(void);
 static void rollbackTransaction(void);
@@ -15,10 +16,18 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
 static enum ERROR addSubDirs(const int root_id, const char* root_path, const size_t root_len, int depth);
 
 static enum FIND findEntry(enum CONFIG config_type, const char* entry);
+static enum FIND rootStillExists(int root_id);
+
+static void printSectionHeader(enum CONFIG config_type);
 static int getNumOfRootRowsForConfig(enum CONFIG config);
 static int translateRootIndexToRow(int user_selection, enum CONFIG config_type);
 
 
+/*
+ * Begins a transaction.
+ * There shouldn't be an error so assertion is done on an error.
+ * If an error occurs it's the fault of the programmer for nesting transactions
+*/
 static void beginTransaction(void){
     assert(single_database_connection != NULL);
 
@@ -29,11 +38,11 @@ static void beginTransaction(void){
     assert(error == NULL);
 }
 
-//these two can not run if the previous sql statement used has not been finalized.
-//If the statement is not finalized, then an error will say there is still
-//a statement running.
-//Also a note for finalizing is that sqlite_prepared will set the prepared statement
-//to NULL if an error occurs.
+/*
+ *  Rolls back the database.
+ *  There shouldn't be an error so assertion is done on an error.
+ *  Rollback can fail if a statement hasn't been finalized for the database
+*/
 static void rollbackTransaction(void){
     assert(single_database_connection != NULL);
 
@@ -44,6 +53,11 @@ static void rollbackTransaction(void){
     assert(error == NULL);
 }
 
+/*
+ *  Commits to the database.
+ *  There shouldn't be an error so assertion is done on an error.
+ *  Commit can fail if a statement hasn't been finalized for the database
+*/
 static void commitTransaction(void){
     assert(single_database_connection != NULL);
 
@@ -54,6 +68,35 @@ static void commitTransaction(void){
     assert(error == NULL);
 }
 
+/*
+*   Helper for printing a header for the user
+*/
+static void printSectionHeader(enum CONFIG config_type){
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
+
+    switch(config_type){
+        case AUDIO_CONFIG: puts("\nAUDIO ROOTS"); break;
+        case VIDEO_CONFIG: puts("\nVIDEO ROOTS"); break;
+        case COVER_CONFIG: puts("\nCOVER ROOTS"); break;
+        case BLACK_CONFIG: puts("\nBLACK LIST");  break;
+        default: assert(200 == 20); break;
+    }
+}
+
+/*
+*   Helper method for the database for for getting the number of root entries.
+*   Outside files don't really need this information as they are selecting
+*   based off path indexes not root indexes.
+*   Manipulation of the roots is localized in this file.
+*
+*   config: filter for what config to count
+*
+*   return:
+*       Number of rows for the config or HAD_ERROR if a database error occured
+*/
 static int getNumOfRootRowsForConfig(enum CONFIG config){
     assert(single_database_connection != NULL);
     assert(config == AUDIO_CONFIG ||
@@ -84,12 +127,25 @@ static int getNumOfRootRowsForConfig(enum CONFIG config){
     }
 
     num_of_rows = sqlite3_column_int(results, 0);
+    assert(num_of_rows >= 0);
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return num_of_rows;
 }
 
+/*
+*   Helper method to translate the user's selection from the menu interface into
+*   a root ID.
+*   Outside files don't really need this information as they are selecting on paths.
+*   Manipulation of the roots is localized in this file.
+*
+*   user_selection: the user's raw selection
+*   config_type: filter for what config to translate. The callee should know about this
+*
+*   return:
+*       The root index from that config or HAD_ERROR if a database error happened.
+*/
 static int translateRootIndexToRow(int user_selection, enum CONFIG config_type){
     assert(user_selection > 0);
     assert(user_selection <= getNumOfRootRowsForConfig(config_type));
@@ -124,18 +180,37 @@ static int translateRootIndexToRow(int user_selection, enum CONFIG config_type){
     }
 
     root_id = sqlite3_column_int(results, 0);
+    assert(root_id > 0);
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return root_id;
 }
 
 
+/*
+*   Adds a a path entry to the database based off the full absolute path.
+*   The absolute path will have a root segment and then the path itself.
+*   The root_len should always be smaller than the path_size and not equal.
+*
+*   root_id: The foreign key root_id to add for information of the parent root
+*   entry: the full absolute path
+*   path_size: the total size of the absolute path including the nul byte
+*   root_len: the length of the root portion of the absolute path
+*
+*   return:
+*       NO_ERROR if succesfully added HAD_ERROR otherwise
+*/
 static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size, size_t root_len){
     assert(single_database_connection != NULL);
-    assert(entry != NULL && entry[0] != '\0');
-    assert(path_size <= PATH_MAX);
+    assert(entry != NULL);
+    assert(entry[0] != '\0');
+    assert(path_size > 0);
+    assert(path_size <= PATH_MAX); //PATH_MAX includes nul byte
+    assert(root_len > 0);
     assert(root_len < PATH_MAX);
+    assert(root_len < path_size);
+    assert(root_id > 0);
 
     const char sql_statement [] = "INSERT INTO Paths (root_id, path_name, path_length) VALUES (?, ?, ?);";
     sqlite3_stmt* results = NULL;
@@ -164,15 +239,32 @@ static enum ERROR addPathEntry(int root_id, const char* entry, size_t path_size,
     }
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return err_ret;
 }
 
+/*
+*   Recursive function that adds path entries based off the root entry.
+*   The original root entry is added with a trailing slash so that the root
+*   itself can be selected without needing to do complex logic. This is useful
+*   for roots that have a depth of zero which refer to itself.
+*   As a note path entries are added like so <built_path>/<the path name/
+*
+*   root_id: The foreign key root_id to add for information of the parent root
+*   built_path: The absolute path that is built
+*   og_root_len: Length of the root portion from the first call
+*   depth: How far to go down.
+*
+*   return:
+*       NO_ERROR if was able to add valid subdirs HAD_ERROR otherwise
+*/
 static enum ERROR addSubDirs(const int root_id, const char* built_path, const size_t og_root_len, int depth){
     assert(root_id > 0);
     assert(og_root_len != 0);
     assert(depth >= 0 || depth == INF_DEPTH);
     assert(built_path != NULL);
+    assert(built_path[0] != '\0');
+
 
     char full_path [PATH_MAX];
     const int path_len = snprintf(full_path, PATH_MAX, "%s/", built_path);
@@ -197,7 +289,7 @@ static enum ERROR addSubDirs(const int root_id, const char* built_path, const si
             continue;
         }
 
-        int entry_len = strlen(dir_entry->d_name);
+        int entry_len = dir_entry->d_reclen;
         if(entry_len + path_len >= PATH_MAX){
             ADVISE_USER_FORMAT("Can't add path '%s%s' because it's too long", full_path, dir_entry->d_name);
             continue;
@@ -214,17 +306,35 @@ static enum ERROR addSubDirs(const int root_id, const char* built_path, const si
             continue;
         }
 
-        if(findEntry(BLACK_CONFIG, full_path) == FOUND){
+        enum FIND find_status = findEntry(BLACK_CONFIG, full_path);
+        if(find_status == FIND_ERROR){
+            error = HAD_ERROR;
+            break;
+        }else if(find_status == FOUND){
             continue;
         }
 
-        error = addSubDirs(root_id, full_path, og_root_len, (depth == INF_DEPTH) ? INF_DEPTH : depth - 1);
+        if(addSubDirs(root_id, full_path, og_root_len, (depth == INF_DEPTH) ? INF_DEPTH : depth - 1) == HAD_ERROR){
+            error = HAD_ERROR;
+            break;
+        }
     }
 
     closedir(dir_stream);
     return error;
 }
 
+/*
+*   Adds a root entry for a config
+*
+*   config: the filter to add to
+*   entry: the absolute path
+*   depth: Maximum on how far the root extends
+*
+*   return:
+*       NO_ERROR if was able to add root entry and all valid subdirs
+*       HAD_ERROR if database or addSubDirs fails
+*/
 static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth){
     assert(single_database_connection != NULL);
     assert(entry != NULL);
@@ -272,18 +382,47 @@ static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth)
     }
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return err_ret;
 }
 
-//If new_depth is SKIPPING then that means to simply update the root
-//It'll basically be like refreshDatabase, but only for one entry instead of all.
+/*
+*   Updates the depth for a root entry. Originally this could update the path,
+*   but it was determined one would update a path if it didn't exist.
+*   So a user should delete then add the new path.
+*   If a user doesn't want to update a depth they can enter skip depth and have
+*   the entry go through the OS searching for subdirs.
+*   This way a user doesn't need to refresh an entire database for one change.
+*   If the depth is != SKIPPING then it will update the depth and research for subdirs.
+*
+*   If the root is found to not exist anymore it will delete it from the db.
+*
+*   id: root id of the row
+*   new_depth: New depth to add SKIPPING can be used for a simple refresh
+*
+*   return:
+*       NO_ERROR if was able to update the root entry and all valid subdirs
+*       HAD_ERROR if database or addSubDirs fails
+*/
+
 static enum ERROR updateRootEntry(int id, int new_depth){
     assert(single_database_connection != NULL);
     assert(id > 0);
     assert(new_depth >= 0 || new_depth == INF_DEPTH || new_depth == SKIPPING);
 
     const char*  sql_update_statement = NULL;
+    enum ERROR func_return = HAD_ERROR;
+
+    enum FIND is_found = rootStillExists(id);
+    if(is_found == NOT_FOUND){
+        ADVISE_USER("This root doesn't exist anymore, so it will be deleted");
+        func_return = deleteRootEntry(id);
+        return func_return;
+    }else if(is_found == FIND_ERROR){
+        PRINT_ERROR("Could not determine if root exists.");
+        return func_return;
+    }
+
     if(new_depth == SKIPPING){
         sql_update_statement = "SELECT root_name, root_length, root_depth FROM Roots WHERE root_id = ?;";
     }else{
@@ -291,10 +430,8 @@ static enum ERROR updateRootEntry(int id, int new_depth){
     }
     sqlite3_stmt* update_results = NULL;
 
-    enum ERROR func_return = HAD_ERROR;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_update_statement, -1, &update_results, NULL);
     if(ret_code != SQLITE_OK){
-        puts(sql_update_statement);
         PRINT_FORMAT_ERROR("Failed to prepare updating statement: %s", sqlite3_errmsg(single_database_connection));
         goto failed;
     }
@@ -332,13 +469,22 @@ static enum ERROR updateRootEntry(int id, int new_depth){
     }
 
     failed:
-    sqlite3_finalize(update_results);
+    (void)sqlite3_finalize(update_results);
     return func_return;
 }
 
-static enum ERROR deleteRootEntry(int index){
+/*
+*   Deletes a root entry and all of its paths
+*
+*   id: root id of the row
+*
+*   return:
+*       NO_ERROR if was able to delete the root entry and all paths
+*       HAD_ERROR if database had an error
+*/
+static enum ERROR deleteRootEntry(int root_id){
     assert(single_database_connection != NULL);
-    assert(index > 0);
+    assert(root_id > 0);
 
     //ON DELETE CASCADE does most of the work
     const char sql_statement [] = "DELETE FROM Roots WHERE root_id = ?;";
@@ -352,7 +498,7 @@ static enum ERROR deleteRootEntry(int index){
         goto failed;
     }
 
-    if(sqlite3_bind_int(results, 1, index) != SQLITE_OK){
+    if(sqlite3_bind_int(results, 1, root_id) != SQLITE_OK){
         PRINT_ERROR("Could not bind parameter for deleting roots");
         goto failed;
     }
@@ -367,10 +513,20 @@ static enum ERROR deleteRootEntry(int index){
     }
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return func_return;
 }
 
+/*
+*   Deletes just the paths from the root entry.
+*   Useful if you want to explicitly do so.
+*
+*   id: root id of the row
+*
+*   return:
+*       NO_ERROR if was able all paths
+*       HAD_ERROR if database had an error
+*/
 static enum ERROR deletePaths(int root_id){
     assert(single_database_connection != NULL);
     assert(root_id > 0);
@@ -399,7 +555,7 @@ static enum ERROR deletePaths(int root_id){
     }
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return func_return;
 }
 
@@ -412,27 +568,30 @@ void addMenu(enum CONFIG config_type){
 
     char* path_input = NULL;
     int depth = 0;
-    int valid_path = INVALID;
-    while(valid_path == INVALID){
+    const int PATH_CHECKS = (config_type == BLACK_CONFIG) ? 1 : 2;
+    while(path_input == NULL){
         path_input = takeDirectoryInput();
+
         if(path_input != NULL){
-            if(findEntry(config_type, path_input) == FOUND){
-                ADVISE_USER("This root path for this config already exists.");
-                free(path_input);
-                path_input = NULL;
-            }else if(findEntry(BLACK_CONFIG, path_input) == FOUND){
-                ADVISE_USER("This root path exists in your blacklist.");
-                free(path_input);
-                path_input = NULL;
-            }else{
-                valid_path = VALID;
+            if(path_input[0] == '\0'){
+                ADVISE_USER("Returning to menu. No changes done");
+                goto finished;
+            }
+
+            for(int i = 1; i <= PATH_CHECKS; ++i){
+                enum CONFIG check_config = (i == 1) ? config_type : BLACK_CONFIG;
+                enum FIND find_status = findEntry(check_config, path_input);
+                if(find_status == FOUND){
+                    ADVISE_USER("This root path already exists in the database");
+                    free(path_input);
+                    path_input = NULL;
+                    break;
+                }else if(find_status == FIND_ERROR){
+                    ADVISE_USER("No changes have been made");
+                    goto finished;
+                }
             }
         }
-    }
-
-    if(path_input[0] == '\0'){
-        ADVISE_USER("Returning to menu. No changes done");
-        goto finished;
     }
 
     if(config_type != BLACK_CONFIG){
@@ -466,7 +625,7 @@ void updateMenu(enum CONFIG config_type){
            config_type == BLACK_CONFIG);
 
     if(config_type == BLACK_CONFIG){
-        ADVISE_USER("Updating is for depths, and blacklist entries don't have this.");
+        ADVISE_USER("Updating is for depths or refreshing paths, and blacklist entries don't have this.");
         return;
     }
 
@@ -530,60 +689,33 @@ void deleteMenu(enum CONFIG config_type){
     }
 }
 
-static void printSectionHeader(enum CONFIG config_type){
-    assert(config_type == AUDIO_CONFIG ||
-           config_type == VIDEO_CONFIG ||
-           config_type == COVER_CONFIG ||
-           config_type == BLACK_CONFIG);
-
-    switch(config_type){
-        case AUDIO_CONFIG:
-            puts("\nAUDIO ROOTS");
-        break;
-
-        case VIDEO_CONFIG:
-            puts("\nVIDEO ROOTS");
-        break;
-
-        case COVER_CONFIG:
-            puts("\nCOVER ROOTS");
-        break;
-
-        case BLACK_CONFIG:
-            puts("\nBLACK LIST");
-        break;
-
-        default: break;
-    }
-}
-
 enum ERROR initDatabase(void){
     uid_t uid;
-    struct passwd* passwd_entry;
+    struct passwd* passwd_entry = NULL;
+    enum ERROR init_status = HAD_ERROR;
 
     uid = getuid();
     passwd_entry = getpwuid(uid);
     if(passwd_entry == NULL){
         PRINT_ERROR("Could not open user's information to get home directory");
-        endpwent();
-        return HAD_ERROR;
+        goto failed;
     }
 
     char home_db [PATH_MAX];
     if(snprintf(home_db, sizeof(home_db), "%s/%s", passwd_entry->pw_dir, CONFIG_DATABASE) >= PATH_MAX){
         PRINT_ERROR("Home directory path is too long to get database. Why is your home path so large though? I mean seriously why is not not just /home/<username>/");
-        endpwent();
-        return HAD_ERROR;
+        goto failed;
     }
-
-    endpwent();
 
     if(sqlite3_open(home_db, &single_database_connection) != SQLITE_OK){
         PRINT_ERROR("Could not open configuration database. Have you done make init?");
-        return HAD_ERROR;
+        goto failed;
     }
 
-    return NO_ERROR;
+    init_status = NO_ERROR;
+
+    failed:
+    return init_status;
 }
 
 
@@ -601,27 +733,27 @@ enum ERROR refreshDatabase(void){
 
     beginTransaction();
     while(error_occured == NO_ERROR && (ret_code = sqlite3_step(results)) == SQLITE_ROW){
-        int id = sqlite3_column_int(results, 0);
-        enum CONFIG type = sqlite3_column_int(results, 1);
         char* root = (char*)sqlite3_column_text(results, 2);
+        int id = sqlite3_column_int(results, 0);
 
-        //It's a lot easier to just delete everything and fill in what is there.
-        //the database can be thought to hold old data and the file system holds
-        //new data.
         DIR* dir_stream = opendir(root);
         if(dir_stream == NULL){
             error_occured = deleteRootEntry(id);
-        }else if(type != BLACK_CONFIG){
-            error_occured = deletePaths(id);
-            if(!error_occured){
-                int root_len = sqlite3_column_int(results, 3);
-                int root_depth = sqlite3_column_int(results, 4);
-                error_occured = addSubDirs(id, root, root_len, root_depth);
+        }else{
+            closedir(dir_stream);
+            enum CONFIG type = sqlite3_column_int(results, 1);
+            if(type != BLACK_CONFIG){
+                error_occured = deletePaths(id);
+                if(error_occured == NO_ERROR){
+                    int root_len = sqlite3_column_int(results, 3);
+                    int root_depth = sqlite3_column_int(results, 4);
+                    error_occured = addSubDirs(id, root, root_len, root_depth);
+                }
             }
         }
     }
 
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     if(error_occured){
         rollbackTransaction();
     }else{
@@ -634,6 +766,7 @@ enum ERROR refreshDatabase(void){
 
 static enum FIND findEntry(enum CONFIG config_type, const char* entry){
     assert(entry != NULL);
+    assert(entry[0] != '\0');
     assert(config_type == AUDIO_CONFIG ||
            config_type == VIDEO_CONFIG ||
            config_type == COVER_CONFIG ||
@@ -667,7 +800,46 @@ static enum FIND findEntry(enum CONFIG config_type, const char* entry){
     }
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
+    return is_found;
+}
+
+static enum FIND rootStillExists(int root_id){
+    assert(root_id > 0);
+
+    const char sql_statement [] = "SELECT root_name FROM Roots WHERE root_id = ?;";
+
+    sqlite3_stmt* results = NULL;
+    int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
+
+    enum FIND is_found = FIND_ERROR;
+    if(ret_code != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to prepare root checking due to %s", sqlite3_errmsg(single_database_connection));
+        goto failed;
+    }
+
+    if(sqlite3_bind_int(results, 1, root_id) != SQLITE_OK){
+        PRINT_FORMAT_ERROR("Failed to bind parameters for finding entry: %s", sqlite3_errmsg(single_database_connection));
+        goto failed;
+    }
+
+    ret_code = sqlite3_step(results);
+    if(ret_code != SQLITE_ROW){
+        PRINT_ERROR("Couldn't get root name despite giving root_id in range");
+        goto failed;
+    }
+
+    char* root_dir = (char*)sqlite3_column_text(results, 0);
+    DIR* test_open = opendir(root_dir);
+
+    is_found = NOT_FOUND;
+    if(test_open != NULL){
+        closedir(test_open);
+        is_found = FOUND;
+    }
+
+    failed:
+    (void)sqlite3_finalize(results);
     return is_found;
 }
 
@@ -675,8 +847,7 @@ int getNumOfPathRowsForConfig(enum CONFIG config){
     assert(single_database_connection != NULL);
     assert(config == AUDIO_CONFIG ||
            config == VIDEO_CONFIG ||
-           config == COVER_CONFIG ||
-           config == BLACK_CONFIG);
+           config == COVER_CONFIG);
 
     //root_id is indexed so the count should be faster
     const char sql_statement [] = "SELECT COUNT(p.path_id) FROM Paths p RIGHT JOIN Roots r WHERE r.root_type = ?;";
@@ -701,9 +872,10 @@ int getNumOfPathRowsForConfig(enum CONFIG config){
     }
 
     num_of_rows = sqlite3_column_int(results, 0);
+    assert(num_of_rows >= 0);
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return num_of_rows;
 }
 
@@ -712,8 +884,7 @@ int translatePathIndexToRow(int user_selection, enum CONFIG config_type){
     assert(user_selection <= getNumOfPathRowsForConfig(config_type));
     assert(config_type == AUDIO_CONFIG ||
            config_type == VIDEO_CONFIG ||
-           config_type == COVER_CONFIG ||
-           config_type == BLACK_CONFIG);
+           config_type == COVER_CONFIG);
 
     const char sql_statement [] =
              "SELECT p.path_id FROM Paths p "
@@ -746,15 +917,17 @@ int translatePathIndexToRow(int user_selection, enum CONFIG config_type){
     }
 
     path_id = sqlite3_column_int(results, 0);
+    assert(path_id > 0);
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return path_id;
 }
 
 int pathIDToPath(int path_id, char* full_path){
     assert(single_database_connection != NULL);
-    assert(path_id >= 0);
+    assert(path_id > 0);
+    assert(full_path != NULL);
 
     const char sql_statement [] =
              "SELECT r.root_name, p.path_name, r.root_length, p.path_length FROM Paths p "
@@ -781,9 +954,10 @@ int pathIDToPath(int path_id, char* full_path){
         goto failed;
     }
 
-    //there is sqlite3 concat, but it seems to also include the nul byte
+    //there is sqlite3 concat, but it includes the nul byte.
     //so something like concat(a\0, b\0) creates a\0b\0 making printf operations at the first \0
     //testing should have caught this, but I guess sqlite3_mprintf does something about the nul byte
+    //while I include it to prevent run away strings.
     char* root_path = (char*)sqlite3_column_text(results, 0);
     char* path_path = (char*)sqlite3_column_text(results, 1);
     int root_len = sqlite3_column_int(results, 2);
@@ -794,12 +968,10 @@ int pathIDToPath(int path_id, char* full_path){
     full_path[written_len] = '\0';
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return written_len;
 }
 
-//Figure out how you want to figure out the index once a user inputs
-//returning the statement might be easier
 enum ERROR listConfigRoots(enum CONFIG config_type){
     assert(single_database_connection != NULL);
     assert(config_type == AUDIO_CONFIG ||
@@ -846,7 +1018,7 @@ enum ERROR listConfigRoots(enum CONFIG config_type){
     err_ret = NO_ERROR;
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return err_ret;
 }
 
@@ -899,7 +1071,7 @@ enum ERROR listConfigRootsWithPaths(enum CONFIG config_type){
     err_ret = NO_ERROR;
 
     failed:
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return err_ret;
 }
 
@@ -927,7 +1099,7 @@ enum ERROR listAllRoots(){
         prev_type = cur_type;
     }
 
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return NO_ERROR;
 }
 
@@ -980,7 +1152,7 @@ enum ERROR listAllRootWithPaths(){
         prev_type = cur_type;
     }
 
-    sqlite3_finalize(results);
+    (void)sqlite3_finalize(results);
     return NO_ERROR;
 }
 

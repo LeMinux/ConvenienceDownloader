@@ -8,7 +8,6 @@
 #include "userInput.h"
 
 enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
-enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
 
 //Home path is found at run time
 #define CONFIG_DATABASE ".config/con-downloader/con-downloader.db"
@@ -17,7 +16,6 @@ enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
 //connections calls within the file have to be done
 //Now yes to make testing easier I could return a sqlite*.
 //However, I want to experiment with file bound variables, and what that means for testing.
-//I also want to see what advantages/disadvantages there are.
 #ifdef TESTING
 
 #define TESTING_CONFIG_DB ":memory:"
@@ -30,12 +28,15 @@ void __testingSetDB(sqlite3* testing_db);
 *   Function to initialize the static member in databaseOps.c, so that
 *   only one connection needs to be worried about in a contained file
 *
-*   return: NO_ERROR if could get database HAD_ERROR otherwise
+*   return: NO_ERROR if could open database HAD_ERROR otherwise
 */
 enum ERROR initDatabase(void);
 
 /*
-*   Function to refresh the database by checking what paths still exists
+*   Function to refresh the database by checking what paths still exists.
+*   Roots that are found to no longer exist are deleted entirely with their paths.
+*   Roots that exist will delete their children and then build them back.
+*   This way it's easier than parsing through the DB and filesystem and cross checking.
 *
 *   return:
 *   NO_ERROR if all entries have been refreshed.
@@ -76,7 +77,7 @@ void deleteMenu(enum CONFIG config_type);
 *
 *   return:
 *   NO_ERROR if could list everything
-*   HAD_ERROR if a database error occured. No data is written to as this just reads
+*   HAD_ERROR if a database error occured
 *
 */
 enum ERROR listAllRoots(void);
@@ -97,7 +98,7 @@ enum ERROR listAllRootWithPaths(void);
 *
 *   return:
 *   NO_ERROR if could list everything
-*   HAD_ERROR if a database error occured. No data is written to as this just reads
+*   HAD_ERROR if a database error occured
 *
 */
 enum ERROR listConfigRoots(enum CONFIG config_type);
