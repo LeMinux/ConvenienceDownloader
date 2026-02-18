@@ -161,6 +161,49 @@ void testUpdateMenuCatchesSkippingIndex(void** state){
     updateMenu(config_type);
 }
 
+void testUpdateMenuCatchesRootIsDeleted(void** state){
+    sqlite3* database = *state;
+    const int index_input = 1;
+    const int depth_input = 3;
+    const char exp_root [] = "I/Dont/Exist/Anymore/Bahahaha";
+    enum CONFIG config_type = COVER_CONFIG;
+
+    addExtraRootEntry(database, config_type, exp_root, 5);
+    setUpStubbedInput(index_input, depth_input);
+
+    updateMenu(config_type);
+    puts("he he he haaa");
+
+    char sql_deleted [] =
+        "SELECT (SELECT COUNT(root_id) FROM Roots WHERE root_id = ?) AS root_count,"
+        "(SELECT COUNT(path_id) FROM Paths WHERE root_id = ?) AS path_count;";
+
+    sqlite3_stmt* total_statement = NULL;
+    int ret_code = sqlite3_prepare_v2(database, sql_deleted, -1, &total_statement, NULL);
+    if(ret_code != SQLITE_OK){
+        fail_msg("Failed to deleteing %s", sqlite3_errmsg(database));
+    }
+
+    if(
+        sqlite3_bind_int(total_statement, 1, 1) != SQLITE_OK ||
+        sqlite3_bind_int(total_statement, 2, 1) != SQLITE_OK
+    ){
+        fail_msg("Failed to bind data due to %s", sqlite3_errmsg(database));
+    }
+
+    ret_code = sqlite3_step(total_statement);
+    if(ret_code == SQLITE_ROW){
+        int total_root_rows = sqlite3_column_int(total_statement, 0);
+        int total_path_rows = sqlite3_column_int(total_statement, 1);
+        assert_int_equal(total_root_rows, 0);
+        assert_int_equal(total_path_rows, 0);
+    }else{
+        sqlite3_finalize(total_statement);
+        fail_msg("Could not determine if updating deleted");
+    }
+    sqlite3_finalize(total_statement);
+}
+
 void testUpdateMenuSkippingDepth(void** state){
     sqlite3* database = *state;
     const int index_input = 1;

@@ -34,6 +34,7 @@ void testUpdateMenuCatchesNoRows(void** state);
 void testUpdateMenuCatchesInvalidDepth(void** state);
 void testUpdateMenuCatchesInvalidIndex(void** state);
 void testUpdateMenuCatchesSkippingIndex(void** state);
+void testUpdateMenuCatchesRootIsDeleted(void** state);
 
 void testUpdateMenuSkippingDepth(void** state);
 

@@ -13,6 +13,7 @@ int main(void){
         cmocka_unit_test_setup_teardown(testUpdateMenuCatchesInvalidIndex, createTestDBWithRootsAndPaths, closeDB),
         cmocka_unit_test_setup_teardown(testUpdateMenuCatchesInvalidDepth, createTestDBWithRootsAndPaths, closeDB),
         cmocka_unit_test_setup_teardown(testUpdateMenuCatchesSkippingIndex, createTestDBWithRootsAndPaths, closeDB),
+        cmocka_unit_test_setup_teardown(testUpdateMenuCatchesRootIsDeleted, createTestDB, closeDB),
 
         cmocka_unit_test_setup_teardown(testUpdateMenuSkippingDepth, createTestDB, closeDB),
         cmocka_unit_test_setup_teardown(testUpdateMenuEnterInfInputOnRootDir, createTestDB, closeDB),
