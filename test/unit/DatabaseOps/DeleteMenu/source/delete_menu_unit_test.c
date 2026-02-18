@@ -56,10 +56,6 @@ void testDeleteEntryCatchesInvalidIndex(void** state){
     deleteMenu(config_type);
 }
 
-
-//uses the asserts to its advantage
-//maybe not the most maintainable, but
-//if implementation were to change it would need to change anyway
 void testDeleteMenuCatchesSkipping(void** state){
     (void) state;
     int index_input = SKIPPING;

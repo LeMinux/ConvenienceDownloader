@@ -172,7 +172,6 @@ void testUpdateMenuCatchesRootIsDeleted(void** state){
     setUpStubbedInput(index_input, depth_input);
 
     updateMenu(config_type);
-    puts("he he he haaa");
 
     char sql_deleted [] =
         "SELECT (SELECT COUNT(root_id) FROM Roots WHERE root_id = ?) AS root_count,"
