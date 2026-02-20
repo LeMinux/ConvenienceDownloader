@@ -17,3 +17,7 @@ When I first downloaded cmocka using apt I had a way out of date 1.x.x version w
 Don't go asking AI for help either.
 Because when I tried it wanted to gaslight me into thinking certain functions never existed in the first place, and if I was using functions that didn't exist I was going against some imaginary guideline.
 So you know, documentation is your friend when it comes to niche stuff.
+
+You'll also notice that I have Makefiles running along down to keep things truly automated.
+That way you can call make at an upper level and cascade down to run everything, but if I need more granular debugging I can to the directory and run make in there.
+They may not be the best Makefiles as I'm not entirely sure if I got the dependencies to reflect changes to compile again properly but it works.
