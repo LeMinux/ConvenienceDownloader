@@ -8,12 +8,13 @@ DATABASE_FILE:=$(CONFIG_DIR)/con-downloader.db
 
 CC:=gcc
 DEP_FLAGS:=-MP -MD
+#-Wconversion is too restrictive, but if you want to use it go ahead :P
 #C_FLAGS:=-Wall -Werror -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings -Wconversion -I$(INC_DIR) $(DEP_FLAGS)
 C_FLAGS:=-Wall -Werror -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings -I$(INC_DIR) $(DEP_FLAGS)
 C_END_FLAGS:=-lsqlite3
 DEBUG_FLAGS:=-g -fsanitize=address -fsanitize-recover=address
 
-C_FILES:=$(filter-out $(CODE_DIR)/test% $(CODE_DIR)/writeArt.c $(CODE_DIR)/musicDriver.c, $(wildcard $(CODE_DIR)/*.c))
+C_FILES:=$(filter-out $(CODE_DIR)/test%, $(wildcard $(CODE_DIR)/*.c))
 #C_FILES :=$(foreach dir, $(CODE_DIR),$(wildcard $(dir)/*.c))
 O_FILES :=$(patsubst $(TEST_CODE_DIR)/%.c, $(OBJECT_DIR)/%.o, $(C_FILES))
 DEP_FILES :=$(patsubst %.c, %.d, $(C_FILES))

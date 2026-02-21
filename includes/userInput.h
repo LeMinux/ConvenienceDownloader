@@ -1,6 +1,8 @@
 #ifndef USERINPUT_H
 #define USERINPUT_H
 
+#include <stdio.h>
+#include <stddef.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -11,8 +13,6 @@
 #include <sys/stat.h>
 
 #include "globals.h"
-#include "fileOps.h"
-#include "databaseOps.h"
 #include "downloading.h"
 
 //Another NASA sin :(
@@ -26,14 +26,15 @@
 #define BLACK_STRING "black"
 #define INF_STRING "INF"
 
-#define MAX_DEPTH 2048
+#define GENRE_LEN 100
+#define ARTIST_LEN 100
+#define ALBUM_LEN 100
+#define FILE_LINE_BUF_SIZE (YT_URL_INPUT_SIZE + GENRE_LEN + ARTIST_LEN + ALBUM_LEN)
 
 #define OPTION_LEN 5
 
 enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
 enum FILE_INPUT {BAD_LINE = -1, DONE, GOOD_LINE};
-
-#include <stdio.h>
 
 /*
 *	gets the URL from the user.
@@ -72,11 +73,15 @@ enum REPEAT askToRepeat(void);
 
 
 /*
-*	method for obtaining user input where size is bounded.
+*	Obtains user input where size is bounded.
 *	Best used for strings on the stack where bounds is known.
 *	Input is read until it encounters a newline or EOF.
 *	If a newline is encountered it's replaced with a nul byte and length is adjusted.
 *	This is meant for c-strings, so a bound of 1 isn't useful as that'll just give you a nul byte.
+*	Since this is a core function for input, as many others call it, if a file stream
+*	error does occur then the program will exit. The expectation should be that
+*	if I get return value from this function then everything is fine rather than
+*	having to check for an error then having to figure out what that error is from others.
 *
 *	stream: file stream which can include stdin
 *	dest: destination string and should not be NULL
@@ -86,7 +91,7 @@ enum REPEAT askToRepeat(void);
 *   length of what was read excluding the nul byte.
 *   The amount returned is able to be used to determine the position of the nul byte.
 */
-int boundedInput(FILE* stream, char* dest, size_t size);
+size_t boundedInput(FILE* stream, char* dest, size_t size);
 
 
 /*
@@ -103,6 +108,11 @@ enum CONFIG getConfigToEdit(const char* input);
 
 /*
 *   Takes input from the user to accept a directory.
+*   The returned pointer is allocated on the heap and should be freed.
+*   This still remains true even on empty input.
+*   A string literal of "" could be returned, but that would mean this
+*   method has two different behaviors with one potentially leading to
+*   modifying a string literal by casting away the const
 *
 *   return: NULL on error or a malloced absolute path
 */
@@ -153,5 +163,22 @@ int getUserChoiceForDir(enum CONFIG type);
 size_t sanitizeMetaString(char* meta_arg);
 
 
+/*
+*   Reads a line from the user's given file from the --file option and parses meta information.
+*   Meta information that is found is added to the passed by reference MetaData_t parameter.
+*   The return value should be use to indicate if the url in url_buffer is valid.
+*   Don't use the url_buffer if BAD_LINE is returned.
+*
+*   list: File stream to read from
+*   url_buffer: the url_buffer is placed in here weither good or bad
+*   data: Meta information will be placed into here for the callee to use
+*
+*   return:
+*       GOOD_LINE if the line is a usable url
+*       BAD_LINE if the line isn't usable
+*       DONE if there is no more content to read
+*
+*/
 enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data);
+
 #endif

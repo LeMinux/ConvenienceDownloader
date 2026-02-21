@@ -1,4 +1,5 @@
 #include "../includes/databaseOps.h"
+#include "../includes/userInput.h"
 
 static sqlite3* single_database_connection = NULL;
 enum FIND {FIND_ERROR = -1, NOT_FOUND, FOUND};
@@ -268,9 +269,15 @@ static enum ERROR addSubDirs(const int root_id, const char* built_path, const si
 
     char full_path [PATH_MAX];
     const int path_len = snprintf(full_path, PATH_MAX, "%s/", built_path);
+
+    if(path_len < 0){
+        PRINT_ERROR("Error in trying to append /");
+        return HAD_ERROR;
+    }
+
     if(path_len >= PATH_MAX){
         ADVISE_USER_FORMAT("Can't add path '%s/' because it's too long", full_path);
-        return HAD_ERROR;
+        return NO_ERROR;
     }
 
     if(addPathEntry(root_id, full_path, path_len + 1, og_root_len) == HAD_ERROR){
@@ -355,7 +362,7 @@ static enum ERROR addRootEntry(enum CONFIG config, const char* entry, int depth)
         goto failed;
     }
 
-    int entry_size = strlen(entry) + 1;
+    size_t entry_size = strlen(entry) + 1;
     if(
         sqlite3_bind_int(results, 1, config) != SQLITE_OK ||
         sqlite3_bind_text(results, 2, entry, entry_size, NULL) != SQLITE_OK ||

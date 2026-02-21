@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "globals.h"
 #include "testGlobals.h"
@@ -149,6 +150,11 @@ int closeDB(void** state);
 * Helper function to add an extra root entry into the database.
 * This may be useful for testing duplication handling, finding, or other stuff.
 * This only adds a root entry. There are no paths added.
+*
+* test_db: database connection that the test has
+* config: filter to use
+* extra_name: the name to be added. This function doesn't validate if it's an absolute or relative path.
+* depth: test depth
 */
 void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_name, int depth);
 
@@ -156,6 +162,10 @@ void addExtraRootEntry(sqlite3* test_db, enum CONFIG config, const char* extra_n
 * Helper function to add an extra path entry into the database.
 * Useful if there needs to be consistency in selecting a path, or
 * if you don't need so many paths to test.
+*
+* test_db: database connection the test has
+* root_id: root id to link to
+* extra_path: The path segment that should be added
 */
 void addExtraPathEntry(sqlite3* test_db, int root_id, const char* extra_path);
 

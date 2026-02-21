@@ -1,4 +1,6 @@
 #include "../includes/userInput.h"
+#include "../includes/fileOps.h"
+#include "../includes/databaseOps.h"
 
 /*
 *	 helper method to flush the stream to the next line.
@@ -38,7 +40,7 @@ static enum INPUT validIDPortion(const char* id_segment){
     return is_good;
 }
 
-static enum INPUT validateURL(const char* url, int url_len){
+static enum INPUT validateURL(const char* url, size_t url_len){
     char* begin_point = NULL;
     if((begin_point = strstr(url, YOUTUBE_URL)) == NULL || begin_point - url != 0){
         ADVISE_USER_FORMAT("'%s' is not a youtube URL. It should look like %sXXXXXXXXXXX", url, YOUTUBE_URL);
@@ -121,7 +123,7 @@ static void printQuestion(enum CONFIG type){
 }
 
 /*
- * The condional compiler flag is here since --wrap won't work on internal linkage
+ * The condional compiler flag is here since --wrap won't work on internal linkage.
  * --wrap is still needed, but now a separate file isn't needed for those
  *  functions that depend on boundedInput.
  *  Unlike the other wrapped functions this shouldn't need to call the original
@@ -129,28 +131,32 @@ static void printQuestion(enum CONFIG type){
  *  Additionally --wrap should still selectively choose what to wrap.
  */
 #ifndef PREVENT_INTERNAL_LINKAGE
-int boundedInput(FILE* stream, char* dest, size_t dest_size){
+size_t boundedInput(FILE* stream, char* dest, size_t dest_size){
     assert(stream != NULL);
     assert(dest != NULL);
     assert(dest_size > 0);
 
     //fgets is normally the better choice for taking user input,
-    //However, On input where it's just EOF length can't be determined if previous input wasn't overwritten
+    //However, On input where it's just EOF, length it can't be determined if previous input wasn't overwritten.
+    //As a result it'll return the length of what was there before
 
     size_t amount_written = 0;
     int data = '\0';
-    int found_end = 0;
-    while(amount_written < dest_size - 1){
-        data = getc(stream);
-        if(data == '\n' || data == EOF){
-            if(ferror(stream)){
-                PRINT_ERROR("Encountered an error reading stream for input");
-                return HAD_ERROR;
-            }
-            found_end = 1;
+    enum IS_END {NO = 0, YES};
+    enum IS_END found_end = NO;
+    while(!found_end && amount_written < dest_size - 1){
+        data = fgetc(stream);
+        switch(data){
+            case '\n': found_end = YES; break;
+            case EOF:
+                if(ferror(stream)){
+                    PRINT_ERROR("Encountered an error reading stream for input!\n Input is a core function of the program thus this is unrecoverable and the program will exit.");
+                    exit(EXIT_FAILURE);
+                }
+                found_end = YES;
             break;
+            default: dest[amount_written++] = data; break;
         }
-        dest[amount_written++] = data;
     }
 
     if(!found_end) clearLine(stream);
@@ -159,7 +165,7 @@ int boundedInput(FILE* stream, char* dest, size_t dest_size){
     return amount_written;
 }
 #else
-int boundedInput(FILE* stream, char* dest, size_t dest_size){
+size_t boundedInput(FILE* stream, char* dest, size_t dest_size){
     return __wrap_boundedInput(stream, dest, dest_size);
 }
 #endif
@@ -168,16 +174,12 @@ char* takeDirectoryInput(void){
     //realpath uses PATH_MAX
     char input [PATH_MAX];
     char* absolute_path = calloc(sizeof(char), PATH_MAX);
-    size_t length = 0;
+    int length = 0;
 
     puts("Enter the path you want:");
     length = boundedInput(stdin, input, sizeof(input));
 
     if(length == 0){
-        //a string literal of "" could be returned, but that would mean this
-        //method has two different behaviors with one potentially leading to
-        //modifying a string literal by casting away the const
-        //for consistency a heap allocated string is returned that'll need to be freed
         return absolute_path;
     }
 
@@ -211,7 +213,7 @@ char* takeDirectoryInput(void){
 }
 
 int takeIndexInput(int max_index){
-    puts("Enter the index you want to change.");
+    puts("Enter the index you want. If you want to skip, only press enter:");
 
     char index_input [15] = "";
 
@@ -301,7 +303,7 @@ enum INPUT getURLFromUser(char* ret_url){
     (void)printf("Enter the youtube URL that you want to download -> ");
 
     enum INPUT is_good_input = INVALID;
-    int len = boundedInput(stdin, ret_url, YT_URL_INPUT_SIZE);
+    size_t len = boundedInput(stdin, ret_url, YT_URL_INPUT_SIZE);
     is_good_input = validateURL(ret_url, len);
 
     return is_good_input;
@@ -323,14 +325,10 @@ enum REPEAT askToRepeat(void){
             }
         break;
         case 2:
-            if(strcasecmp(input_buf, "no") == 0){
-                wants_to = NO_REPEAT;
-            }
+            if(strcasecmp(input_buf, "no") == 0) wants_to = NO_REPEAT;
         break;
         case 3:
-            if(strcasecmp(input_buf, "yes") == 0){
-                wants_to = REPEAT;
-            }
+            if(strcasecmp(input_buf, "yes") == 0) wants_to = REPEAT;
         break;
         default: break;
     }
@@ -374,6 +372,12 @@ int getUserChoiceForDir(enum CONFIG type){
 
     int num_of_rows = getNumOfPathRowsForConfig(type);
     if(num_of_rows == 0){
+        switch(type){
+            case AUDIO_CONFIG: ADVISE_USER("Nothing to be selected for AUDIOs"); break;
+            case VIDEO_CONFIG: ADVISE_USER("Nothing to be selected for VIDEOs"); break;
+            case COVER_CONFIG: ADVISE_USER("Nothing to be selected for COVERs"); break;
+            default: assert(300 != 300); break;
+        }
         return SKIPPING;
     }
 
@@ -408,7 +412,7 @@ size_t sanitizeMetaString(char* meta_arg){
         "0123456789"
         " ?!@#$%^&*_-~+=.<>|";
 
-    int inplace_insert = 0;
+    size_t inplace_insert = 0;
     for(int i = 0; meta_arg[i] != '\0'; ++i){
         if(strchr(white_list, meta_arg[i]) != NULL){
             meta_arg[inplace_insert++] = meta_arg[i];
@@ -420,52 +424,57 @@ size_t sanitizeMetaString(char* meta_arg){
     return inplace_insert;
 }
 
+//I am aware that if a metatag being added contains a colon then it'll stop
+//at the colon since I have no form of escaping it.
 enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
     //going to keep this as a purposeful memory leak
-    //this way each line isn't freed and then reallocated
-    static char* file_line = NULL;
-    static size_t longest_size_found = 0;
+    //this way each line isn't freed and then reallocated wasting time
 
-    ssize_t line_len = getline(&file_line, &longest_size_found, list);
-    if(line_len < 0){
-        if(errno){
-            PRINT_ERROR("Ran out of memory for reading the file");
-            free(file_line);
-            file_line = NULL;
+    //static char* file_line = NULL;
+    //static size_t longest_size_found = 0;
+    //ssize_t line_len = getline(&file_line, &longest_size_found, list);
+
+    char file_line [FILE_LINE_BUF_SIZE];
+    size_t line_len = boundedInput(list, file_line, FILE_LINE_BUF_SIZE);
+    if(line_len == 0){
+        if(feof(list) != 0){
+            return DONE;
+        }else{
+            return BAD_LINE;
         }
-        return DONE;
-    }
-
-    if(file_line[line_len - 1] == '\n'){
-        file_line[line_len - 1] = '\0';
-        --line_len;
     }
 
     enum FILE_INPUT is_valid = BAD_LINE;
     if(validateURL(file_line, line_len) == VALID){
         memcpy(url_buffer, file_line, YT_URL_INPUT_LEN);
         url_buffer[YT_URL_INPUT_LEN] = '\0';
-        enum OPTIONS {GENRE = 1, ARTIST, ALBUM};
-        enum OPTIONS separator_count = 1;
+        enum OPTIONS {GENRE = 0, ARTIST, ALBUM};
+        enum OPTIONS separator_count = GENRE;
+        const size_t meta_sizes [] = {GENRE_LEN + 1, ARTIST_LEN + 1, ALBUM_LEN + 1};
         char* separator_pos = strchrnul(file_line, '|');
+
         while(*separator_pos != '\0' && separator_count <= ALBUM){
             char* colon_pos = strchrnul(separator_pos + 1, ':');
-            size_t separation_len = colon_pos - separator_pos;
-            if(separation_len > 1){
-                --separation_len;
+            size_t separation_len = colon_pos - separator_pos - 1;
+            if(separation_len > 0){
+                size_t malloc_size = separation_len + 1;
+                if(meta_sizes[separator_count] < separation_len){
+                    malloc_size = meta_sizes[separator_count];
+                }
                 char* new_meta = NULL;
-                new_meta = malloc(separation_len);
-                memcpy(new_meta, separator_pos + 1, separation_len);
-                new_meta[separation_len] = '\0';
+                new_meta = malloc(malloc_size);
+                memcpy(new_meta, separator_pos + 1, malloc_size - 1);
+                new_meta[malloc_size - 1] = '\0';
                 switch(separator_count){
                     case GENRE: data->genre = new_meta; break;
                     case ARTIST: data->artist = new_meta; break;
                     case ALBUM: data->album = new_meta; break;
                 }
             }
+
+            assert(separator_count <= ALBUM);
             ++separator_count;
             separator_pos = colon_pos;
-
         }
         is_valid = GOOD_LINE;
     }

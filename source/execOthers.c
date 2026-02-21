@@ -1,6 +1,6 @@
 #include "../includes/execOthers.h"
 
-enum ERROR execProgram(const char* bin_path, char* const* command_args){
+enum ERROR execProgram(const char* bin_path, char* const command_args []){
     assert(bin_path != NULL);
     assert(command_args != NULL);
 

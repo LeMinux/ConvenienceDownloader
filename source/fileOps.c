@@ -2,6 +2,7 @@
 
 enum INPUT checkDirPath(const char* dir_path){
     assert(dir_path != NULL);
+    assert(dir_path[0] != '\0');
 
     struct stat file_stat = {0};
     if(lstat(dir_path, &file_stat) < 0){
@@ -37,8 +38,10 @@ enum INPUT checkDirPath(const char* dir_path){
 }
 
 FILE* openFile(const char* file_path, const char* mode){
-    assert(file_path != NULL && file_path[0] != '\0');
-    assert(mode != NULL && mode[0] != '\0');
+    assert(file_path != NULL);
+    assert(mode != NULL);
+    assert(file_path[0] != '\0');
+    assert(mode[0] != '\0');
 
     FILE* open_file = fopen(file_path, mode);
     if(open_file == NULL){

@@ -1,11 +1,12 @@
 #ifndef DATABASEOPS_H
 #define DATABASEOPS_H
 
+#include <limits.h>
+#include <unistd.h>
 #include <sqlite3.h>
 #include <pwd.h>
 
 #include "globals.h"
-#include "userInput.h"
 
 enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
 

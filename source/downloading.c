@@ -1,23 +1,27 @@
 #include "../includes/downloading.h"
+#include "../includes/databaseOps.h"
+#include "../includes/execOthers.h"
+#include "../includes/writeArt.h"
 
 /*
- due to how yt-dlp merges it's bit difficult to get exactly the behavior I would like.
+ due to how yt-dlp merges into a video it's bit difficult to get exactly the behavior I would like.
  Ideally I would like to have one command where I craft arguments to download
  video, audio, and covers and send them to separate locations.
  Sadly, -o applies to all output and I potentially have completely different locations to send to.
- The file types as specified in the man page aren't file extension types but rather certain kinds of metadata types.
+ The output template does have an optional argument for the file type, but these are rather certain metadata types.
  Of which only the thumbnail type could be used in a combined command.
  It is possible to download audio and video in one command, but the solutions either download twice
  anyway, uses -k to purposely leave itermediate files, or uses the exec option which I find dangerous.
 
  I also would like to avoid needing to search the current directory for the file by the yt id and extension
- as that would just slow things down and add extra complexity
+ like I did in the last implementation. There I kinda forced myself to because I didn't canonize
+ relative paths.
  With the search current directory strat it would be much slower in a heavily populated directory.
  Ideally I want this program to be ran anywhere as that's why the database holds absolute paths.
  Luckily yt-dlp does have a way to return the filepath if needed.
 
  There is also the issue of maintanability of needing to change options for preference in the future.
- Having one giant command would make it difficult to change one specific metadata if it applies to all.
+ Having one giant command would make it difficult to change one specific attribute if there was a global command for all.
 
  When it comes to the metadata I am aware that --parse-metadata is an option, but it's behavior is heavily
  tied to how yt-dlp parses OUTPUT TEMPLATES.
@@ -46,7 +50,7 @@
 
  You may then be surprised as to why I am choosing to go this route anyway as it is a hacky solution.
  The alternative would be to send the file into a temporary place, use ffmpeg to add metadata and send to the location,
- and the remove the temp file.
+ and the remove the temp file. This is what I had to do for adding a given cover art.
  This would involve three separate tasks while I could let yt-dlp handle that for me.
  yt-dlp is using the same -metadata flag for ffmpeg anyway I just need to set it correctly.
 */
@@ -60,7 +64,7 @@ static const char ADD_COVER [] = "--embed-thumbnail";
 static const char GENRE_FORMAT [] =  "%%(zqjjxvly|%s)s:%%(meta_genre)s";
 static const char ARTIST_FORMAT [] = "%%(zqqjxvy|%s)s:%%(meta_artist)s";
 static const char ALBUM_FORMAT [] =  "%%(zqjjxvvy|%s)s:%%(meta_album)s";
-static const int META_SIZE = sizeof(GENRE_FORMAT) - 2;
+static const int META_SIZE = sizeof(GENRE_FORMAT) - 2; //-2 because of %%
 
 static const char PRINT_TO_FILE [] = "--print-to-file";
 static const char WHAT_TO_PRINT [] = "after_move:filepath";
@@ -68,7 +72,6 @@ static const char FILE_NAME [] = "/tmp/add_cover_to.txt";
 
 static enum ERROR createOutputTemplate(int path_id, char* output_template);
 static char* createMetaArg(const char* data, enum META_TYPE type);
-static char* createPostArg(const char* cover_path);
 
 static enum ERROR createOutputTemplate(int path_id, char* output_template){
     assert(output_template != NULL);
@@ -92,15 +95,9 @@ static char* createMetaArg(const char* data, enum META_TYPE type){
     if(argument == NULL) return NULL;
     int len = 0;
     switch(type){
-        case GENRE:
-            len = snprintf(argument, size, GENRE_FORMAT, data);
-        break;
-        case ARTIST:
-            len = snprintf(argument, size, ARTIST_FORMAT, data);
-        break;
-        case ALBUM:
-            len = snprintf(argument, size, ALBUM_FORMAT, data);
-        break;
+        case GENRE:  len = snprintf(argument, size, GENRE_FORMAT, data);  break;
+        case ARTIST: len = snprintf(argument, size, ARTIST_FORMAT, data); break;
+        case ALBUM:  len = snprintf(argument, size, ALBUM_FORMAT, data);  break;
     }
 
     if(len < 0 || len >= size){
@@ -111,7 +108,6 @@ static char* createMetaArg(const char* data, enum META_TYPE type){
     return argument;
 }
 
-//want to add album name, artist name, genre, id, perhaps yt url
 enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     assert(yt_url != NULL);
     assert(v_id != SKIPPING || v_id == INVALID);
@@ -127,7 +123,7 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     //the command line arg needs to end with a NULL anyway, so just like how a nul byte
     //would stop strlen early this will do the same.
     //Do need to figure out how to get rid of all those warnings though
-    char* command_arguments [] ={
+    const char* command_arguments [] ={
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
@@ -170,7 +166,7 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
 
     command_arguments[append_index] = yt_url;
 
-    error_status = execProgram("/usr/bin/yt-dlp", command_arguments);
+    error_status = execProgram("/usr/bin/yt-dlp", (char* const*)command_arguments);
 
     failed:
     free(genre_meta);
@@ -197,7 +193,7 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     //the command line arg needs to end with a NULL anyway, so just like how a nul byte
     //would stop strlen early this will do the same.
     //Do need to figure out how to get rid of all those warnings though
-    char* command_arguments [] ={
+    const char* command_arguments [] ={
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
@@ -257,7 +253,7 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     }
 
     command_arguments[append_index] = yt_url;
-    error_status = execProgram("/usr/bin/yt-dlp", command_arguments);
+    error_status = execProgram("/usr/bin/yt-dlp", (char* const*)command_arguments);
 
     if(wants_cover == GIVEN_ART && error_status == NO_ERROR){
         assert(cover_path != NULL);
@@ -281,7 +277,7 @@ enum ERROR downloadCover(const char* yt_url, int c_id){
         return HAD_ERROR;
     }
 
-    char* command_arguments [] ={
+     const char* command_arguments [] ={
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
@@ -293,6 +289,6 @@ enum ERROR downloadCover(const char* yt_url, int c_id){
         NULL
     };
 
-    execProgram("/usr/bin/yt-dlp", command_arguments);
+    execProgram("/usr/bin/yt-dlp", (char* const*)command_arguments);
     return NO_ERROR;
 }

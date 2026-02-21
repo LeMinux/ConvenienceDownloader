@@ -5,13 +5,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define VERSION "2026 1.28"
+#define VERSION "2026 2.19"
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
 #define CYAN    "\033[36m"
 
+#define MAX_DEPTH 2048
 #define INF_DEPTH -5
 
 #define YOUTUBE_URL "https://www.youtube.com/watch?v="
@@ -32,6 +33,7 @@ enum COVERS {THUMB_ART = 0, GIVEN_ART, NO_ART};
 
 //If you're a NASA programmer seeing this sorry for the variadic macro.
 //Although you probably don't like the usage of dynamic memory after initalization from the printf family anyway lol
+//Or really the code because I have a few things that go against the 10 rules.
 #define PRINT_FORMAT_ERROR(format_, ...) ((void)fprintf(stderr, RED format_ RESET"\n", __VA_ARGS__))
 
 #define ADVISE_USER(message_) ((void)puts(CYAN message_ RESET))

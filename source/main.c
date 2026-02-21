@@ -1,15 +1,22 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "../includes/fileOps.h"
 #include "../includes/databaseOps.h"
 #include "../includes/userInput.h"
+#include "../includes/downloading.h"
+
+enum DOWNLOAD_COVERS {NO = 0, YES};
+
+static void editMenu(enum CONFIG config);
+static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path);
+static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path);
 
 static void editMenu(enum CONFIG config){
-    int editing = 1;
-    char buffer [5] = ""; //buffer of 5 just to see if length is greater than 1
+    enum EDITING {NOT = 0, IS};
+    enum EDITING editing = IS;
+    char buffer [5] = "";
     while(editing){
         enum ERROR err = NO_ERROR;
         err = listConfigRoots(config);
@@ -21,17 +28,75 @@ static void editMenu(enum CONFIG config){
 
         printf("What action do you want to take?\n%c) Add\n%c) Update\n%c) Delete\n%c) Exit\nEnter the number: ", ADD_OPT, UPT_OPT, DEL_OPT, EXT_OPT);
         if(boundedInput(stdin, buffer, 5) != 1){
-            puts("Input only needs to be a single digit");
+            ADVISE_USER("Enter a single digit");
             continue;
         }
+
         switch(buffer[0]){
             case ADD_OPT: addMenu(config); break;
             case UPT_OPT: updateMenu(config); break;
             case DEL_OPT: deleteMenu(config); break;
-            case EXT_OPT: editing = 0; break;
+            case EXT_OPT: editing = NOT; break;
             default: ADVISE_USER("Enter an available number"); break;
         }
     }
+}
+
+static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path){
+    do{
+        int video_path_id = getUserChoiceForDir(VIDEO_CONFIG);
+        int audio_path_id = getUserChoiceForDir(AUDIO_CONFIG);
+        int cover_path_id = SKIPPING;
+        if(wants_cover) cover_path_id = getUserChoiceForDir(COVER_CONFIG);
+
+        if(video_path_id != SKIPPING || audio_path_id != SKIPPING || cover_path_id != SKIPPING){
+            char yt_url [YT_URL_INPUT_SIZE] = "";
+            while(getURLFromUser(yt_url) == INVALID);
+            if(video_path_id != SKIPPING) (void)downloadVideo(yt_url, video_path_id, meta_info);
+            if(audio_path_id != SKIPPING) (void)downloadAudio(yt_url, audio_path_id, meta_info, cover_mode, cover_path);
+            if(cover_path_id != SKIPPING) (void)downloadCover(yt_url, cover_path_id);
+        }
+    }while(askToRepeat());
+}
+
+static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path){
+    int video_path_id = getUserChoiceForDir(VIDEO_CONFIG);
+    int audio_path_id = getUserChoiceForDir(AUDIO_CONFIG);
+    int cover_path_id = SKIPPING;
+
+    if(wants_cover) cover_path_id = getUserChoiceForDir(COVER_CONFIG);
+
+    if(video_path_id == SKIPPING && audio_path_id == SKIPPING && cover_path_id == SKIPPING){
+        ADVISE_USER("Fine download nothing then >:(");
+        return;
+    }
+
+    MetaData_t per_line_meta = {NULL};
+
+    char url_buffer [YT_URL_INPUT_SIZE] = "";
+    enum FILE_INPUT line_details = DONE;
+    while((line_details = readFileLine(list, url_buffer, &per_line_meta)) != DONE){
+        if(line_details == GOOD_LINE){
+            MetaData_t meta_data = {
+                .genre=overall_meta_info->genre,
+                .artist=overall_meta_info->artist,
+                .album=overall_meta_info->album
+            };
+
+            if(per_line_meta.genre != NULL) meta_data.genre = per_line_meta.genre;
+            if(per_line_meta.artist != NULL) meta_data.artist = per_line_meta.artist;
+            if(per_line_meta.album != NULL) meta_data.album = per_line_meta.album;
+
+            if(video_path_id != SKIPPING) (void)downloadVideo(url_buffer, video_path_id, &meta_data);
+            if(audio_path_id != SKIPPING) (void)downloadAudio(url_buffer, audio_path_id, &meta_data, cover_mode, cover_path);
+            if(cover_path_id != SKIPPING) (void)downloadCover(url_buffer, cover_path_id);
+
+            free((char*)per_line_meta.genre);
+            free((char*)per_line_meta.artist);
+            free((char*)per_line_meta.album);
+        }
+    }
+    ADVISE_USER("Finished parsing the file");
 }
 
 int main(int argc, char** argv){
@@ -39,29 +104,35 @@ int main(int argc, char** argv){
         exit(EXIT_FAILURE);
     }
 
-    int keepArt = 0;
-    enum {THUMB_ART, GIVEN_ART, NO_ART} cover_mode = THUMB_ART;
     FILE* cover_art = NULL;
     FILE* url_list = NULL;
-
-    unsigned int new_audio_amount = 0;
-    unsigned int new_video_amount = 0;
 
     int opt = 0;
     int parsing = 1;
     int edit_choice  = -1;
+    char* genre = NULL;
+    char* artist = NULL;
+    char* album = NULL;
+    char* cover_path = NULL;
+    enum COVERS cover_mode = THUMB_ART;
+    enum DOWNLOAD_COVERS download_covers = NO;
     while(parsing){
         int option_index = 0;
-        static const char short_options [] = "dhlrvc:e:f:";
+        static const char short_options [] = "dhklnrva:b:c:e:f:g:";
         static const struct option long_options [] = {
-            {"deep-list", no_argument, NULL, 'd'},
-            {"help", no_argument, NULL, 'h'},
-            {"list", no_argument, NULL, 'l'},
-            {"refresh", no_argument, NULL, 'r'},
-            {"version", no_argument, NULL, 'v'},
+            {"artist", required_argument, NULL, 'a'},
+            {"album", required_argument, NULL, 'b'},
             {"cover", required_argument, NULL, 'c'},
+            {"deep-list", no_argument, NULL, 'd'},
             {"edit", required_argument, NULL, 'e'},
             {"file", required_argument, NULL, 'f'},
+            {"genre", required_argument, NULL, 'g'},
+            {"help", no_argument, NULL, 'h'},
+            {"keep-covers", no_argument, NULL, 'k'},
+            {"list", no_argument, NULL, 'l'},
+            {"no-covers", no_argument, NULL, 'n'},
+            {"refresh", no_argument, NULL, 'r'},
+            {"version", no_argument, NULL, 'v'},
             {0, 0, 0, 0} //last struct must be zeros
         };
 
@@ -73,51 +144,104 @@ int main(int argc, char** argv){
         }
 
         switch(opt){
-            case 'l':
-                if(listAllRoots() == HAD_ERROR){
-                    PRINT_ERROR("Sorry couldn't list root paths :(");
+            case 'a':
+                artist = optarg;
+                (void)sanitizeMetaString(artist);
+            break;
+
+            case 'b':
+                album = optarg;
+                (void)sanitizeMetaString(album);
+            break;
+
+            case 'c':
+                if(cover_mode != THUMB_ART){
+                    PRINT_ERROR("Can not specify both cover modes as they conflict");
+                    exit(EXIT_FAILURE);
                 }
+                cover_art = openFile(optarg, "r");
+                if(cover_art == NULL){
+                    PRINT_ERROR("Couldn't open provided cover file\n");
+                    exit(EXIT_FAILURE);
+                }
+                //can be a TOCTOU, but this is handed off to another program
+                //so not like I can use the fd anyway.
+                fclose(cover_art);
+                cover_path = optarg;
+                cover_mode = GIVEN_ART;
             break;
 
             case 'd':
                 if(listAllRootWithPaths() == HAD_ERROR){
                     PRINT_ERROR("Sorry couldn't list all paths :(");
+                    exit(EXIT_FAILURE);
                 }
+                exit(EXIT_SUCCESS);
+            break;
+
+            case 'e':
+                edit_choice = getConfigToEdit(optarg);
+                if(edit_choice != NOT_A_CONFIG){
+                    editMenu(edit_choice);
+                }else{
+                    PRINT_ERROR("Configs to edit are audio (a), black (b), video (v), and cover (c)");
+                    exit(EXIT_FAILURE);
+                }
+                exit(EXIT_SUCCESS);
             break;
 
             case 'f':
                 url_list = openFile(optarg, "r");
                 if(url_list == NULL){
-                    PRINT_ERROR("Couldn't open URL file\n");
+                    PRINT_ERROR("Couldn't open provided URL file\n");
                     exit(EXIT_FAILURE);
                 }
             break;
 
-            case 'c':
-                if(strcmp(optarg, "NO-ART")){
-                    cover_mode = NO_ART;
-                }else{
-                    cover_art = openFile(optarg, "r");
-                    if(cover_art == NULL){
-                        PRINT_ERROR("Couldn't open cover file\n");
-                        exit(EXIT_FAILURE);
-                    }
-                    cover_mode = GIVEN_ART;
-                }
+            case 'g':
+                genre = optarg;
+                (void)sanitizeMetaString(genre);
             break;
 
-            case 'e':
-                edit_choice = getConfigToEdit(optarg);
-                if(edit_choice != -1){
-                    editMenu(edit_choice);
-                }else{
-                    PRINT_ERROR("Configs to edit are audio (a), video (v), and cover (c)");
-                    exit(EXIT_FAILURE);
-
-                }
-                puts("Leaving editing now");
+            case 'h':
+                printf("Usage: %s [OPTIONS]\n\nOPTIONS:\n"
+                    "-a, --artist GENRE\t\t\tSpecify the artist to add as meta data for all downloaded content\n"
+                    "-b, --album ALBUM\t\t\tSpecify the album to add as meta data for all downloaded content\n"
+                    "-c, --cover COVER\t\tSpecify an image file to add as a cover art to all downloaded content\n"
+                    "-d, --deep-list\t\t\tPrint all root paths and their children paths\n"
+                    "-e, --edit [audio (a),video (v),cover (c)]\t\t\tEnter the short or long form to edit your root paths for the specified config.\n"
+                    "-f, --file FILE\t\t\tSpecify a file with youtube URLs separated by newlines. Modifiers can be added at the end of each line in the format of |GENRE:ARTIST:ALBUM\n"
+                    "-g, --genre GENRE\t\t\tSpecify the genre to add as meta data to all downloaded content\n"
+                    "-h, --help\t\t\tPrint this help menu :D\n"
+                    "-k, --keep-covers\t\t\t Enable the prompt asking where to send covers\n"
+                    "-l, --list\t\t\tPrint just root paths and their depth\n"
+                    "-n, --no-cover\t\t\t Do not add the cover art on the youtube page for all downloaded content\n"
+                    "-r, --refresh\t\t\tTell the database to scan through its root paths to remove or add children paths\n"
+                    "-v, --version\t\t\tPrint the current version\n"
+                    ,argv[0]
+                );
                 exit(EXIT_SUCCESS);
+            break;
 
+            case 'k':
+                download_covers = YES;
+            break;
+
+            case 'l':
+                if(listAllRoots() == HAD_ERROR){
+                    PRINT_ERROR("Sorry couldn't list root paths :(");
+                    exit(EXIT_FAILURE);
+                }
+                exit(EXIT_SUCCESS);
+            break;
+
+            case 'n':
+                if(cover_mode != THUMB_ART){
+                    PRINT_ERROR("Can not specify both cover modes as they conflict");
+                    exit(EXIT_FAILURE);
+                }
+
+                cover_mode = NO_ART;
             break;
 
             case 'r':
@@ -126,23 +250,6 @@ int main(int argc, char** argv){
                 }else{
                     ADVISE_USER("Database refreshed!");
                 }
-            break;
-
-            case 'h':
-                printf("Usage: %s [OPTIONS]\n\nOptions\n"
-                    "-h, --help\t\t\tPrint this help menu :D\n"
-                    "-v, --version\t\t\tPrint the current version\n"
-                    "-l, --list\t\t\tPrint all your root paths from your config\n"
-                    "-d, --deep-list\t\t\tPrint all potential destinations based on your config\n"
-                    "-f, --file [FILE]\t\t\tSpecify a file with youtube URLs separated by newlines\n"
-                    "-r, --refresh\t\t\tTell the database to scan through its root paths to remove or add root paths."
-                    "-e, --edit [a,v,c]\t\t\tedit your destinations for the specified type."
-                    "-c, --cover=COVER\t\tSpecify what cover art to use or pass NO-ART to enforce adding no art\n",
-                    //"-a, --write-audio=PATH,DEPTH\tSpecify what file paths to save audio to and their depths. Only giving the path without a depth will default to infinite depth.\n"
-                    //"-o, --write-video=PATH,DEPTH\tSpecify what file paths to save video to and their depths. Only giving the path without a depth will default to infinite depth.\n",
-                    argv[0]
-                );
-                exit(EXIT_SUCCESS);
             break;
 
             case 'v':
@@ -156,13 +263,33 @@ int main(int argc, char** argv){
         }
     } //end of arg parsing
 
-    puts("Finished parsing");
+    if(genre != NULL) ADVISE_USER("GENRE metadata will be %s\n");
+    if(artist != NULL) ADVISE_USER("ARTIST metadata will be %s\n");
+    if(album != NULL) ADVISE_USER("ALBUM metadata will be %s\n");
 
-    if(url_list == NULL){
-        //execute_no_list();
+
+    if(download_covers == YES){
+        if(getNumOfPathRowsForConfig(COVER_CONFIG) == 0){
+            ADVISE_USER("You need to add some cover destinations with --edit");
+            exit(EXIT_FAILURE);
+        }
     }else{
-        //execute_with_list();
+        if(getNumOfPathRowsForConfig(VIDEO_CONFIG) == 0 &&
+            getNumOfPathRowsForConfig(AUDIO_CONFIG) == 0){
+            ADVISE_USER("You need to add audio and video destinations with --edit");
+            exit(EXIT_FAILURE);
+        }
     }
 
-    return 0;
+    MetaData_t meta_data = {.genre = genre, .artist=artist, .album=album};
+    if(url_list == NULL){
+        executeNoList(&meta_data, download_covers, cover_mode, cover_path);
+        free(genre);
+        free(artist);
+        free(album);
+    }else{
+        executeWithList(url_list, &meta_data, download_covers, cover_mode, cover_path);
+    }
+
+    return EXIT_SUCCESS;
 }

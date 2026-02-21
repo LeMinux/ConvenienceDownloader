@@ -3,6 +3,7 @@
 enum ERROR writeCover(const char* file_with_path, const char* cover_path){
     assert(file_with_path != NULL);
     assert(cover_path != NULL);
+    assert(cover_path[0] != '\0');
 
     FILE* file = openFile(file_with_path, "r");
     if(file == NULL){
@@ -13,7 +14,7 @@ enum ERROR writeCover(const char* file_with_path, const char* cover_path){
     char* file_path = NULL;
     size_t path_len = 0;
     int str_len = getline(&file_path, &path_len, file);
-    if(str_len < 0){
+    if(str_len <= 0){
         PRINT_ERROR("Could not get file name from temp file");
         free(file_path);
         (void)fclose(file);
@@ -23,7 +24,7 @@ enum ERROR writeCover(const char* file_with_path, const char* cover_path){
 
     if(file_path[str_len - 1] == '\n') file_path[str_len - 1] = '\0';
 
-    char* command_arguments [] ={
+     const char* command_arguments [] ={
         "ffmpeg",
         "-xerror",
         "-y",
@@ -36,16 +37,16 @@ enum ERROR writeCover(const char* file_with_path, const char* cover_path){
         NULL
     };
 
-    enum ERROR status = execProgram("/usr/bin/ffmpeg", command_arguments);
+    enum ERROR status = execProgram("/usr/bin/ffmpeg", (char* const*)command_arguments);
     if(status == NO_ERROR){
-        char* mv_command_args [] = {
+        const char* mv_command_args [] = {
             "mv",
             "-f",
             TEMP_FILE,
             file_path,
             NULL
         };
-        status = execProgram("/usr/bin/mv", mv_command_args);
+        status = execProgram("/usr/bin/mv", (char* const*)mv_command_args);
     }
 
     free(file_path);

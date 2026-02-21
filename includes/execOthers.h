@@ -6,20 +6,18 @@
 
 #include "globals.h"
 
-
 /*
 *   Helper function for executing another binary
 *   the bin_path should avoid using PATH, and should give an absolute path
 *   to the binary.
 *
-*   params:
-*       bin_path: path to the binary
-*       command_args: crafted command arguments
+*   bin_path: path to the binary
+*   command_args: crafted command arguments
 *
 *   return:
 *       HAD_ERROR if fork fails or if the program returns an error
 *       NO_ERROR if everything is fine
 */
-enum ERROR execProgram(const char* bin_path, char* const* command_args);
+enum ERROR execProgram(const char* bin_path, char* const command_args []);
 
 #endif

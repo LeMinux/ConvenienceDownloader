@@ -7,6 +7,7 @@
 #include <sys/dir.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "globals.h"
 
@@ -17,9 +18,8 @@
  *  These extra checks are for if the file is an actual file and not a directory as fopen won't NULL on directories.
  *  Mostly this is for paths given from a user.
  *
- *  param:
- *      file_path: path to the file
- *      mode: same mode you would give to fopen()
+ *  file_path: path to the file
+ *  mode: same mode you would give to fopen()
  *
  *  return:
  *      NULL if couldn't open file or file is not a file
@@ -31,6 +31,8 @@ FILE* openFile(const char* file_path, const char* mode);
  *  Check if a path given is a directory, and exists.
  *  Don't expect to be saved from race conditions since the database only holds paths.
  *  Updates that happen on the OS will not be reflected in the database.
+ *  The conditions for being valid are if it's a directory, the end is not a link,
+ *  and if it's accessible
  *
  *   return: VALID if meets conditions INVALID otherwise.
  */
