@@ -16,7 +16,7 @@ DEBUG_FLAGS:=-g -fsanitize=address -fsanitize-recover=address
 
 C_FILES:=$(filter-out $(CODE_DIR)/test%, $(wildcard $(CODE_DIR)/*.c))
 #C_FILES :=$(foreach dir, $(CODE_DIR),$(wildcard $(dir)/*.c))
-O_FILES :=$(patsubst $(TEST_CODE_DIR)/%.c, $(OBJECT_DIR)/%.o, $(C_FILES))
+O_FILES :=$(patsubst $(CODE_DIR)/%.c, $(OBJECT_DIR)/%.o, $(C_FILES))
 DEP_FILES :=$(patsubst %.c, %.d, $(C_FILES))
 
 #default
