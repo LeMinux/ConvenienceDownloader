@@ -20,7 +20,7 @@ static int closeMemFile(void** state){
 int main(void){
     const struct CMUnitTest read_line_group[] = {
         cmocka_unit_test_setup_teardown(testReadFileLineReturnsDoneOnEmptyFile, createMemFile, closeMemFile),
-        cmocka_unit_test_setup_teardown(testReadFileLineReturnsDoneAfterOneLine, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineReturnsDoneIfOneLine, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineProceedsToNextLine, createMemFile, closeMemFile),
 
         /* short testing */
@@ -31,6 +31,7 @@ int main(void){
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLJustArtist, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLJustAlbum, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLGenreArtist, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineShortURLGenreArtistVerboseEndingColon, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLGenreAlbum, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLArtistAlbum, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLAllMeta, createMemFile, closeMemFile),
@@ -44,8 +45,11 @@ int main(void){
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLAllMetaNoEndingColon, createMemFile, closeMemFile),
 
         cmocka_unit_test_setup_teardown(testReadFileLineReturnsDoneOnEmptyFile, createMemFile, closeMemFile),
-        cmocka_unit_test_setup_teardown(testReadFileLineReturnsDoneAfterOneLine, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineReturnsDoneIfOneLine, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineProceedsToNextLine, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineDetectsEmptyLine, createMemFile, closeMemFile),
+
+        cmocka_unit_test_setup_teardown(testReadFileLineShortURLAllMetaWithSpaces, createMemFile, closeMemFile),
 
         /* long testing */
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLNoMeta, createMemFile, closeMemFile),
@@ -63,9 +67,12 @@ int main(void){
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLJustArtistNoEndingColon, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLJustAlbumNoEndingColon, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLGenreArtistNoEndingColon, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineLongURLGenreArtistVerboseEndingColon, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLGenreAlbumNoEndingColon, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLArtistAlbumNoEndingColon, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLAllMetaNoEndingColon, createMemFile, closeMemFile),
+
+        cmocka_unit_test_setup_teardown(testReadFileLineLongURLAllMetaWithSpaces, createMemFile, closeMemFile),
 
         /* special testing */
         cmocka_unit_test_setup_teardown(testReadFileLineInvalidURL, createMemFile, closeMemFile),
@@ -73,6 +80,7 @@ int main(void){
         cmocka_unit_test_setup_teardown(testReadFileLineValidURLInWrongSpot, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineInvalidIDPortion, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineMoreSeperatorsThanNeeded, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineUsesShorterLen, createMemFile, closeMemFile),
     };
 
     return cmocka_run_group_tests(read_line_group, NULL, NULL);

@@ -13,8 +13,9 @@
 #define LONG_URL "https://www.youtube.com/watch?v=G1s2gMRetS8&list=OLAK5uy_k4guHD70-5yw_Xl_y9WP63XQ8gT70mbU8&index=6"
 
 void testReadFileLineReturnsDoneOnEmptyFile(void** state);
-void testReadFileLineReturnsDoneAfterOneLine(void** state);
+void testReadFileLineReturnsDoneIfOneLine(void** state);
 void testReadFileLineProceedsToNextLine(void** state);
+void testReadFileLineDetectsEmptyLine(void** state);
 
 /* Short URL testing */
 void testReadFileLineShortURLNoMeta(void** state);
@@ -24,6 +25,7 @@ void testReadFileLineShortURLJustGenre(void** state);
 void testReadFileLineShortURLJustArtist(void** state);
 void testReadFileLineShortURLJustAlbum(void** state);
 void testReadFileLineShortURLGenreArtist(void** state);
+void testReadFileLineShortURLGenreArtistVerboseEndingColon(void** state);
 void testReadFileLineShortURLGenreAlbum(void** state);
 void testReadFileLineShortURLArtistAlbum(void** state);
 void testReadFileLineShortURLAllMeta(void** state);
@@ -36,6 +38,8 @@ void testReadFileLineShortURLGenreAlbumNoEndingColon(void** state);
 void testReadFileLineShortURLArtistAlbumNoEndingColon(void** state);
 void testReadFileLineShortURLAllMetaNoEndingColon(void** state);
 
+void testReadFileLineShortURLAllMetaWithSpaces(void** state);
+
 /* Long URL testing */
 void testReadFileLineLongURLNoMeta(void** state);
 void testReadFileLineLongURLNoMetaWithInitialSeperator(void** state);
@@ -44,6 +48,7 @@ void testReadFileLineLongURLJustGenre(void** state);
 void testReadFileLineLongURLJustArtist(void** state);
 void testReadFileLineLongURLJustAlbum(void** state);
 void testReadFileLineLongURLGenreArtist(void** state);
+void testReadFileLineLongURLGenreArtistVerboseEndingColon(void** state);
 void testReadFileLineLongURLGenreAlbum(void** state);
 void testReadFileLineLongURLArtistAlbum(void** state);
 void testReadFileLineLongURLAllMeta(void** state);
@@ -56,6 +61,8 @@ void testReadFileLineLongURLGenreAlbumNoEndingColon(void** state);
 void testReadFileLineLongURLArtistAlbumNoEndingColon(void** state);
 void testReadFileLineLongURLAllMetaNoEndingColon(void** state);
 
+void testReadFileLineLongURLAllMetaWithSpaces(void** state);
+
 
 /*special testing*/
 void testReadFileLineInvalidURL(void** state);
@@ -63,5 +70,6 @@ void testReadFileLineTooShortID(void** state);
 void testReadFileLineValidURLInWrongSpot(void** state);
 void testReadFileLineInvalidIDPortion(void** state);
 void testReadFileLineMoreSeperatorsThanNeeded(void** state);
+void testReadFileLineUsesShorterLen(void** state);
 
 #endif
