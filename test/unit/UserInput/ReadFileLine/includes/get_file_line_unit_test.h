@@ -19,6 +19,7 @@ void testReadFileLineDetectsEmptyLine(void** state);
 
 /* Short URL testing */
 void testReadFileLineShortURLNoMeta(void** state);
+void testReadFileLineShortURLNoMetaUsingSyntax(void** state);
 void testReadFileLineShortURLNoMetaWithInitialSeperator(void** state);
 
 void testReadFileLineShortURLJustGenre(void** state);
@@ -42,6 +43,7 @@ void testReadFileLineShortURLAllMetaWithSpaces(void** state);
 
 /* Long URL testing */
 void testReadFileLineLongURLNoMeta(void** state);
+void testReadFileLineLongURLNoMetaUsingSyntax(void** state);
 void testReadFileLineLongURLNoMetaWithInitialSeperator(void** state);
 
 void testReadFileLineLongURLJustGenre(void** state);

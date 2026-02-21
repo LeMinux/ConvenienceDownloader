@@ -25,6 +25,7 @@ int main(void){
 
         /* short testing */
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLNoMeta, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineShortURLNoMetaUsingSyntax, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLNoMetaWithInitialSeperator, createMemFile, closeMemFile),
 
         cmocka_unit_test_setup_teardown(testReadFileLineShortURLJustGenre, createMemFile, closeMemFile),
@@ -53,6 +54,7 @@ int main(void){
 
         /* long testing */
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLNoMeta, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineLongURLNoMetaUsingSyntax, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLNoMetaWithInitialSeperator, createMemFile, closeMemFile),
 
         cmocka_unit_test_setup_teardown(testReadFileLineLongURLJustGenre, createMemFile, closeMemFile),
