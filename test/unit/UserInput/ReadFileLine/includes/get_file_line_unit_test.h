@@ -73,5 +73,6 @@ void testReadFileLineValidURLInWrongSpot(void** state);
 void testReadFileLineInvalidIDPortion(void** state);
 void testReadFileLineMoreSeperatorsThanNeeded(void** state);
 void testReadFileLineUsesShorterLen(void** state);
+void testReadFileLineSanitizes(void** state);
 
 #endif

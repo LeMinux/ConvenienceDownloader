@@ -944,3 +944,22 @@ void testReadFileLineUsesShorterLen(void** state){
     assert_string_equal(act_meta.genre, exp_meta.genre);
 }
 
+void testReadFileLineSanitizes(void** state){
+    FILE* test_file = *state;
+    const char* exp_url = SHORT_URL;
+    const MetaData_t exp_meta = {.genre="%genres", .artist=NULL, .album=NULL};
+    enum FILE_INPUT exp_ret = GOOD_LINE;
+
+    writeData(test_file, "%s|%s:",  exp_url, "%(genre)s");
+
+    char act_url [YT_URL_INPUT_SIZE];
+    MetaData_t act_meta = {NULL, NULL, NULL};
+
+    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
+
+    assert_int_equal(act_ret, exp_ret);
+    assert_string_equal(act_url, exp_url);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_ptr_equal(act_meta.album, exp_meta.album);
+}
