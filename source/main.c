@@ -60,10 +60,17 @@ static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS want
 }
 
 static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path){
+
+    enum ERROR were_errors = NO_ERROR;
+    FILE* error_log = fopen("/tmp/con-downloader-errors.txt", "w");
+    if(error_log == NULL){
+        PRINT_ERROR("Could not create file for logging errors");
+        exit(EXIT_FAILURE);
+    }
+
     int video_path_id = getUserChoiceForDir(VIDEO_CONFIG);
     int audio_path_id = getUserChoiceForDir(AUDIO_CONFIG);
     int cover_path_id = SKIPPING;
-
     if(wants_cover) cover_path_id = getUserChoiceForDir(COVER_CONFIG);
 
     if(video_path_id == SKIPPING && audio_path_id == SKIPPING && cover_path_id == SKIPPING){
@@ -87,16 +94,40 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
             if(per_line_meta.artist != NULL) meta_data.artist = per_line_meta.artist;
             if(per_line_meta.album != NULL) meta_data.album = per_line_meta.album;
 
-            if(video_path_id != SKIPPING) (void)downloadVideo(url_buffer, video_path_id, &meta_data);
-            if(audio_path_id != SKIPPING) (void)downloadAudio(url_buffer, audio_path_id, &meta_data, cover_mode, cover_path);
-            if(cover_path_id != SKIPPING) (void)downloadCover(url_buffer, cover_path_id);
+            if(video_path_id != SKIPPING){
+                enum ERROR video_error = downloadVideo(url_buffer, video_path_id, &meta_data);
+                if(video_error == HAD_ERROR){
+                    were_errors = HAD_ERROR;
+                    fprintf(error_log, "Getting the video for the url %s wasn't error free\n", url_buffer);
+                }
+            }
+
+            if(audio_path_id != SKIPPING){
+                enum ERROR audio_error = downloadAudio(url_buffer, audio_path_id, &meta_data, cover_mode, cover_path);
+                if(audio_error == HAD_ERROR){
+                    were_errors = HAD_ERROR;
+                    fprintf(error_log, "Getting the audio for the url %s wasn't error free\n", url_buffer);
+                }
+            }
+
+            if(video_path_id != SKIPPING){
+                enum ERROR cover_error = downloadCover(url_buffer, cover_path_id);
+                if(cover_error == HAD_ERROR){
+                    were_errors = HAD_ERROR;
+                    fprintf(error_log, "Getting the cover for the url %s wasn't error free\n", url_buffer);
+                }
+            }
 
             free((char*)per_line_meta.genre);
             free((char*)per_line_meta.artist);
             free((char*)per_line_meta.album);
         }
     }
+    fclose(error_log);
     ADVISE_USER("Finished parsing the file");
+    if(were_errors == HAD_ERROR){
+        ADVISE_USER("There were some errors while downloading. Check the file tmp/con-downloader-errors.txt");
+    }
 }
 
 int main(int argc, char** argv){
@@ -263,9 +294,9 @@ int main(int argc, char** argv){
         }
     } //end of arg parsing
 
-    if(genre != NULL) ADVISE_USER("GENRE metadata will be %s\n");
-    if(artist != NULL) ADVISE_USER("ARTIST metadata will be %s\n");
-    if(album != NULL) ADVISE_USER("ALBUM metadata will be %s\n");
+    if(genre != NULL) ADVISE_USER_FORMAT("GENRE metadata will be %s\n", genre);
+    if(artist != NULL) ADVISE_USER_FORMAT("ARTIST metadata will be %s\n", artist);
+    if(album != NULL) ADVISE_USER_FORMAT("ALBUM metadata will be %s\n", album);
 
 
     if(download_covers == YES){
