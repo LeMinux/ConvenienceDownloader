@@ -573,6 +573,7 @@ void addMenu(enum CONFIG config_type){
            config_type == COVER_CONFIG ||
            config_type == BLACK_CONFIG);
 
+    puts("\nAdding Selected");
     char* path_input = NULL;
     int depth = 0;
     const int PATH_CHECKS = (config_type == BLACK_CONFIG) ? 1 : 2;
@@ -631,6 +632,8 @@ void updateMenu(enum CONFIG config_type){
            config_type == COVER_CONFIG ||
            config_type == BLACK_CONFIG);
 
+
+    puts("\nUpdating Selected");
     if(config_type == BLACK_CONFIG){
         ADVISE_USER("Updating is for depths or refreshing paths, and blacklist entries don't have this.");
         return;
@@ -668,6 +671,12 @@ void updateMenu(enum CONFIG config_type){
 }
 
 void deleteMenu(enum CONFIG config_type){
+    assert(config_type == AUDIO_CONFIG ||
+           config_type == VIDEO_CONFIG ||
+           config_type == COVER_CONFIG ||
+           config_type == BLACK_CONFIG);
+
+    puts("\nDeleting Selected");
     int max_index = getNumOfRootRowsForConfig(config_type);
     if(max_index == HAD_ERROR){
         ADVISE_USER("No changes have been made.");
