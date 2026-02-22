@@ -202,7 +202,6 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
         "--audio-format", "mp3",
         "--audio-quality", "256K",
         "--embed-metadata",
-        "--replace-in-metadata", "title", "_-_", "-",
         NULL,           //--embed-thumbnail
         NULL, NULL, NULL, //potential after print
         NULL, NULL,     //meta argument
