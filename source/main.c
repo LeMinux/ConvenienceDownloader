@@ -118,9 +118,16 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
                 }
             }
 
+            PRINT_ERROR("HELLO");
             free((char*)per_line_meta.genre);
+            PRINT_ERROR("HALO");
             free((char*)per_line_meta.artist);
+            PRINT_ERROR("ALLO");
             free((char*)per_line_meta.album);
+            per_line_meta.genre = NULL;
+            per_line_meta.artist = NULL;
+            per_line_meta.album = NULL;
+            PRINT_ERROR("GOODBYE");
         }
     }
     fclose(error_log);

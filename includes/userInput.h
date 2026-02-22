@@ -166,12 +166,13 @@ size_t sanitizeMetaString(char* meta_arg);
 /*
 *   Reads a line from the user's given file from the --file option and parses meta information.
 *   Meta information that is found is added to the passed by reference MetaData_t parameter.
+*   This information is allocated on the HEAP and should be freed to prevent memory leaks.
 *   The return value should be use to indicate if the url in url_buffer is valid.
 *   Don't use the url_buffer if BAD_LINE is returned.
 *
 *   list: File stream to read from
 *   url_buffer: the url_buffer is placed in here weither good or bad
-*   data: Meta information will be placed into here for the callee to use
+*   data: Meta information allocated on the HEAP will be placed into here for the callee to use
 *
 *   return:
 *       GOOD_LINE if the line is a usable url
