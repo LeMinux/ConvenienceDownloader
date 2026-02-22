@@ -465,6 +465,8 @@ enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
                 new_meta = malloc(malloc_size);
                 memcpy(new_meta, separator_pos + 1, malloc_size - 1);
                 new_meta[malloc_size - 1] = '\0';
+                sanitizeMetaString(new_meta);
+
                 switch(separator_count){
                     case GENRE: data->genre = new_meta; break;
                     case ARTIST: data->artist = new_meta; break;
