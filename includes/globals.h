@@ -28,6 +28,10 @@ enum ERROR {HAD_ERROR = -1, NO_ERROR = 0};
 enum CONFIG {NOT_A_CONFIG = -1, AUDIO_CONFIG = 1, VIDEO_CONFIG, COVER_CONFIG, BLACK_CONFIG};
 enum INPUT {SKIPPING = -2, INVALID, VALID};
 enum COVERS {THUMB_ART = 0, GIVEN_ART, NO_ART};
+enum FOUND_END {NOT_PRESENT = 0, WAS_PRESENT};
+//I'm not sure why the FOUND_END enum seems to not give warnings in this file, but do if it's in the userInput.h file.
+//The errors are occur when compiling the tests and they say information about forward declaring an enum.
+//My only guess is that testWrapInput.h doesn't know about the size of the enum?
 
 #define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET"\n", stderr))
 
