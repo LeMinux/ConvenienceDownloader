@@ -40,13 +40,18 @@ downloader \[OPTIONS\]
          /c/
     ```
 
-## Options
+    If you want to skip a prompt because you don't want that type of file you can press enter.
+    The program will then use yt-dlp to download the file types and send them to the destinations your specified.
+    Mp4 files will have embedded metadata that yt-dlp adds, and mp3 files will have the metadata and thumbnail cover added.
+    This is included by default since I like how my audio players sorts the content based on the metadata.
+    After that URL has had its downloads, the program will ask if you want to download more in which case you can say yes/y to repeat the cycle or no/n to quit.
 
-If you want to skip a prompt because you don't want that type of file you can press enter.
-The program will then use yt-dlp to download the file types and send them to the destinations your specified.
-Mp4 files will have embedded metadata that yt-dlp adds, and mp3 files will have the metadata and thumbnail cover added.
-This is included by default since I like how my audio players sorts the content based on the metadata.
-After that URL has had its downloads, the program will ask if you want to download more in which case you can say yes/y to repeat the cycle or no/n to quit.
+    Currently, when it comes to metadata it will always try to add a field.
+    When you specify one of the tags for metadata you are simply overwriting what was pulled from the page.
+    In some cases, like for albums, there may not be a metadata tag so it will be empty.
+    I have no way of setting metadata to empty yet, but I'm debating if I would like to add this feature.
+
+## Options
 
 - -a, --artist ARTIST
 
@@ -181,6 +186,14 @@ After that URL has had its downloads, the program will ask if you want to downlo
     If a root file does not exist anymore it will be removed.
     If a root file has new children they will be added to the database.
     The idea is you don't change your directory paths very often, so to speed up Initialization the program doesn't parse all paths at the beginning anymore.
+
+- -s, --strict-meta
+
+    Use this option if you want to strictly use the metadata you provide.
+    The default behavior is to always add artist, album, and genre metadata information.
+    This means if you don't specify an artist it'll always try to add the youtuber that published the video as the artist in the Metadata.
+    If you don't want this and would rather keep that field blank use this option.
+    This way if you were to provide --artist <artist> and --album <album> it won't fill in the genre with a generic field.
 
 - -v, --version
 
