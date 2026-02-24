@@ -27,7 +27,7 @@ static void editMenu(enum CONFIG config){
         }
 
         printf("What action do you want to take?\n%c) Add\n%c) Update\n%c) Delete\n%c) Exit\nEnter the number: ", ADD_OPT, UPT_OPT, DEL_OPT, EXT_OPT);
-        if(boundedInput(stdin, buffer, 5) != 1){
+        if(boundedInput(stdin, buffer, 5, NULL) != 1){
             ADVISE_USER("Enter a single digit");
             continue;
         }
@@ -51,7 +51,17 @@ static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS want
 
         if(video_path_id != SKIPPING || audio_path_id != SKIPPING || cover_path_id != SKIPPING){
             char yt_url [YT_URL_INPUT_SIZE] = "";
-            while(getURLFromUser(yt_url) == INVALID);
+            enum INPUT user_input = INVALID;
+            while(user_input == INVALID){
+                user_input = getURLFromUser(yt_url);
+                if(yt_url[0] == '\0'){
+                    ADVISE_USER("Okay No URL then");
+                    video_path_id = SKIPPING;
+                    audio_path_id = SKIPPING;
+                    cover_path_id = SKIPPING;
+                    user_input = VALID;
+                }
+            }
             if(video_path_id != SKIPPING) (void)downloadVideo(yt_url, video_path_id, meta_info);
             if(audio_path_id != SKIPPING) (void)downloadAudio(yt_url, audio_path_id, meta_info, cover_mode, cover_path);
             if(cover_path_id != SKIPPING) (void)downloadCover(yt_url, cover_path_id);
@@ -118,16 +128,12 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
                 }
             }
 
-            PRINT_ERROR("HELLO");
             free((char*)per_line_meta.genre);
-            PRINT_ERROR("HALO");
             free((char*)per_line_meta.artist);
-            PRINT_ERROR("ALLO");
             free((char*)per_line_meta.album);
             per_line_meta.genre = NULL;
             per_line_meta.artist = NULL;
             per_line_meta.album = NULL;
-            PRINT_ERROR("GOODBYE");
         }
     }
     fclose(error_log);
@@ -156,7 +162,7 @@ int main(int argc, char** argv){
     enum DOWNLOAD_COVERS download_covers = NO;
     while(parsing){
         int option_index = 0;
-        static const char short_options [] = "dhklnrva:b:c:e:f:g:";
+        static const char short_options [] = "dhklnrsva:b:c:e:f:g:";
         static const struct option long_options [] = {
             {"artist", required_argument, NULL, 'a'},
             {"album", required_argument, NULL, 'b'},
@@ -170,6 +176,7 @@ int main(int argc, char** argv){
             {"list", no_argument, NULL, 'l'},
             {"no-covers", no_argument, NULL, 'n'},
             {"refresh", no_argument, NULL, 'r'},
+            {"strict-meta", no_argument, NULL, 's'},
             {"version", no_argument, NULL, 'v'},
             {0, 0, 0, 0} //last struct must be zeros
         };
@@ -288,6 +295,11 @@ int main(int argc, char** argv){
                 }else{
                     ADVISE_USER("Database refreshed!");
                 }
+                exit(EXIT_SUCCESS);
+            break;
+
+            case 's':
+                puts("You found the secret feature!\nYour reward is nothing, but you read the source code at least :D.");
             break;
 
             case 'v':
