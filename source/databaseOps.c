@@ -866,7 +866,7 @@ int getNumOfPathRowsForConfig(enum CONFIG config){
            config == COVER_CONFIG);
 
     //root_id is indexed so the count should be faster
-    const char sql_statement [] = "SELECT COUNT(p.path_id) FROM Paths p RIGHT JOIN Roots r WHERE r.root_type = ?;";
+    const char sql_statement [] = "SELECT COUNT(p.path_id) FROM Paths p RIGHT JOIN Roots r USING (root_id) WHERE r.root_type = ?;";
     sqlite3_stmt* results = NULL;
     int ret_code = sqlite3_prepare_v2(single_database_connection, sql_statement, sizeof(sql_statement), &results, NULL);
 
@@ -1151,7 +1151,11 @@ enum ERROR listAllRootWithPaths(){
                 printf("\t%s/\n", root);
             }else{
                 int depth = sqlite3_column_int(results, 4);
-                printf("\t%s\t%d\n", root, depth);
+                if(depth == INF_DEPTH){
+                    printf("\t%s\tINF\n", root);
+                }else{
+                    printf("\t%s\t%d\n", root, depth);
+                }
             }
         }
 
