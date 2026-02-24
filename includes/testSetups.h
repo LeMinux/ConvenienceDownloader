@@ -42,6 +42,7 @@
 #define ARTS_PATH_2 "/SurprisinglyMoreArts/"
 
 #define TOTAL_ROWS 26
+#define PATHS_PER_CONFIG 6 //4 added +2 root itselfs
 
 //root IDs
 #define ROCK_ROOT_ID 1
