@@ -71,7 +71,7 @@ static enum INPUT validateURL(const char* url, size_t url_len){
 *
 *   return: returns a value < INT_MAX or the value of INF_DEPTH
 */
-static void normalizeNumericInput(char* input){
+static int normalizeNumericInput(char* input){
     assert(input != NULL);
 
     int inplace_insert = 0;
@@ -81,6 +81,7 @@ static void normalizeNumericInput(char* input){
         }
     }
     input[inplace_insert] = '\0';
+    return inplace_insert;
 }
 
 /*
@@ -131,7 +132,7 @@ static void printQuestion(enum CONFIG type){
  *  Additionally --wrap should still selectively choose what to wrap.
  */
 #ifndef PREVENT_INTERNAL_LINKAGE
-size_t boundedInput(FILE* stream, char* dest, size_t dest_size){
+size_t boundedInput(FILE* stream, char* dest, size_t dest_size, enum FOUND_END* is_found){
     assert(stream != NULL);
     assert(dest != NULL);
     assert(dest_size > 0);
@@ -159,14 +160,20 @@ size_t boundedInput(FILE* stream, char* dest, size_t dest_size){
         }
     }
 
-    if(!found_end) clearLine(stream);
+    if(!found_end){
+        if(is_found != NULL) *is_found = NOT_PRESENT;
+
+        clearLine(stream);
+    }else{
+        if(is_found != NULL) *is_found = WAS_PRESENT;
+    }
 
     dest[amount_written] = '\0';
     return amount_written;
 }
 #else
-size_t boundedInput(FILE* stream, char* dest, size_t dest_size){
-    return __wrap_boundedInput(stream, dest, dest_size);
+size_t boundedInput(FILE* stream, char* dest, size_t dest_size, enum FOUND_END* is_found){
+    return __wrap_boundedInput(stream, dest, dest_size, is_found);
 }
 #endif
 
@@ -177,10 +184,16 @@ char* takeDirectoryInput(void){
     int length = 0;
 
     puts("Enter the path you want:");
-    length = boundedInput(stdin, input, sizeof(input));
+    enum FOUND_END newline;
+    length = boundedInput(stdin, input, sizeof(input), &newline);
 
-    if(length == 0){
-        return absolute_path;
+    if(length == 0) return absolute_path;
+
+    if(newline == NOT_PRESENT){
+        ADVISE_USER("Path entered is too large");
+        free(absolute_path);
+        absolute_path = NULL;
+        return NULL;
     }
 
     if(input[0] == '~'){
@@ -218,11 +231,15 @@ int takeIndexInput(int max_index){
     char index_input [15] = "";
 
     long index = SKIPPING;
-    if(boundedInput(stdin, index_input, sizeof(index_input)) == 0){
+    enum FOUND_END newline;
+    if(boundedInput(stdin, index_input, sizeof(index_input), &newline) == 0){
         return index;
+    }else if(newline == NOT_PRESENT){
+        ADVISE_USER("Input given is too large");
+        return INVALID;
     }
 
-    normalizeNumericInput(index_input);
+    if(normalizeNumericInput(index_input) == 0) return INVALID;
 
     index = VALID;
     errno = 0;
@@ -262,33 +279,35 @@ int takeDepthInput(void){
 
     (void)printf("What depth do you want for the path? If depth is not a concern enter %s:\n", INF_STRING);
 
-    if(boundedInput(stdin, depth_input, sizeof(depth_input)) == 0){
-        depth = SKIPPING;
+    enum FOUND_END newline;
+    if(boundedInput(stdin, depth_input, sizeof(depth_input), &newline) == 0){
+        return SKIPPING;
+    }else if(newline == NOT_PRESENT){
+        ADVISE_USER("Input entered is too large");
+        return INVALID;
     }
 
-    normalizeNumericInput(depth_input);
+    if(normalizeNumericInput(depth_input) == 0) return INVALID;
 
-    if(depth != SKIPPING){
-        errno = 0;
-        char* non_digit = NULL;
-        depth = strtol(depth_input, &non_digit, 10);
-        if(*non_digit != '\0'){
-            if(strcasecmp(depth_input, INF_STRING) == 0){
-                depth = INF_DEPTH;
-            }else{
-                ADVISE_USER("Use 'INF' or enter digits");
-                depth = INVALID;
-            }
+    errno = 0;
+    char* non_digit = NULL;
+    depth = strtol(depth_input, &non_digit, 10);
+    if(*non_digit != '\0'){
+        if(strcasecmp(depth_input, INF_STRING) == 0){
+            depth = INF_DEPTH;
         }else{
-            if(errno == ERANGE || depth > MAX_DEPTH){
-                ADVISE_USER("Depth given is too large");
-                depth = INVALID;
-            }
+            ADVISE_USER("Use 'INF' or enter digits");
+            depth = INVALID;
+        }
+    }else{
+        if(errno == ERANGE || depth > MAX_DEPTH){
+            ADVISE_USER("Depth given is too large");
+            depth = INVALID;
+        }
 
-            if(depth < 0){
-                ADVISE_USER("Depth can't be negative");
-                depth = INVALID;
-            }
+        if(depth < 0){
+            ADVISE_USER("Depth can't be negative");
+            depth = INVALID;
         }
     }
 
@@ -303,8 +322,10 @@ enum INPUT getURLFromUser(char* ret_url){
     (void)printf("Enter the youtube URL that you want to download -> ");
 
     enum INPUT is_good_input = INVALID;
-    size_t len = boundedInput(stdin, ret_url, YT_URL_INPUT_SIZE);
-    is_good_input = validateURL(ret_url, len);
+    size_t len = boundedInput(stdin, ret_url, YT_URL_INPUT_SIZE, NULL);
+    if(len != 0){
+        is_good_input = validateURL(ret_url, len);
+    }
 
     return is_good_input;
 }
@@ -313,7 +334,7 @@ enum REPEAT askToRepeat(void){
     (void)printf("Do you want to download more? Y/N: ");
     char input_buf [4] = "";
 
-    int user_input_len = boundedInput(stdin, input_buf, sizeof(input_buf));
+    int user_input_len = boundedInput(stdin, input_buf, sizeof(input_buf), NULL);
 
     enum REPEAT wants_to = ASK_AGAIN;
     switch(user_input_len){
@@ -371,6 +392,7 @@ int getUserChoiceForDir(enum CONFIG type){
            type == COVER_CONFIG);
 
     int num_of_rows = getNumOfPathRowsForConfig(type);
+    printf("Rows count %d\n",num_of_rows);
     if(num_of_rows == 0){
         switch(type){
             case AUDIO_CONFIG: ADVISE_USER("Nothing to be selected for AUDIOs"); break;
@@ -435,7 +457,8 @@ enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
     //ssize_t line_len = getline(&file_line, &longest_size_found, list);
 
     char file_line [FILE_LINE_BUF_SIZE];
-    size_t line_len = boundedInput(list, file_line, FILE_LINE_BUF_SIZE);
+    enum FOUND_END end_line;
+    size_t line_len = boundedInput(list, file_line, FILE_LINE_BUF_SIZE, &end_line);
     if(line_len == 0){
         if(feof(list) != 0){
             return DONE;
@@ -443,6 +466,8 @@ enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
             return BAD_LINE;
         }
     }
+
+    if(end_line == NOT_PRESENT) return BAD_LINE;
 
     enum FILE_INPUT is_valid = BAD_LINE;
     if(validateURL(file_line, line_len) == VALID){

@@ -964,16 +964,14 @@ void testReadFileLineSanitizes(void** state){
     assert_ptr_equal(act_meta.album, exp_meta.album);
 }
 
-
-void testReadFileLineNoDoubleFreeReadingTwo(void** state){
+void testReadFileLineLineOutOfBufferIsBadLine(void** state){
     FILE* test_file = *state;
-    const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta1 = {.genre="First", .artist="Second", .album="Third"};
-    const MetaData_t exp_meta2 = {.genre="Fourth", .artist="Fifth", .album="Sixth"};
-    enum FILE_INPUT exp_ret = GOOD_LINE;
+    enum FILE_INPUT exp_ret = BAD_LINE;
+    char long_meta [150];
+    memset(long_meta, 'A', sizeof(long_meta) - 1);
+    long_meta[sizeof(long_meta) - 1] = '\0';
 
-    writeData(test_file, "%s|%s:%s:%s:\n",  exp_url, exp_meta1.genre, exp_meta1.artist, exp_meta1.album);
-    writeData(test_file, "%s|%s:%s:%s:",  exp_url, exp_meta2.genre, exp_meta2.artist, exp_meta2.album);
+    writeData(test_file, "%s|%s:%s:%s:", LONG_URL, long_meta, long_meta, long_meta);
 
     char act_url [YT_URL_INPUT_SIZE];
     MetaData_t act_meta = {NULL, NULL, NULL};
@@ -981,9 +979,4 @@ void testReadFileLineNoDoubleFreeReadingTwo(void** state){
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
-    assert_string_equal(act_url, exp_url);
-    assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_string_equal(act_meta.album, exp_meta.album);
-
 }

@@ -26,6 +26,8 @@ int main(void){
         cmocka_unit_test(testTakeDirectoryInputNoWritePerms),
 
         cmocka_unit_test(testTakeDirectoryInputPathHasSpaces),
+
+        cmocka_unit_test(testTakeDirectoryInputNullsAtPathMax),
     };
 
     return cmocka_run_group_tests(dir_input_test, NULL, NULL);

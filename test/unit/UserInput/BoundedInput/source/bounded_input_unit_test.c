@@ -38,7 +38,7 @@ void testExactInputExactBoundWithNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = sizeof(dest) - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
 
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
@@ -53,7 +53,7 @@ void testExactInputExactBoundWithoutNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = sizeof(dest) - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -67,7 +67,7 @@ void testExactInputNewlineAtExact(void** state){
     int input_length = strlen(input_text);
     int expected_length = strlen(input_text) - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -81,7 +81,7 @@ void testExactInputLessThanBoundWithNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = strlen(input_text) - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -95,7 +95,7 @@ void testExactInputTakingOneCharWithNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = strlen(input_text) - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -109,7 +109,7 @@ void testExactInputLessThanBoundWithoutNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = strlen(input_text);
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -124,7 +124,7 @@ void testExactInputGreaterThanBoundWithNewline(void** state){
     int expected_length = TEST_BUFFER_SIZE - 1;
 
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -138,7 +138,7 @@ void testExactInputGreaterThanBoundWithoutNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = TEST_BUFFER_SIZE - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -152,7 +152,7 @@ void testExactInputTakingOneCharWithoutNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = strlen(input_text);
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -165,7 +165,7 @@ void testExactInputClearsLineToNewline(void** state){
     char dest [TEST_BUFFER_SIZE] = "";
     int expected_end = strlen(input_text);
 
-    (void)boundedInput(test_file, dest, sizeof(dest));
+    (void)boundedInput(test_file, dest, sizeof(dest), NULL);
     assert_int_equal(ftell(test_file), expected_end);
 }
 
@@ -178,7 +178,7 @@ void testExactInputClearsLineToEOF(void** state){
     char dest [TEST_BUFFER_SIZE] = "";
     int expected_end = strlen(input_text);
 
-    (void)boundedInput(test_file, dest, sizeof(dest));
+    (void)boundedInput(test_file, dest, sizeof(dest), NULL);
     assert_int_equal(ftell(test_file), expected_end);
 }
 
@@ -192,7 +192,7 @@ void testExactInputJustNewline(void** state){
     int input_length = strlen(input_text);
     int expected_length = strlen(input_text) - 1;
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
     assertCorrect(input_text, input_length, dest, amount_written, expected_length);
 }
 
@@ -201,7 +201,7 @@ void testExactInputEmptyInput(void** state){
     FILE* test_file = *state;
     char dest [TEST_BUFFER_SIZE] = "";
 
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
 
     assert_int_equal(amount_written, 0);
     assert_true(dest[0] == '\0');
@@ -211,7 +211,7 @@ void testExactInputEmptyInputResetsPrev(void** state){
     FILE* test_file = *state;
 
     char dest [TEST_BUFFER_SIZE] = "AAA";
-    int amount_written = boundedInput(test_file, dest, sizeof(dest));
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
 
     assert_int_equal(amount_written, 0);
     assert_true(dest[0] == '\0');
@@ -241,7 +241,7 @@ void testExactInputMultipleLinesExactBound(void** state){
     int exp_file_pos = 0;
 
     for(int i = 0; i < 3; ++i){
-        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
         exp_file_pos += size;
         assert_int_equal(amount_written, expected_length);
         switch(i){
@@ -272,7 +272,7 @@ void testExactInputMultipleLinesBelowBound(void** state){
     int expected_length = size - 1;
     int exp_file_pos = 0;
     for(int i = 0; i < 3; ++i){
-        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
         exp_file_pos += size;
         assert_int_equal(amount_written, expected_length);
         switch(i){
@@ -302,7 +302,7 @@ void testExactInputMultipleLinesAboveBound(void** state){
     int expected_length = sizeof(dest) - 1;
     int exp_file_pos = 0;
     for(int i = 0; i < 3; ++i){
-        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
         exp_file_pos += size;
 
         assert_int_equal(amount_written, expected_length);
@@ -333,7 +333,7 @@ void testExactInputMultipleLinesMixedBound(void** state){
 
     char dest [TEST_BUFFER_SIZE] = "";
     for(int i = 0; i < 3; ++i){
-        int amount_written = boundedInput(test_file, dest, sizeof(dest));
+        int amount_written = boundedInput(test_file, dest, sizeof(dest), NULL);
         switch(i){
             case 0:
                 assert_int_equal(amount_written, amount1);
@@ -351,4 +351,40 @@ void testExactInputMultipleLinesMixedBound(void** state){
             break;
         }
     }
+}
+
+void testExactInputSetItCouldNotFindNewLineIfInputIsTooLarge(void** state){
+    FILE* test_file = *state;
+    char input_text [] = "AAAAAAAAAAAAAAAAAAAA\n";
+
+    writeData(input_text, sizeof(input_text), test_file);
+
+    char dest [TEST_BUFFER_SIZE/2] = "";
+    int input_length = strlen(input_text);
+    int expected_length = sizeof(dest) - 1;
+    enum FOUND_END exp_end = NOT_PRESENT;
+
+    enum FOUND_END act_end = WAS_PRESENT;
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), &act_end);
+
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
+    assert_int_equal(act_end, exp_end);
+}
+
+void testExactInputSetItCouldNotFindEOFIfInputIsTooLarge(void** state){
+    FILE* test_file = *state;
+    char input_text [] = "AAAAAAAAAAAAAAAAAAAA";
+
+    writeData(input_text, sizeof(input_text), test_file);
+
+    char dest [TEST_BUFFER_SIZE/2] = "";
+    int input_length = strlen(input_text);
+    int expected_length = sizeof(dest) - 1;
+    enum FOUND_END exp_end = NOT_PRESENT;
+
+    enum FOUND_END act_end = WAS_PRESENT;
+    int amount_written = boundedInput(test_file, dest, sizeof(dest), &act_end);
+
+    assertCorrect(input_text, input_length, dest, amount_written, expected_length);
+    assert_int_equal(act_end, exp_end);
 }

@@ -241,3 +241,22 @@ void testTakeDirectoryInputPathHasSpaces(void** state){
     free(act_result);
     rmdir(directory_input);
 }
+
+void testTakeDirectoryInputNullsAtPathMax(void** state){
+    (void) state;
+    char directory_input [PATH_MAX + 10] = "";
+    const char filler [] = "../";
+    int filled = 0;
+    while(filled < PATH_MAX + 10){
+        memcpy(directory_input + filled, filler, sizeof(filler));
+        filled += sizeof(filler) - 1;
+    }
+    puts(directory_input);
+
+    will_return(__wrap_boundedInput, directory_input);
+
+    char* act_result = takeDirectoryInput();
+
+    assert_null(act_result);
+    free(act_result);
+}

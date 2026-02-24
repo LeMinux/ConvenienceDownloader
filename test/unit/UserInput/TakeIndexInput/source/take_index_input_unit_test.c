@@ -49,6 +49,42 @@ void testTakeIndexInputReallySmallNumber(void** state){
     assert_int_equal(actual_ret, expect_ret);
 }
 
+void testTakeIndexInputVeryLongInputJustNumbers(void** state){
+    (void)state;
+    char input [] = "12345678901234567890";
+    int expect_ret = INVALID;
+
+    will_return(__wrap_boundedInput, input);
+
+    int actual_ret = takeIndexInput(MAX_INDEX);
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
+void testTakeIndexInputNumberPaddedOutOfRange(void** state){
+    (void)state;
+    char input [] = "            2000";
+    int expect_ret = INVALID;
+
+    will_return(__wrap_boundedInput, input);
+
+    int actual_ret = takeIndexInput(MAX_INDEX);
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
+void testTakeIndexInput10Spaces(void** state){
+    (void)state;
+    char input [] = "          ";
+    int expect_ret = INVALID;
+
+    will_return(__wrap_boundedInput, input);
+
+    int actual_ret = takeIndexInput(MAX_INDEX);
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
 void testTakeIndexInputRandomLetters(void** state){
     (void)state;
     char input [] = "eaithaiha";

@@ -40,4 +40,7 @@ void testExactInputMultipleLinesBelowBound(void** state);
 void testExactInputMultipleLinesAboveBound(void** state);
 void testExactInputMultipleLinesMixedBound(void** state);
 
+
+void testExactInputSetItCouldNotFindNewLineIfInputIsTooLarge(void** state);
+void testExactInputSetItCouldNotFindEOFIfInputIsTooLarge(void** state);
 #endif

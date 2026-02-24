@@ -43,4 +43,7 @@ void testTakeDirectoryInputNoWritePerms(void **state);
 //formatting
 void testTakeDirectoryInputPathHasSpaces(void** state);
 
+//special
+void testTakeDirectoryInputNullsAtPathMax(void** state);
+
 #endif

@@ -84,6 +84,7 @@ int main(void){
         cmocka_unit_test_setup_teardown(testReadFileLineMoreSeperatorsThanNeeded, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineUsesShorterLen, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testReadFileLineSanitizes, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testReadFileLineLineOutOfBufferIsBadLine, createMemFile, closeMemFile),
     };
 
     return cmocka_run_group_tests(read_line_group, NULL, NULL);

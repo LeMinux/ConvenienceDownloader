@@ -1,9 +1,7 @@
 #include "../includes/testWrapInput.h"
 
-size_t __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size){
-    //don't care about these just want to return a string
+size_t __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size, enum FOUND_END* end){
     (void) stream;
-    (void) dest_size;
 
     const char* stubbed_string = mock_type(char*);
     size_t write_len = strlen(stubbed_string);
@@ -13,10 +11,12 @@ size_t __wrap_boundedInput(FILE* stream, char* dest, size_t dest_size){
         memcpy(dest, stubbed_string, write_len);
         dest[write_len] = '\0';
         written_amt = write_len;
+        if(end != NULL) *end = WAS_PRESENT;
     }else{
         memcpy(dest, stubbed_string, dest_size - 1);
         dest[dest_size - 1] = '\0';
         written_amt = dest_size - 1;
+        if(end != NULL) *end = NOT_PRESENT;
     }
 
     return written_amt;

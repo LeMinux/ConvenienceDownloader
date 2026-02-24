@@ -74,5 +74,6 @@ void testReadFileLineInvalidIDPortion(void** state);
 void testReadFileLineMoreSeperatorsThanNeeded(void** state);
 void testReadFileLineUsesShorterLen(void** state);
 void testReadFileLineSanitizes(void** state);
+void testReadFileLineLineOutOfBufferIsBadLine(void** state);
 
 #endif

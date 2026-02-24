@@ -49,6 +49,42 @@ void testTakeDepthInputReallySmallNumber(void** state){
     assert_int_equal(actual_ret, expect_ret);
 }
 
+void testTakeDepthInputVeryLongInputJustNumbers(void** state){
+    (void)state;
+    char input [] = "12345678901234567890";
+    int expect_ret = INVALID;
+
+    will_return(__wrap_boundedInput, input);
+
+    int actual_ret = takeDepthInput();
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
+void testTakeDepthInputNumberPaddedOutOfRange(void** state){
+    (void)state;
+    char input [] = "            2000";
+    int expect_ret = INVALID;
+
+    will_return(__wrap_boundedInput, input);
+
+    int actual_ret = takeDepthInput();
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
+void testTakeDepthInput10Spaces(void** state){
+    (void)state;
+    char input [] = "          ";
+    int expect_ret = INVALID;
+
+    will_return(__wrap_boundedInput, input);
+
+    int actual_ret = takeDepthInput();
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
 void testTakeDepthInputRandomLetters(void** state){
     (void)state;
     char input [] = "eaithaiha";
@@ -123,7 +159,7 @@ void testTakeDepthInputWithCommas(void** state){
 
 void testTakeDepthInputWithSpaces(void** state){
     (void)state;
-    char input [] = "1 000";
+    char input [] = "   1 000";
     int expect_ret = 1000;
 
     will_return(__wrap_boundedInput, input);

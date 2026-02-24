@@ -38,6 +38,9 @@ int main(void){
         cmocka_unit_test_setup_teardown(testExactInputMultipleLinesExactBound, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputMultipleLinesBelowBound, createMemFile, closeMemFile),
         cmocka_unit_test_setup_teardown(testExactInputMultipleLinesAboveBound, createMemFile, closeMemFile),
+
+        cmocka_unit_test_setup_teardown(testExactInputSetItCouldNotFindNewLineIfInputIsTooLarge, createMemFile, closeMemFile),
+        cmocka_unit_test_setup_teardown(testExactInputSetItCouldNotFindEOFIfInputIsTooLarge, createMemFile, closeMemFile),
     };
 
     return cmocka_run_group_tests(exact_input_group, NULL, NULL);

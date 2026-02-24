@@ -75,8 +75,11 @@ enum REPEAT askToRepeat(void);
 /*
 *	Obtains user input where size is bounded.
 *	Best used for strings on the stack where bounds is known.
-*	Input is read until it encounters a newline or EOF.
+*	Input is read until it encounters a newline or EOF or size - 1 characters.
 *	If a newline is encountered it's replaced with a nul byte and length is adjusted.
+*	If you care about knowing if a newline was present in the input a passed by reference enum
+*	is used. This way you can determine if the user input something larger than expected so that
+*	you don't use truncated input. This parameter can be NULL if it's not cared about.
 *	This is meant for c-strings, so a bound of 1 isn't useful as that'll just give you a nul byte.
 *	Since this is a core function for input, as many others call it, if a file stream
 *	error does occur then the program will exit. The expectation should be that
@@ -86,12 +89,13 @@ enum REPEAT askToRepeat(void);
 *	stream: file stream which can include stdin
 *	dest: destination string and should not be NULL
 *	buffer: size of input buffer. This should account for the nul byte like you would for fgets.
+*	is_found: enum to determine if a newline was found in input.
 *
 *   return:
 *   length of what was read excluding the nul byte.
 *   The amount returned is able to be used to determine the position of the nul byte.
 */
-size_t boundedInput(FILE* stream, char* dest, size_t size);
+size_t boundedInput(FILE* stream, char* dest, size_t size, enum FOUND_END* is_found);
 
 
 /*
