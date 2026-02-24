@@ -1,15 +1,5 @@
 #include "../includes/get_dir_choice_unit_test.h"
 
-void getUserDirChoiceNoRowsIsSkip(void** state){
-    (void)state;
-    int expect_ret = SKIPPING;
-
-    expect_function_calls(__wrap_takeIndexInput, 0);
-    int actual_ret = getUserChoiceForDir(AUDIO_CONFIG);
-
-    assert_int_equal(actual_ret, expect_ret);
-}
-
 void getUserDirChoiceSkippingIndexIsSkipping(void** state){
     (void)state;
     int selection = SKIPPING;
@@ -79,5 +69,37 @@ void getUserDirChoicePathAlreadyAlphabetical(void** state){
     int actual_ret = getUserChoiceForDir(type);
 
     assert_int_equal(actual_ret, expect_ret);
+}
 
+void getUserDirChoiceSkipsAudioIfEmpty(void** state){
+    (void)state;
+    int expect_ret = SKIPPING;
+    enum CONFIG type = AUDIO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 0);
+    int actual_ret = getUserChoiceForDir(type);
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
+void getUserDirChoiceSkipsVideoIfEmpty(void** state){
+    (void)state;
+    int expect_ret = SKIPPING;
+    enum CONFIG type = VIDEO_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 0);
+    int actual_ret = getUserChoiceForDir(type);
+
+    assert_int_equal(actual_ret, expect_ret);
+}
+
+void getUserDirChoiceSkipsCoverIfEmpty(void** state){
+    (void)state;
+    int expect_ret = SKIPPING;
+    enum CONFIG type = COVER_CONFIG;
+
+    expect_function_calls(__wrap_takeIndexInput, 0);
+    int actual_ret = getUserChoiceForDir(type);
+
+    assert_int_equal(actual_ret, expect_ret);
 }

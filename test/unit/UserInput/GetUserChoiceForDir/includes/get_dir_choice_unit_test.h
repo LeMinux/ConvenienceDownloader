@@ -5,7 +5,6 @@
 #include "testWrapInput.h"
 #include "userInput.h"
 
-void getUserDirChoiceNoRowsIsSkip(void** state);
 void getUserDirChoiceSkippingIndexIsSkipping(void** state);
 
 //Simulates when the roots have been added at different times like
@@ -20,5 +19,11 @@ void getUserDirChoicePathUsingAlphabeticalSorting(void** state);
 
 //path 'A' added before dir 'D'
 void getUserDirChoicePathAlreadyAlphabetical(void** state);
+
+void getUserDirChoiceAsksAgainOnBeyondMax(void** state);
+
+void getUserDirChoiceSkipsAudioIfEmpty(void** state);
+void getUserDirChoiceSkipsVideoIfEmpty(void** state);
+void getUserDirChoiceSkipsCoverIfEmpty(void** state);
 
 #endif
