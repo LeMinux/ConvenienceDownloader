@@ -449,13 +449,6 @@ size_t sanitizeMetaString(char* meta_arg){
 //I am aware that if a metatag being added contains a colon then it'll stop
 //at the colon since I have no form of escaping it.
 enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
-    //going to keep this as a purposeful memory leak
-    //this way each line isn't freed and then reallocated wasting time
-
-    //static char* file_line = NULL;
-    //static size_t longest_size_found = 0;
-    //ssize_t line_len = getline(&file_line, &longest_size_found, list);
-
     char file_line [FILE_LINE_BUF_SIZE];
     enum FOUND_END end_line;
     size_t line_len = boundedInput(list, file_line, FILE_LINE_BUF_SIZE, &end_line);
