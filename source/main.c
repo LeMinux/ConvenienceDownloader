@@ -334,9 +334,6 @@ int main(int argc, char** argv){
     MetaData_t meta_data = {.genre = genre, .artist=artist, .album=album};
     if(url_list == NULL){
         executeNoList(&meta_data, download_covers, cover_mode, cover_path);
-        free(genre);
-        free(artist);
-        free(album);
     }else{
         executeWithList(url_list, &meta_data, download_covers, cover_mode, cover_path);
     }
