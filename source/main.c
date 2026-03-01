@@ -70,8 +70,6 @@ static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS want
 }
 
 static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path){
-
-    enum ERROR were_errors = NO_ERROR;
     FILE* error_log = fopen("/tmp/con-downloader-errors.txt", "w");
     if(error_log == NULL){
         PRINT_ERROR("Could not create file for logging errors");
@@ -88,24 +86,26 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
         return;
     }
 
-    MetaData_t per_line_meta = {NULL};
+    enum ERROR were_errors = NO_ERROR;
+    enum FILE_INPUT line_details = GOOD_LINE;
+    while(line_details != DONE){
+        MetaData_t per_line_meta = {NULL};
+        char url_buffer [YT_URL_INPUT_SIZE] = "";
 
-    char url_buffer [YT_URL_INPUT_SIZE] = "";
-    enum FILE_INPUT line_details = DONE;
-    while((line_details = readFileLine(list, url_buffer, &per_line_meta)) != DONE){
+        line_details = readFileLine(list, url_buffer, &per_line_meta);
         if(line_details == GOOD_LINE){
-            MetaData_t meta_data = {
+            MetaData_t added_meta_data = {
                 .genre=overall_meta_info->genre,
                 .artist=overall_meta_info->artist,
                 .album=overall_meta_info->album
             };
 
-            if(per_line_meta.genre != NULL) meta_data.genre = per_line_meta.genre;
-            if(per_line_meta.artist != NULL) meta_data.artist = per_line_meta.artist;
-            if(per_line_meta.album != NULL) meta_data.album = per_line_meta.album;
+            if(per_line_meta.genre != NULL) added_meta_data.genre = per_line_meta.genre;
+            if(per_line_meta.artist != NULL) added_meta_data.artist = per_line_meta.artist;
+            if(per_line_meta.album != NULL) added_meta_data.album = per_line_meta.album;
 
             if(video_path_id != SKIPPING){
-                enum ERROR video_error = downloadVideo(url_buffer, video_path_id, &meta_data);
+                enum ERROR video_error = downloadVideo(url_buffer, video_path_id, &added_meta_data);
                 if(video_error == HAD_ERROR){
                     were_errors = HAD_ERROR;
                     fprintf(error_log, "Getting the video for the url %s wasn't error free\n", url_buffer);
@@ -113,7 +113,7 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
             }
 
             if(audio_path_id != SKIPPING){
-                enum ERROR audio_error = downloadAudio(url_buffer, audio_path_id, &meta_data, cover_mode, cover_path);
+                enum ERROR audio_error = downloadAudio(url_buffer, audio_path_id, &added_meta_data, cover_mode, cover_path);
                 if(audio_error == HAD_ERROR){
                     were_errors = HAD_ERROR;
                     fprintf(error_log, "Getting the audio for the url %s wasn't error free\n", url_buffer);
@@ -131,9 +131,6 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
             free((char*)per_line_meta.genre);
             free((char*)per_line_meta.artist);
             free((char*)per_line_meta.album);
-            per_line_meta.genre = NULL;
-            per_line_meta.artist = NULL;
-            per_line_meta.album = NULL;
         }
     }
     fclose(error_log);
