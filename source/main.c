@@ -120,7 +120,7 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
                 }
             }
 
-            if(video_path_id != SKIPPING){
+            if(cover_path_id != SKIPPING){
                 enum ERROR cover_error = downloadCover(url_buffer, cover_path_id);
                 if(cover_error == HAD_ERROR){
                     were_errors = HAD_ERROR;
@@ -336,6 +336,7 @@ int main(int argc, char** argv){
         executeNoList(&meta_data, download_covers, cover_mode, cover_path);
     }else{
         executeWithList(url_list, &meta_data, download_covers, cover_mode, cover_path);
+        (void)fclose(url_list);
     }
 
     return EXIT_SUCCESS;
