@@ -21,6 +21,13 @@ static void clearLine(FILE* stream){
 	}
 }
 
+/*
+*   Validates the id segment of a url.
+*   The actual ID portion is passed in since that gives more control, and the
+*   caller gives what they believe is the id segment.
+*
+*   id_segment: character array of YT_ID_LEN + 1 size
+*/
 static enum INPUT validIDPortion(const char* id_segment){
     assert(id_segment != NULL);
     assert(strlen(id_segment) == YT_ID_LEN);
@@ -40,6 +47,17 @@ static enum INPUT validIDPortion(const char* id_segment){
     return is_good;
 }
 
+/*
+*   Validates input as a youtube URL.
+*   This doesn't support the mobile version of a yt URL.
+*   Checks if a standard URL is present and is at the correct location and
+*   not in the middle of the string.
+*   Longer urls are acceptable, but anything below the expected length isn't passable.
+*   The id segment is also validated to make sure it does even point to a video.
+*
+*   url: input expected to be a URL
+*   url_len: The length of the input taken
+*/
 static enum INPUT validateURL(const char* url, size_t url_len){
     char* begin_point = NULL;
     if((begin_point = strstr(url, YOUTUBE_URL)) == NULL || begin_point - url != 0){

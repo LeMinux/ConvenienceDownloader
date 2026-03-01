@@ -73,6 +73,19 @@ static const char FILE_NAME [] = "/tmp/add_cover_to.txt";
 static enum ERROR createOutputTemplate(int path_id, char* output_template);
 static char* createMetaArg(const char* data, enum META_TYPE type);
 
+/*
+*   Sets into output_template the output template used for yt-dlp.
+*   This takes the path_id and goes to the database to get the output path.
+*   the passed in output_template should expect to take PATH_MAX and the size of
+*   the template.
+*
+*   path_id: destination string in database
+*   type: the kind of metadata
+*
+*   return:
+*       NO_ERROR if could create template HAD_ERROR otherwise
+*
+*/
 static enum ERROR createOutputTemplate(int path_id, char* output_template){
     assert(output_template != NULL);
     assert(path_id > 0);
@@ -86,6 +99,17 @@ static enum ERROR createOutputTemplate(int path_id, char* output_template){
     return status;
 }
 
+/*
+*   Creates the metadata flag for yt-dlp to use. This uses the more hacky way of
+*   forcibly using default values to add the metadata.
+*
+*   data: metadata string
+*   type: the kind of metadata
+*
+*   return:
+*       NO_ERROR if could create template HAD_ERROR otherwise
+*
+*/
 static char* createMetaArg(const char* data, enum META_TYPE type){
     assert(data != NULL);
     assert(type == GENRE || type == ARTIST || type == ALBUM);
@@ -123,7 +147,7 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     //the command line arg needs to end with a NULL anyway, so just like how a nul byte
     //would stop strlen early this will do the same.
     //Do need to figure out how to get rid of all those warnings though
-    const char* command_arguments [] ={
+    const char* command_arguments [] = {
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
@@ -175,8 +199,6 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     return error_status;
 }
 
-
-//want to add album name, artist name, genre, id, perhaps yt url
 enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, enum COVERS wants_cover, const char* cover_path){
     assert(yt_url != NULL);
     assert(a_id != SKIPPING || a_id == INVALID);
@@ -193,7 +215,7 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     //the command line arg needs to end with a NULL anyway, so just like how a nul byte
     //would stop strlen early this will do the same.
     //Do need to figure out how to get rid of all those warnings though
-    const char* command_arguments [] ={
+    const char* command_arguments [] = {
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
@@ -276,7 +298,7 @@ enum ERROR downloadCover(const char* yt_url, int c_id){
         return HAD_ERROR;
     }
 
-     const char* command_arguments [] ={
+     const char* command_arguments [] = {
         "yt-dlp",
         "--restrict-filenames",
         "--retries", "4",
