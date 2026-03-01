@@ -11,7 +11,6 @@ DEP_FLAGS:=-MP -MD
 #-Wconversion is too restrictive, but if you want to use it go ahead :P
 #C_FLAGS:=-Wall -Werror -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings -Wconversion -I$(INC_DIR) $(DEP_FLAGS)
 C_FLAGS:=-Wall -Werror -Wextra -Wpedantic -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings -I$(INC_DIR) $(DEP_FLAGS)
-C_END_FLAGS:=-lsqlite3
 DEBUG_FLAGS:=-g -fsanitize=address -fsanitize-recover=address
 
 C_FILES:=$(filter-out $(CODE_DIR)/test%, $(wildcard $(CODE_DIR)/*.c))
@@ -39,12 +38,12 @@ run:
 	./$(BINARY)
 
 #compile with debuging information and address sanitization
-leak: $(C_FILES)
-	$(CC) $(C_FLAGS) $(DEBUG_FLAGS) -o $@ $^
+leak: $(O_FILES)
+	$(CC) $(C_FLAGS) $(DEBUG_FLAGS) -o $@ $^ -lsqlite3
 
 #compile for gdb debugging
-debug: $(C_FILES)
-	$(CC) -g $(C_FLAGS) -o $@ $^
+debug: $(O_FILES)
+	$(CC) -g $(C_FLAGS) -o $@ $^ -lsqlite3
 
 test-compile:
 	$(MAKE) -C $(TEST_DIR) compile
