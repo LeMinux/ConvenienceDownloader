@@ -38,7 +38,7 @@ $(OBJECT_DIR)/%.o: $(SOURCE_CODE_DIR)/%.c | $(OBJECT_DIR)
 	$(CC) $(COMPILER_FLAG) -c $(C_FLAGS) $(DEP_FLAGS) $(INCLUDES) $< -o $@
 
 run:
-	for dir in $(TEST_DIRS); do rm -f $(DIR_ENV)$$dir; done
+	for dir in $(TEST_DIRS); do rm -f $(DIR_ENV)/$$dir/*; done
 	./$(BINARY)
 
 clean:
