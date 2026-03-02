@@ -1,5 +1,7 @@
 #include "../includes/download_audio_test.h"
 
+enum GREP {FOUND = 0, NOT_FOUND};
+
 static void getRealPath(const char* input, char result [PATH_MAX]){
     if(realpath(input, result) == NULL){
         fail_msg("Could not create real path");
@@ -20,6 +22,7 @@ static void addEntry(sqlite3* database){
     addExtraPathEntry(database, 1, PATH_5);
     addExtraPathEntry(database, 1, PATH_6);
     addExtraPathEntry(database, 1, PATH_7);
+    addExtraPathEntry(database, 1, PATH_8);
 }
 
 static void assertDownloaded(const char* path){
@@ -43,88 +46,138 @@ static void assertDownloaded(const char* path){
 
 //Don't like the usage of system, but I am in control of what is executed
 //Assuming that I don't change PATH, IFS, or what ever werid shell stuff
-static void assertMetaData(const char* path, const char* meta_content, int exp_ret){
+static void assertMetaData(const char* path, const char* meta_content, enum GREP exp_ret){
     char command [100];
-    size_t len = snprintf(command, sizeof(command), "exiftool '%s'* | grep --fixed-strings '%s'", path, meta_content);
-    if(len >= sizeof(command)){
+    int len = snprintf(command, sizeof(command), "exiftool '%s'* | grep --fixed-strings '%s'", path, meta_content);
+    if(len < 0 || len >= (int)sizeof(command)){
         fail_msg("command buffer is too short you need to extend it");
     }
 
-    int ret = system(command);
-    assert_true(ret == exp_ret || WEXITSTATUS(ret) == exp_ret);
+    enum GREP ret = system(command);
+    const char* fail_message = NULL;
+    const char expecting_find [] = "Expected to FIND metadata it was NOT FOUND:";
+    const char expecting_not_find [] = "Expected to NOT FIND metadta but it was FOUND:";
+
+    if(exp_ret == FOUND) fail_message = expecting_find;
+    else if(exp_ret == NOT_FOUND) fail_message = expecting_not_find;
+    else fail_msg("Grep returned a different error code");
+
+    if(WEXITSTATUS(ret) != exp_ret) fail_msg("%s '%s'", fail_message, meta_content);
+
 }
 
-static void assertCover(const char* path, int exp_ret){
+static void assertCover(const char* path, enum GREP exp_ret){
     char command [100];
     size_t len = snprintf(command, sizeof(command), "exiftool '%s'* | grep Picture", path);
     if(len >= sizeof(command)){
         fail_msg("command buffer is too short you need to extend it");
     }
 
-    int ret = system(command);
-    assert_true(ret == exp_ret || WEXITSTATUS(ret) == exp_ret);
+    enum GREP ret = system(command);
+    if(!WIFEXITED(ret)) fail_msg("Couldn't conduct the system command");
+
+    const char* fail_message = NULL;
+    const char expecting_cover [] = "Expected to FIND cover art but it was NOT FOUND";
+    const char not_expecting_cover [] = "Expected to NOT FIND cover but it was FOUND";
+
+    if(exp_ret == FOUND) fail_message = expecting_cover;
+    else if(exp_ret == NOT_FOUND) fail_message = not_expecting_cover;
+    else fail_msg("Grep returned a different error code");
+
+    if(WEXITSTATUS(ret) != exp_ret) fail_msg("%s", fail_message);
+
 }
 
-void testDownloadAudioNoMetaData(void** state){
+void testDownloadAudioNoMetaDataUsesOnPageStats(void** state){
     sqlite3* database = *state;
     const char exp_path [] = AUDIO_ROOT PATH_1;
-    MetaData_t data = {NULL, NULL, NULL};
+    MetaData_t data = {0};
 
     addEntry(database);
 
     downloadAudio("https://www.youtube.com/watch?v=iic-mhXFZic", PATH_1_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_NO_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_NO_FOUND);
-    assertMetaData(exp_path, data.album, GREP_NO_FOUND);
-    assertCover(exp_path, GREP_NO_FOUND);
+    assertMetaData(exp_path, "Music",  FOUND);
+    assertMetaData(exp_path, "Tom Cardy, Brian David Gilbert", FOUND);
+    assertMetaData(exp_path, "Beautiful Mind", FOUND);
+    assertCover(exp_path, NOT_FOUND);
 }
 
 void testDownloadAudioAllMetaData(void** state){
     sqlite3* database = *state;
-    const char genre [] = "Mine Craft";
-    const char artist [] = "C418";
-    const char album [] = "Ocean";
     const char exp_path [] = AUDIO_ROOT PATH_2;
-    MetaData_t data = {.genre=genre, .artist=artist, .album=album};
+    MetaData_t data = {.genre="Mine Craft", .artist="C418", .album="Ocean"};
 
     addEntry(database);
 
     downloadAudio("https://www.youtube.com/watch?v=HvdP87eDasE", PATH_2_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_FOUND);
-    assertMetaData(exp_path, data.album, GREP_FOUND);
-    assertCover(exp_path, GREP_NO_FOUND);
+    assertMetaData(exp_path, data.genre,  FOUND);
+    assertMetaData(exp_path, data.artist, FOUND);
+    assertMetaData(exp_path, data.album, FOUND);
+    assertCover(exp_path, NOT_FOUND);
 }
 
 void testDownloadAudioEmbedsCoverArt(void** state){
     sqlite3* database = *state;
     const char exp_path [] = AUDIO_ROOT PATH_3;
-    MetaData_t data = {NULL, NULL, NULL};
+    MetaData_t data = {0};
 
     addEntry(database);
 
     downloadAudio("https://www.youtube.com/watch?v=iic-mhXFZic", PATH_3_ID, &data, THUMB_ART, NULL);
 
     assertDownloaded(exp_path);
-    assertCover(exp_path, GREP_FOUND);
+    assertCover(exp_path, FOUND);
+}
+
+void testDownloadAudioEmbedsNoCoverArt(void** state){
+    sqlite3* database = *state;
+    const char exp_path [] = AUDIO_ROOT PATH_4;
+    MetaData_t data = {0};
+
+    addEntry(database);
+
+    downloadAudio("https://www.youtube.com/watch?v=wMIWqUPlEtE", PATH_4_ID, &data, NO_ART, NULL);
+
+    assertDownloaded(exp_path);
+    assertCover(exp_path, NOT_FOUND);
+}
+
+void testDownloadAudioWeirdMetaData(void** state){
+    sqlite3* database = *state;
+    const char exp_path [] = AUDIO_ROOT PATH_5;
+    MetaData_t data = {
+        .genre="%titles.%exts",
+        .artist="?P<meta_synopsis>",
+        .album=" ?!@#$%^&*_-~+=.<>|"
+    };
+
+    addEntry(database);
+
+    downloadAudio("https://www.youtube.com/watch?v=SaoT_ULWJZk", PATH_5_ID, &data, NO_ART, NULL);
+
+    assertDownloaded(exp_path);
+    assertMetaData(exp_path, data.genre,  FOUND);
+    assertMetaData(exp_path, data.artist, FOUND);
+    assertMetaData(exp_path, data.album, FOUND);
+    assertCover(exp_path, NOT_FOUND);
 }
 
 void testDownloadAudioEmbedsGivenCoverArt(void** state){
     sqlite3* database = *state;
     const char exp_path [] = AUDIO_ROOT PATH_6;
     const char cover_path [] = "./purple-frog.jpg";
-    MetaData_t data = {NULL, NULL, NULL};
+    MetaData_t data = {0};
 
     addEntry(database);
 
     downloadAudio("https://www.youtube.com/watch?v=k85mRPqvMbE", PATH_6_ID, &data, GIVEN_ART, cover_path);
 
     assertDownloaded(exp_path);
-    assertCover(exp_path, GREP_FOUND);
+    assertCover(exp_path, FOUND);
 }
 
 //yt-dlp is a bit weird when it comes to this specific task
@@ -139,47 +192,31 @@ void testDownloadAudioEmbedsGivenCoverArtAndAllMetaData(void** state){
     sqlite3* database = *state;
     const char exp_path [] = AUDIO_ROOT PATH_7;
     const char cover_path [] = "./purple-frog.jpg";
-    MetaData_t data = {"Frog", "Crazy", "Wow"};
+    MetaData_t data = {.genre="Frog", .artist="Crazy", .album="Wow"};
 
     addEntry(database);
 
     downloadAudio("https://www.youtube.com/watch?v=k85mRPqvMbE", PATH_7_ID, &data, GIVEN_ART, cover_path);
 
     assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_FOUND);
-    assertMetaData(exp_path, data.album, GREP_FOUND);
-    assertCover(exp_path, GREP_FOUND);
+    assertMetaData(exp_path, data.genre,  FOUND);
+    assertMetaData(exp_path, data.artist, FOUND);
+    assertMetaData(exp_path, data.album, FOUND);
+    assertCover(exp_path, FOUND);
 }
 
-void testDownloadAudioEmbedsNoCoverArt(void** state){
+void testDownloadAudioPartialMetaDataFillsRestFromPage(void** state){
     sqlite3* database = *state;
-    const char exp_path [] = AUDIO_ROOT PATH_4;
-    MetaData_t data = {NULL, NULL, NULL};
+    const char exp_path [] = AUDIO_ROOT PATH_8;
+    MetaData_t data = {.genre="", .artist="", .album="Single"};
 
     addEntry(database);
 
-    downloadAudio("https://www.youtube.com/watch?v=wMIWqUPlEtE", PATH_4_ID, &data, NO_ART, NULL);
+    downloadAudio("https://www.youtube.com/watch?v=HvdP87eDasE", PATH_8_ID, &data, NO_ART, NULL);
 
     assertDownloaded(exp_path);
-    assertCover(exp_path, GREP_NO_FOUND);
-}
-
-void testDownloadAudioWeirdMetaData(void** state){
-    sqlite3* database = *state;
-    const char genre [] = "%titles.%exts";
-    const char artist [] = "?P<meta_synopsis>";
-    const char album [] = " ?!@#$%^&*_-~+=.<>|";
-    const char exp_path [] = AUDIO_ROOT PATH_5;
-    MetaData_t data = {.genre=genre, .artist=artist, .album=album};
-
-    addEntry(database);
-
-    downloadAudio("https://www.youtube.com/watch?v=SaoT_ULWJZk", PATH_5_ID, &data, NO_ART, NULL);
-
-    assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_FOUND);
-    assertMetaData(exp_path, data.album, GREP_FOUND);
-    assertCover(exp_path, GREP_NO_FOUND);
+    assertMetaData(exp_path, "Entertainment",  FOUND); //genre
+    assertMetaData(exp_path, "Toothless", FOUND); //artist
+    assertMetaData(exp_path, data.album, FOUND);
+    assertCover(exp_path, NOT_FOUND);
 }

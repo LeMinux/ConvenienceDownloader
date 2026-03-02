@@ -9,14 +9,15 @@ int main(void){
     #endif
 
     const struct CMUnitTest download_audio_tests[] = {
-        cmocka_unit_test_setup_teardown(testDownloadAudioNoMetaData, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadAudioAllMetaData, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsCoverArt, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsNoCoverArt, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadAudioWeirdMetaData, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsGivenCoverArt, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadAudioEmbedsGivenCoverArtAndAllMetaData, createTestDB, closeDB),
+        cmocka_unit_test(testDownloadAudioNoMetaDataUsesOnPageStats),
+        cmocka_unit_test(testDownloadAudioAllMetaData),
+        cmocka_unit_test(testDownloadAudioEmbedsCoverArt),
+        cmocka_unit_test(testDownloadAudioEmbedsNoCoverArt),
+        cmocka_unit_test(testDownloadAudioWeirdMetaData),
+        cmocka_unit_test(testDownloadAudioEmbedsGivenCoverArt),
+        cmocka_unit_test(testDownloadAudioEmbedsGivenCoverArtAndAllMetaData),
+        cmocka_unit_test(testDownloadAudioPartialMetaDataFillsRestFromPage),
     };
 
-    return cmocka_run_group_tests(download_audio_tests, NULL, NULL);
+    return cmocka_run_group_tests(download_audio_tests, createTestDB, closeDB);
 }

@@ -9,10 +9,11 @@ int main(void){
     #endif
 
     const struct CMUnitTest download_video_tests[] = {
-        cmocka_unit_test_setup_teardown(testDownloadVideoNoMetaData, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadVideoAllMetaData, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testDownloadVideoWeirdMetaData, createTestDB, closeDB),
+        cmocka_unit_test(testDownloadVideoNoMetaDataUsesOnPageStats),
+        cmocka_unit_test(testDownloadVideoAllMetaData),
+        cmocka_unit_test(testDownloadVideoWeirdMetaData),
+        cmocka_unit_test(testDownloadVideoPartialMetaDataFillsRestWithPageContent),
     };
 
-    return cmocka_run_group_tests(download_video_tests, NULL, NULL);
+    return cmocka_run_group_tests(download_video_tests, createTestDB, closeDB);
 }

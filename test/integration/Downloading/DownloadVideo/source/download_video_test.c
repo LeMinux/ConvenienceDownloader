@@ -1,5 +1,7 @@
 #include "../includes/download_video_test.h"
 
+enum GREP {FOUND = 0, NOT_FOUND};
+
 static void getRealPath(const char* input, char result [PATH_MAX]){
     if(realpath(input, result) == NULL){
         fail_msg("Could not create real path");
@@ -16,6 +18,7 @@ static void addEntry(sqlite3* database){
     addExtraPathEntry(database, 1, PATH_1);
     addExtraPathEntry(database, 1, PATH_2);
     addExtraPathEntry(database, 1, PATH_3);
+    addExtraPathEntry(database, 1, PATH_4);
 }
 
 static void assertDownloaded(const char* path){
@@ -29,6 +32,7 @@ static void assertDownloaded(const char* path){
     while((dir_entry = readdir(dir)) != NULL){
         ++file_count;
     }
+
     //3 because there is . and .. special dirs
     if(file_count < 3){
         fail_msg("Did not download to %s\n", path);
@@ -39,65 +43,89 @@ static void assertDownloaded(const char* path){
 
 //Don't like the usage of system, but I am in control of what is executed
 //Assuming that I don't change PATH, IFS, or what ever werid shell stuff
-static void assertMetaData(const char* path, const char* meta_content, int exp_ret){
+static void assertMetaData(const char* path, const char* meta_content, enum GREP exp_ret){
     char command [100];
-    size_t len = snprintf(command, sizeof(command), "exiftool '%s'* | grep --fixed-strings '%s'", path, meta_content);
-    if(len >= sizeof(command)){
+    int len = snprintf(command, sizeof(command), "exiftool '%s'* | grep --fixed-strings '%s'", path, meta_content);
+    if(len < 0 || len >= (int)sizeof(command)){
         fail_msg("command buffer is too short you need to extend it");
     }
 
-    int ret = system(command);
-    assert_true(ret == exp_ret || WEXITSTATUS(ret) == exp_ret);
+    enum GREP ret = system(command);
+    if(!WIFEXITED(ret)) fail_msg("Couldn't conduct the system command");
+
+    const char* fail_message = NULL;
+    const char expecting_find [] = "Expected to FIND metadata it was NOT FOUND:";
+    const char expecting_not_find [] = "Expected to NOT FIND metadta but it was FOUND:";
+
+    if(exp_ret == FOUND) fail_message = expecting_find;
+    else if(exp_ret == NOT_FOUND) fail_message = expecting_not_find;
+    else fail_msg("Grep returned a different error code");
+
+    if(WEXITSTATUS(ret) != exp_ret) fail_msg("%s '%s'", fail_message, meta_content);
+
 }
 
-void testDownloadVideoNoMetaData(void** state){
+void testDownloadVideoNoMetaDataUsesOnPageStats(void** state){
     sqlite3* database = *state;
     const char* exp_path = VIDEO_ROOT PATH_1;
-    MetaData_t data = {NULL, NULL, NULL};
+    MetaData_t data = {0};
 
     addEntry(database);
 
     downloadVideo("https://www.youtube.com/watch?v=yxmFztbq234", PATH_1_ID, &data);
 
     assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_NO_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_NO_FOUND);
-    assertMetaData(exp_path, data.album, GREP_NO_FOUND);
+    assertMetaData(exp_path, "Entertainment",  FOUND);        //genre on page
+    assertMetaData(exp_path, "The Microwave Network", FOUND); //artist on page
+    assertMetaData(exp_path, "Album", NOT_FOUND);             //album on page
 }
 
 void testDownloadVideoAllMetaData(void** state){
     sqlite3* database = *state;
-    const char genre [] = "Meme";
-    const char artist [] = "Dont Care";
-    const char album [] = "MegaFunniez";
     const char* exp_path = VIDEO_ROOT PATH_2;
-    MetaData_t data = {.genre=genre, .artist=artist, .album=album};
+    MetaData_t data = {.genre="Meme", .artist="Dont Care", .album="MegaFunniez"};
 
     addEntry(database);
 
     downloadVideo("https://www.youtube.com/watch?v=vVC6HJQEVjo", PATH_2_ID, &data);
 
     assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_FOUND);
-    assertMetaData(exp_path, data.album, GREP_FOUND);
+    assertMetaData(exp_path, data.genre,  FOUND);
+    assertMetaData(exp_path, data.artist, FOUND);
+    assertMetaData(exp_path, data.album, FOUND);
 }
 
 
 void testDownloadVideoWeirdMetaData(void** state){
     sqlite3* database = *state;
-    const char genre [] = "%titles.%exts";
-    const char artist [] = "?P<meta_synopsis>";
-    const char album [] = " ?!@#$%^&*_-~+=.<>|";
     const char* exp_path = VIDEO_ROOT PATH_3;
-    MetaData_t data = {.genre=genre, .artist=artist, .album=album};
+    MetaData_t data = {
+        .genre="%titles.%exts",
+        .artist="?P<meta_synopsis>",
+        .album=" ?!@#$%^&*_-~+=.<>|"
+    };
 
     addEntry(database);
 
     downloadVideo("https://www.youtube.com/watch?v=h7zdroTvMkE", PATH_3_ID, &data);
 
     assertDownloaded(exp_path);
-    assertMetaData(exp_path, data.genre,  GREP_FOUND);
-    assertMetaData(exp_path, data.artist, GREP_FOUND);
-    assertMetaData(exp_path, data.album, GREP_FOUND);
+    assertMetaData(exp_path, data.genre,  FOUND);
+    assertMetaData(exp_path, data.artist, FOUND);
+    assertMetaData(exp_path, data.album, FOUND);
+}
+
+void testDownloadVideoPartialMetaDataFillsRestWithPageContent(void** state){
+    sqlite3* database = *state;
+    const char* exp_path = VIDEO_ROOT PATH_4;
+    MetaData_t data = {.genre="Meme", .artist="", .album="MegaFunniez"};
+
+    addEntry(database);
+
+    downloadVideo("https://www.youtube.com/watch?v=yxmFztbq234", PATH_4_ID, &data);
+
+    assertDownloaded(exp_path);
+    assertMetaData(exp_path, data.genre,  FOUND);
+    assertMetaData(exp_path, "The Microwave Network", FOUND);
+    assertMetaData(exp_path, data.album, FOUND);
 }
