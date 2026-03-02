@@ -209,16 +209,12 @@ char* takeDirectoryInput(void){
 
     if(newline == NOT_PRESENT){
         ADVISE_USER("Path entered is too large");
-        free(absolute_path);
-        absolute_path = NULL;
-        return NULL;
+        goto bad_dir;
     }
 
     if(input[0] == '~'){
         ADVISE_USER("Sorry, usage of ~ is a shell expansion");
-        free(absolute_path);
-        absolute_path = NULL;
-        return NULL;
+        goto bad_dir;
     }
 
     //traling slashes can apparenlty mask a link if it points to a dir due to POSIX
@@ -226,21 +222,21 @@ char* takeDirectoryInput(void){
         input[length - 1] = '\0';
     }
 
-    if(checkDirPath(input) == INVALID){
-        free(absolute_path);
-        absolute_path = NULL;
-        return NULL;
-    }
+    if(checkDirPath(input) == INVALID) goto bad_dir;
 
     //For secure input canonicalization should be the first step
     //but here I don't want to canonize end point links
     if(canonizePath(input, absolute_path) == NULL){
         PRINT_ERROR("Couldn't make an absolute path:");
-        free(absolute_path);
-        absolute_path = NULL;
+        goto bad_dir;
     }
 
     return absolute_path;
+
+    bad_dir:
+    free(absolute_path);
+    absolute_path = NULL;
+    return NULL;
 }
 
 int takeIndexInput(int max_index){
@@ -270,20 +266,14 @@ int takeIndexInput(int max_index){
         if(errno == ERANGE || index > INT_MAX){
             ADVISE_USER("Index given is too large.");
             index = INVALID;
-        }
-
-        if(index < 0){
+        }else if(index < 0){
             ADVISE_USER("Index can't be negative.");
             index = INVALID;
-        }
-
-        if(index == 0){
+        }else if(index == 0){
             ADVISE_USER("Index can't be zero. Index starts at 1.");
             index = INVALID;
-        }
-
-        if(index > max_index){
-            ADVISE_USER("Index is larger than was is available.");
+        }else if(index > max_index){
+            ADVISE_USER("Index is larger than what is available.");
             index = INVALID;
         }
     }
