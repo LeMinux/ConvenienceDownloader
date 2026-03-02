@@ -89,20 +89,25 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
     enum ERROR were_errors = NO_ERROR;
     enum FILE_INPUT line_details = GOOD_LINE;
     while(line_details != DONE){
-        MetaData_t per_line_meta = {NULL};
+        MetaData_t added_meta_data = {0};
         char url_buffer [YT_URL_INPUT_SIZE] = "";
 
-        line_details = readFileLine(list, url_buffer, &per_line_meta);
+        line_details = readFileLine(list, url_buffer, &added_meta_data);
         if(line_details == GOOD_LINE){
-            MetaData_t added_meta_data = {
-                .genre=overall_meta_info->genre,
-                .artist=overall_meta_info->artist,
-                .album=overall_meta_info->album
-            };
+            if(added_meta_data.genre[0] == '\0'){
+                memcpy(added_meta_data.genre, overall_meta_info->genre, META_LEN);
+                added_meta_data.genre[META_LEN] = '\0';
+            }
 
-            if(per_line_meta.genre != NULL) added_meta_data.genre = per_line_meta.genre;
-            if(per_line_meta.artist != NULL) added_meta_data.artist = per_line_meta.artist;
-            if(per_line_meta.album != NULL) added_meta_data.album = per_line_meta.album;
+            if(added_meta_data.artist[0] == '\0'){
+                memcpy(added_meta_data.artist, overall_meta_info->artist, META_LEN);
+                added_meta_data.artist[META_LEN] = '\0';
+            }
+
+            if(added_meta_data.album[0] == '\0'){
+                memcpy(added_meta_data.album, overall_meta_info->album, META_LEN);
+                added_meta_data.album[META_LEN] = '\0';
+            }
 
             if(video_path_id != SKIPPING){
                 enum ERROR video_error = downloadVideo(url_buffer, video_path_id, &added_meta_data);
@@ -127,12 +132,9 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
                     fprintf(error_log, "Getting the cover for the url %s wasn't error free\n", url_buffer);
                 }
             }
-
-            free((char*)per_line_meta.genre);
-            free((char*)per_line_meta.artist);
-            free((char*)per_line_meta.album);
         }
     }
+
     fclose(error_log);
     ADVISE_USER("Finished parsing the file");
     if(were_errors == HAD_ERROR){
@@ -140,6 +142,8 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
     }
 }
 
+//NEED TO ENFORCE A SIZE ON THE METADATA
+//might as well ger ride of malloc usage there
 int main(int argc, char** argv){
     if(initDatabase() == HAD_ERROR){
         exit(EXIT_FAILURE);
@@ -151,9 +155,7 @@ int main(int argc, char** argv){
     int opt = 0;
     int parsing = 1;
     int edit_choice  = -1;
-    char* genre = NULL;
-    char* artist = NULL;
-    char* album = NULL;
+    MetaData_t meta_data = {0};
     char* cover_path = NULL;
     enum COVERS cover_mode = THUMB_ART;
     enum DOWNLOAD_COVERS download_covers = NO;
@@ -187,13 +189,17 @@ int main(int argc, char** argv){
 
         switch(opt){
             case 'a':
-                artist = optarg;
-                (void)sanitizeMetaString(artist);
+                if(strlen(optarg) > META_LEN) WARN_USER("Metadata for ARTIST is too long it will be TRUNCATED to 100 characters");
+                memcpy(meta_data.artist, optarg, META_LEN);
+                meta_data.artist[META_LEN] = '\0';
+                (void)sanitizeMetaString(meta_data.artist);
             break;
 
             case 'b':
-                album = optarg;
-                (void)sanitizeMetaString(album);
+                if(strlen(optarg) > META_LEN) WARN_USER("Metadata for ALBUM is too long it will be TRUNCATED to 100 characters");
+                memcpy(meta_data.album, optarg, META_LEN);
+                meta_data.album[META_LEN] = '\0';
+                (void)sanitizeMetaString(meta_data.album);
             break;
 
             case 'c':
@@ -241,8 +247,10 @@ int main(int argc, char** argv){
             break;
 
             case 'g':
-                genre = optarg;
-                (void)sanitizeMetaString(genre);
+                if(strlen(optarg) > META_LEN) WARN_USER("Metadata for GENRE is too long it will be TRUNCATED to 100 characters");
+                memcpy(meta_data.genre, optarg, META_LEN);
+                meta_data.genre[META_LEN] = '\0';
+                (void)sanitizeMetaString(meta_data.genre);
             break;
 
             case 'h':
@@ -310,9 +318,9 @@ int main(int argc, char** argv){
         }
     } //end of arg parsing
 
-    if(genre != NULL) ADVISE_USER_FORMAT("GENRE metadata will be %s\n", genre);
-    if(artist != NULL) ADVISE_USER_FORMAT("ARTIST metadata will be %s\n", artist);
-    if(album != NULL) ADVISE_USER_FORMAT("ALBUM metadata will be %s\n", album);
+    if(meta_data.genre[0] != '\0') ADVISE_USER_FORMAT("GENRE metadata will be %s\n", meta_data.genre);
+    if(meta_data.artist [0] != '\0') ADVISE_USER_FORMAT("ARTIST metadata will be %s\n", meta_data.artist);
+    if(meta_data.album [0] != '\0') ADVISE_USER_FORMAT("ALBUM metadata will be %s\n", meta_data.album);
 
 
     if(download_covers == YES){
@@ -328,7 +336,6 @@ int main(int argc, char** argv){
         }
     }
 
-    MetaData_t meta_data = {.genre = genre, .artist=artist, .album=album};
     if(url_list == NULL){
         executeNoList(&meta_data, download_covers, cover_mode, cover_path);
     }else{

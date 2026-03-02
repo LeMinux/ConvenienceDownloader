@@ -6,9 +6,9 @@
 #include "globals.h"
 
 typedef struct MetaData{
-    const char* genre;
-    const char* artist;
-    const char* album;
+    char genre [META_SIZE];
+    char artist [META_SIZE];
+    char album [META_SIZE];
 }MetaData_t;
 
 /*

@@ -486,28 +486,28 @@ enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
         url_buffer[YT_URL_INPUT_LEN] = '\0';
         enum OPTIONS {GENRE = 0, ARTIST, ALBUM};
         enum OPTIONS separator_count = GENRE;
-        const size_t meta_sizes [] = {GENRE_LEN + 1, ARTIST_LEN + 1, ALBUM_LEN + 1};
         char* separator_pos = strchrnul(file_line, '|');
 
         while(*separator_pos != '\0' && separator_count <= ALBUM){
             char* colon_pos = strchrnul(separator_pos + 1, ':');
             size_t separation_len = colon_pos - separator_pos - 1;
             if(separation_len > 0){
-                size_t malloc_size = separation_len + 1;
-                if(meta_sizes[separator_count] < separation_len){
-                    malloc_size = meta_sizes[separator_count];
-                }
-                char* new_meta = NULL;
-                new_meta = malloc(malloc_size);
-                memcpy(new_meta, separator_pos + 1, malloc_size - 1);
-                new_meta[malloc_size - 1] = '\0';
-                sanitizeMetaString(new_meta);
-
+                char* new_meta;
                 switch(separator_count){
-                    case GENRE: data->genre = new_meta; break;
-                    case ARTIST: data->artist = new_meta; break;
-                    case ALBUM: data->album = new_meta; break;
+                    case GENRE:  new_meta = data->genre;  break;
+                    case ARTIST: new_meta = data->artist; break;
+                    case ALBUM:  new_meta = data->album;  break;
                 }
+
+                size_t copy_len = separation_len;
+                if(separation_len > META_LEN){
+                    WARN_USER_FORMAT("Metadata in file is longer than %d characters it will be truncated", META_LEN);
+                    copy_len = META_LEN;
+                }
+
+                memcpy(new_meta, separator_pos + 1, copy_len);
+                new_meta[copy_len] = '\0';
+                sanitizeMetaString(new_meta);
             }
 
             assert(separator_count <= ALBUM);

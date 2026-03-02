@@ -5,15 +5,18 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#define VERSION "2026 2.19"
+#define VERSION "2026 3.1"
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
+#define YELLOW    "\033[33m"
 #define CYAN    "\033[36m"
 
 #define MAX_DEPTH 2048
 #define INF_DEPTH -5
+#define META_SIZE 101
+#define META_LEN 100
 
 #define YOUTUBE_URL "https://www.youtube.com/watch?v="
 
@@ -41,7 +44,10 @@ enum FOUND_END {NOT_PRESENT = 0, WAS_PRESENT};
 #define PRINT_FORMAT_ERROR(format_, ...) ((void)fprintf(stderr, RED format_ RESET"\n", __VA_ARGS__))
 
 #define ADVISE_USER(message_) ((void)puts(CYAN message_ RESET))
-
 #define ADVISE_USER_FORMAT(format_, ...) ((void)fprintf(stderr, CYAN format_ RESET"\n", __VA_ARGS__))
+
+#define WARN_USER(message_) ((void)puts(YELLOW message_ RESET))
+#define WARN_USER_FORMAT(format_, ...) ((void)fprintf(stderr, YELLOW format_ RESET"\n", __VA_ARGS__))
+
 
 #endif

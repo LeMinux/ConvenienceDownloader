@@ -64,14 +64,14 @@ static const char ADD_COVER [] = "--embed-thumbnail";
 static const char GENRE_FORMAT [] =  "%%(zqjjxvly|%s)s:%%(meta_genre)s";
 static const char ARTIST_FORMAT [] = "%%(zqqjxvy|%s)s:%%(meta_artist)s";
 static const char ALBUM_FORMAT [] =  "%%(zqjjxvvy|%s)s:%%(meta_album)s";
-static const int META_SIZE = sizeof(GENRE_FORMAT) - 2; //-2 because of %%
+static const int META_TEMPLATE_SIZE = (META_LEN + sizeof(GENRE_FORMAT) - 2); //-2 because of %%
 
 static const char PRINT_TO_FILE [] = "--print-to-file";
 static const char WHAT_TO_PRINT [] = "after_move:filepath";
 static const char FILE_NAME [] = "/tmp/add_cover_to.txt";
 
 static enum ERROR createOutputTemplate(int path_id, char* output_template);
-static char* createMetaArg(const char* data, enum META_TYPE type);
+static enum ERROR createMetaArg(const char* data, char* out_template, enum META_TYPE type);
 
 /*
 *   Sets into output_template the output template used for yt-dlp.
@@ -110,26 +110,24 @@ static enum ERROR createOutputTemplate(int path_id, char* output_template){
 *       NO_ERROR if could create template HAD_ERROR otherwise
 *
 */
-static char* createMetaArg(const char* data, enum META_TYPE type){
+static enum ERROR createMetaArg(const char* data, char* out_template, enum META_TYPE type){
     assert(data != NULL);
+    assert(data[0] != '\0');
+    assert(out_template != NULL);
+    assert(out_template[0] == '\0');
     assert(type == GENRE || type == ARTIST || type == ALBUM);
 
-    int size = strlen(data) + META_SIZE;
-    char* argument = malloc(size);
-    if(argument == NULL) return NULL;
+    int size = strlen(data) + META_TEMPLATE_SIZE;
     int len = 0;
     switch(type){
-        case GENRE:  len = snprintf(argument, size, GENRE_FORMAT, data);  break;
-        case ARTIST: len = snprintf(argument, size, ARTIST_FORMAT, data); break;
-        case ALBUM:  len = snprintf(argument, size, ALBUM_FORMAT, data);  break;
+        case GENRE:  len = snprintf(out_template, size, GENRE_FORMAT, data);  break;
+        case ARTIST: len = snprintf(out_template, size, ARTIST_FORMAT, data); break;
+        case ALBUM:  len = snprintf(out_template, size, ALBUM_FORMAT, data);  break;
     }
 
-    if(len < 0 || len >= size){
-        free(argument);
-        return NULL;
-    }
+    if(len < 0 || len >= size) return HAD_ERROR;
 
-    return argument;
+    return NO_ERROR;
 }
 
 enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
@@ -163,27 +161,24 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     //the size of the pointer array not all the elements
     size_t append_index = sizeof(command_arguments)/sizeof(command_arguments[0]) - 7 - 1;
 
-    char* genre_meta = NULL;
-    char* artist_meta = NULL;
-    char* album_meta = NULL;
+    char genre_meta [META_LEN + sizeof(GENRE_FORMAT) - 2] = "";
+    char artist_meta [META_LEN + sizeof(ARTIST_FORMAT) - 2] = "";
+    char album_meta [META_LEN + sizeof(ALBUM_FORMAT) - 2] = "";
     enum ERROR error_status = HAD_ERROR;
-    if(meta->genre != NULL){
-        genre_meta = createMetaArg(meta->genre, GENRE);
-        if(genre_meta == NULL) goto failed;
+    if(meta->genre[0] != '\0'){
+        if(createMetaArg(meta->genre, genre_meta, GENRE) == HAD_ERROR) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = genre_meta;
     }
 
-    if(meta->artist != NULL){
-        artist_meta = createMetaArg(meta->artist, ARTIST);
-        if(artist_meta == NULL) goto failed;
+    if(meta->artist[0] != '\0'){
+        if(createMetaArg(meta->artist, artist_meta, ARTIST) == HAD_ERROR) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = artist_meta;
     }
 
-    if(meta->album != NULL){
-        album_meta = createMetaArg(meta->album, ALBUM);
-        if(album_meta == NULL) goto failed;
+    if(meta->album[0] != '\0'){
+        if(createMetaArg(meta->album, album_meta, ALBUM) == HAD_ERROR) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = album_meta;
     }
@@ -193,9 +188,6 @@ enum ERROR downloadVideo(const char* yt_url, int v_id, const MetaData_t* meta){
     error_status = execProgram("/usr/bin/yt-dlp", (char* const*)command_arguments);
 
     failed:
-    free(genre_meta);
-    free(artist_meta);
-    free(album_meta);
     return error_status;
 }
 
@@ -248,30 +240,28 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
         default: break;
     }
 
-    char* genre_meta = NULL;
-    char* artist_meta = NULL;
-    char* album_meta = NULL;
+    char genre_meta [META_LEN + sizeof(GENRE_FORMAT) - 2] = "";
     enum ERROR error_status = HAD_ERROR;
-    if(meta->genre != NULL){
-        genre_meta = createMetaArg(meta->genre, GENRE);
-        if(genre_meta == NULL) goto failed;
+    if(meta->genre[0] != '\0'){
+        if(createMetaArg(meta->genre, genre_meta, GENRE) == HAD_ERROR) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = genre_meta;
     }
 
-    if(meta->artist != NULL){
-        artist_meta = createMetaArg(meta->artist, ARTIST);
-        if(artist_meta == NULL) goto failed;
+    char artist_meta [META_LEN + sizeof(ARTIST_FORMAT) - 2] = "";
+    if(meta->artist[0] != '\0'){
+        if(createMetaArg(meta->artist, artist_meta, ARTIST) == HAD_ERROR) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = artist_meta;
     }
 
-    if(meta->album != NULL){
-        album_meta = createMetaArg(meta->album, ALBUM);
-        if(album_meta == NULL) goto failed;
+    char album_meta [META_LEN + sizeof(ALBUM_FORMAT) - 2] = "";
+    if(meta->album[0] != '\0'){
+        if(createMetaArg(meta->album, album_meta, ALBUM) == HAD_ERROR) goto failed;
         command_arguments[append_index++] = META_ARG;
         command_arguments[append_index++] = album_meta;
     }
+
 
     command_arguments[append_index] = yt_url;
     error_status = execProgram("/usr/bin/yt-dlp", (char* const*)command_arguments);
@@ -282,9 +272,6 @@ enum ERROR downloadAudio(const char* yt_url, int a_id, const MetaData_t* meta, e
     }
 
     failed:
-    free(genre_meta);
-    free(artist_meta);
-    free(album_meta);
     return error_status;
 }
 
