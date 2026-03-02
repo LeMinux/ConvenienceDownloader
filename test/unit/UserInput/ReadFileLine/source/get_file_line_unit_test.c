@@ -18,7 +18,7 @@ void testReadFileLineReturnsDoneOnEmptyFile(void** state){
     enum FILE_INPUT exp_ret = DONE;
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
@@ -31,7 +31,7 @@ void testReadFileLineReturnsDoneIfOneLine(void** state){
     writeData(test_file, "Information I don't care About");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
     (void)readFileLine(test_file, act_url, &act_meta);
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -46,7 +46,7 @@ void testReadFileLineProceedsToNextLine(void** state){
     writeData(test_file, "%s\n%s",  exp_url, exp_url);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
     assert_int_equal(act_ret, exp_ret);
@@ -62,61 +62,61 @@ void testReadFileLineProceedsToNextLine(void** state){
 void testReadFileLineShortURLNoMeta(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s",  exp_url);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLNoMetaUsingSyntax(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:::",  exp_url);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLNoMetaWithInitialSeperator(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|",  exp_url);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineDetectsEmptyLine(void** state){
@@ -125,7 +125,7 @@ void testReadFileLineDetectsEmptyLine(void** state){
     enum FILE_INPUT exp_ret1 = GOOD_LINE;
     enum FILE_INPUT exp_ret2 = BAD_LINE;
     enum FILE_INPUT exp_ret3 = GOOD_LINE;
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     writeData(test_file, "%s\n\n%s",  exp_url, exp_url);
 
@@ -146,73 +146,73 @@ void testReadFileLineDetectsEmptyLine(void** state){
 void testReadFileLineShortURLJustGenre(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="ReallyCool", .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="ReallyCool", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:",  exp_url, exp_meta.genre);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLJustArtist(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="CoolDude", .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="CoolDude", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s:",  exp_url, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLJustAlbum(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album="CoolSongs"};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album="CoolSongs"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|::%s:",  exp_url, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLGenreArtistVerboseEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=NULL};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:%s::",  exp_url, exp_meta.genre, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -220,19 +220,19 @@ void testReadFileLineShortURLGenreArtistVerboseEndingColon(void** state){
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLGenreArtist(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=NULL};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:%s:",  exp_url, exp_meta.genre, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -240,45 +240,45 @@ void testReadFileLineShortURLGenreArtist(void** state){
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLGenreAlbum(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist=NULL, .album="Evil"};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s::%s:",  exp_url, exp_meta.genre, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLArtistAlbum(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="Larry", .album="Evil"};
+    const MetaData_t exp_meta = {.genre="", .artist="Larry", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s:%s:",  exp_url, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
@@ -292,7 +292,7 @@ void testReadFileLineShortURLAllMeta(void** state){
     writeData(test_file, "%s|%s:%s:%s:",  exp_url, exp_meta.genre, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -312,7 +312,7 @@ void testReadFileLineShortURLAllMetaWithSpaces(void** state){
     writeData(test_file, "%s|%s:%s:%s:",  exp_url, exp_meta.genre, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -326,73 +326,73 @@ void testReadFileLineShortURLAllMetaWithSpaces(void** state){
 void testReadFileLineShortURLJustGenreNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="Barbeque", .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="Barbeque", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s",  exp_url, exp_meta.genre);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLJustArtistNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="BadDaddy", .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="BadDaddy", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s",  exp_url, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLJustAlbumNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album="Louie"};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album="Louie"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|::%s",  exp_url, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLGenreArtistNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=NULL};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:%s",  exp_url, exp_meta.genre, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -400,45 +400,45 @@ void testReadFileLineShortURLGenreArtistNoEndingColon(void** state){
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLGenreAlbumNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist=NULL, .album="Evil"};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s::%s",  exp_url, exp_meta.genre, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineShortURLArtistAlbumNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="Larry", .album="Evil"};
+    const MetaData_t exp_meta = {.genre="", .artist="Larry", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s:%s",  exp_url, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
@@ -452,7 +452,7 @@ void testReadFileLineShortURLAllMetaNoEndingColon(void** state){
     writeData(test_file, "%s|%s:%s:%s",  exp_url, exp_meta.genre, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -466,133 +466,133 @@ void testReadFileLineShortURLAllMetaNoEndingColon(void** state){
 void testReadFileLineLongURLNoMeta(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s",  LONG_URL);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
-
-    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
-
-    assert_int_equal(act_ret, exp_ret);
-    assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
-}
-
-void testReadFileLineLongURLNoMetaUsingSyntax(void** state){
-    FILE* test_file = *state;
-    const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album=NULL};
-    enum FILE_INPUT exp_ret = GOOD_LINE;
-
-    writeData(test_file, "%s|:::",  LONG_URL);
-
-    char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
-
-    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
-
-    assert_int_equal(act_ret, exp_ret);
-    assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
-}
-
-void testReadFileLineLongURLNoMetaWithInitialSeperator(void** state){
-    FILE* test_file = *state;
-    const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album=NULL};
-    enum FILE_INPUT exp_ret = GOOD_LINE;
-
-    writeData(test_file, "%s|",  LONG_URL);
-
-    char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
-
-    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
-
-    assert_int_equal(act_ret, exp_ret);
-    assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
-}
-
-void testReadFileLineLongURLJustGenre(void** state){
-    FILE* test_file = *state;
-    const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="ReallyCool", .artist=NULL, .album=NULL};
-    enum FILE_INPUT exp_ret = GOOD_LINE;
-
-    writeData(test_file, "%s|%s:",  LONG_URL, exp_meta.genre);
-
-    char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
+}
+
+void testReadFileLineLongURLNoMetaUsingSyntax(void** state){
+    FILE* test_file = *state;
+    const char* exp_url = EXP_LONG;
+    const MetaData_t exp_meta = {.genre="", .artist="", .album=""};
+    enum FILE_INPUT exp_ret = GOOD_LINE;
+
+    writeData(test_file, "%s|:::",  LONG_URL);
+
+    char act_url [YT_URL_INPUT_SIZE];
+    MetaData_t act_meta = {0};
+
+    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
+
+    assert_int_equal(act_ret, exp_ret);
+    assert_string_equal(act_url, exp_url);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
+}
+
+void testReadFileLineLongURLNoMetaWithInitialSeperator(void** state){
+    FILE* test_file = *state;
+    const char* exp_url = EXP_LONG;
+    const MetaData_t exp_meta = {.genre="", .artist="", .album=""};
+    enum FILE_INPUT exp_ret = GOOD_LINE;
+
+    writeData(test_file, "%s|",  LONG_URL);
+
+    char act_url [YT_URL_INPUT_SIZE];
+    MetaData_t act_meta = {0};
+
+    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
+
+    assert_int_equal(act_ret, exp_ret);
+    assert_string_equal(act_url, exp_url);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
+}
+
+void testReadFileLineLongURLJustGenre(void** state){
+    FILE* test_file = *state;
+    const char* exp_url = EXP_LONG;
+    const MetaData_t exp_meta = {.genre="ReallyCool", .artist="", .album=""};
+    enum FILE_INPUT exp_ret = GOOD_LINE;
+
+    writeData(test_file, "%s|%s:",  LONG_URL, exp_meta.genre);
+
+    char act_url [YT_URL_INPUT_SIZE];
+    MetaData_t act_meta = {0};
+
+    enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
+
+    assert_int_equal(act_ret, exp_ret);
+    assert_string_equal(act_url, exp_url);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLJustArtist(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="CoolDude", .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="CoolDude", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s:",  LONG_URL, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLJustAlbum(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album="CoolSongs"};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album="CoolSongs"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|::%s:",  LONG_URL, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLGenreArtist(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=NULL};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:%s:",  LONG_URL, exp_meta.genre, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -600,19 +600,19 @@ void testReadFileLineLongURLGenreArtist(void** state){
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLGenreArtistVerboseEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=NULL};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:%s::",  LONG_URL, exp_meta.genre, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -620,46 +620,46 @@ void testReadFileLineLongURLGenreArtistVerboseEndingColon(void** state){
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 
 void testReadFileLineLongURLGenreAlbum(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist=NULL, .album="Evil"};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s::%s:",  LONG_URL, exp_meta.genre, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLArtistAlbum(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="Larry", .album="Evil"};
+    const MetaData_t exp_meta = {.genre="", .artist="Larry", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s:%s:",  LONG_URL, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
@@ -673,7 +673,7 @@ void testReadFileLineLongURLAllMeta(void** state){
     writeData(test_file, "%s|%s:%s:%s:",  LONG_URL, exp_meta.genre, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -687,73 +687,73 @@ void testReadFileLineLongURLAllMeta(void** state){
 void testReadFileLineLongURLJustGenreNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="Barbeque", .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="Barbeque", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s",  LONG_URL, exp_meta.genre);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLJustArtistNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="BadDaddy", .album=NULL};
+    const MetaData_t exp_meta = {.genre="", .artist="BadDaddy", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s",  LONG_URL, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLJustAlbumNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist=NULL, .album="Louie"};
+    const MetaData_t exp_meta = {.genre="", .artist="", .album="Louie"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|::%s",  LONG_URL, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLGenreArtistNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=NULL};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="Larry", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:%s",  LONG_URL, exp_meta.genre, exp_meta.artist);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -761,45 +761,45 @@ void testReadFileLineLongURLGenreArtistNoEndingColon(void** state){
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLGenreAlbumNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre="BallSlammer", .artist=NULL, .album="Evil"};
+    const MetaData_t exp_meta = {.genre="BallSlammer", .artist="", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s::%s",  LONG_URL, exp_meta.genre, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLongURLArtistAlbumNoEndingColon(void** state){
     FILE* test_file = *state;
     const char* exp_url = EXP_LONG;
-    const MetaData_t exp_meta = {.genre=NULL, .artist="Larry", .album="Evil"};
+    const MetaData_t exp_meta = {.genre="", .artist="Larry", .album="Evil"};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|:%s:%s",  LONG_URL, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
-    assert_ptr_equal(act_meta.genre, exp_meta.genre);
+    assert_string_equal(act_meta.genre, exp_meta.genre);
     assert_string_equal(act_meta.artist, exp_meta.artist);
     assert_string_equal(act_meta.album, exp_meta.album);
 }
@@ -813,7 +813,7 @@ void testReadFileLineLongURLAllMetaNoEndingColon(void** state){
     writeData(test_file, "%s|%s:%s:%s",  LONG_URL, exp_meta.genre, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -831,7 +831,7 @@ void testReadFileLineInvalidURL(void** state){
     writeData(test_file, "%s",  "ayiaaaa");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -847,7 +847,7 @@ void testReadFileLineLongURLAllMetaWithSpaces(void** state){
     writeData(test_file, "%s|%s:%s:%s:",  LONG_URL, exp_meta.genre, exp_meta.artist, exp_meta.album);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -866,7 +866,7 @@ void testReadFileLineTooShortID(void** state){
     writeData(test_file, "%s",  "https://www.youtube.com/watch?v=ui1DpWyYeA");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -880,7 +880,7 @@ void testReadFileLineValidURLInWrongSpot(void** state){
     writeData(test_file, "extra_%s",  "https://www.youtube.com/watch?v=ui1DpWyYeA");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -894,7 +894,7 @@ void testReadFileLineInvalidIDPortion(void** state){
     writeData(test_file, "%s",  "https://www.youtube.com/watch?v=ui1DpW|:eiA");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -913,7 +913,7 @@ void testReadFileLineMoreSeperatorsThanNeeded(void** state){
               "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
@@ -927,14 +927,16 @@ void testReadFileLineMoreSeperatorsThanNeeded(void** state){
 void testReadFileLineUsesShorterLen(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    char long_meta [GENRE_LEN + 10];
-    memset(long_meta, 'M', GENRE_LEN + 10);
+    MetaData_t exp_meta = {0};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
+    char long_meta [META_LEN + 10];
+    memset(long_meta, 'M', META_LEN + 10);
+    memset(exp_meta.genre, 'M', META_LEN);
+    exp_meta.genre[META_LEN] = '\0';
+
     writeData(test_file, "%s|%s:",  exp_url, long_meta);
-    long_meta[GENRE_LEN] = '\0'; //set the nul byte as string comparision should stop
-    const MetaData_t exp_meta = {.genre=long_meta, .artist=NULL, .album=NULL};
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
     char act_url [YT_URL_INPUT_SIZE];
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
@@ -947,21 +949,21 @@ void testReadFileLineUsesShorterLen(void** state){
 void testReadFileLineSanitizes(void** state){
     FILE* test_file = *state;
     const char* exp_url = SHORT_URL;
-    const MetaData_t exp_meta = {.genre="%genres", .artist=NULL, .album=NULL};
+    const MetaData_t exp_meta = {.genre="%genres", .artist="", .album=""};
     enum FILE_INPUT exp_ret = GOOD_LINE;
 
     writeData(test_file, "%s|%s:",  exp_url, "%(genre)s");
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
     assert_int_equal(act_ret, exp_ret);
     assert_string_equal(act_url, exp_url);
     assert_string_equal(act_meta.genre, exp_meta.genre);
-    assert_ptr_equal(act_meta.artist, exp_meta.artist);
-    assert_ptr_equal(act_meta.album, exp_meta.album);
+    assert_string_equal(act_meta.artist, exp_meta.artist);
+    assert_string_equal(act_meta.album, exp_meta.album);
 }
 
 void testReadFileLineLineOutOfBufferIsBadLine(void** state){
@@ -974,7 +976,7 @@ void testReadFileLineLineOutOfBufferIsBadLine(void** state){
     writeData(test_file, "%s|%s:%s:%s:", LONG_URL, long_meta, long_meta, long_meta);
 
     char act_url [YT_URL_INPUT_SIZE];
-    MetaData_t act_meta = {NULL, NULL, NULL};
+    MetaData_t act_meta = {0};
 
     enum FILE_INPUT act_ret = readFileLine(test_file, act_url, &act_meta);
 
