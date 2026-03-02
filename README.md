@@ -50,6 +50,10 @@ downloader \[OPTIONS\]
     When you specify one of the tags for metadata you are simply overwriting what was pulled from the page.
     In some cases, like for albums, there may not be a metadata tag so it will be empty.
     I have no way of setting metadata to empty yet, but I'm debating if I would like to add this feature.
+    When you do add your own metadata whether it's through the command line or by file the max length is 100 characters.
+    This should be plenty of room for most cases other than maybe the raw exception of a few artists.
+    If the metadata given is too long, the program will keep going, but it will truncate the metadata to 100 characters.
+    A warning message will be given in this case.
 
 ## Options
 
