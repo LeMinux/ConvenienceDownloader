@@ -21,3 +21,15 @@ So you know, documentation is your friend when it comes to niche stuff.
 You'll also notice that I have Makefiles running along down to keep things truly automated.
 That way you can call make at an upper level and cascade down to run everything, but if I need more granular debugging I can to the directory and run make in there.
 They may not be the best Makefiles as I'm not entirely sure if I got the dependencies to reflect changes to compile again properly but it works.
+
+I have considered adding an integration test for main.c and have tried to implement it a few times, but I've dissuaded myself each time.
+The reasoning always came down to main using units that have already been verified as passing tests, so my scope of testing is just main using those units correctly.
+At which point mocking could be used, but this would require mocking everything else and tests require their own main file leading to double mains.
+Perhaps I could include the C file and add \_\_wrap\_ functions, but that seems kinda sloppy.
+Really the main concern I have is like 15 lines relating to file input and extracting metadata.
+Now I could make those helper functions not static, but once again what am I really testing.
+It's either duplicate testing at a higher level, or many mocks checking parameters.
+Once again bringing back to the point of testing main for parameter passing where unit testing has shown they can handle those parameters.
+With main being smaller, I feel it's probably sufficient to determine behavior with code review and a bit of manual testing.
+Manual testing of course has the drawbacks of being inconsistent, but it's also kind of just using the program naturally.
+Perhaps my reasoning is absolute garbage \*insert shrug emoji\*, but I feel testing main is too much effort for not much beneficial feedback.
