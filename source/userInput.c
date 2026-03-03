@@ -400,7 +400,6 @@ int getUserChoiceForDir(enum CONFIG type){
            type == COVER_CONFIG);
 
     int num_of_rows = getNumOfPathRowsForConfig(type);
-    printf("Rows count %d\n",num_of_rows);
     if(num_of_rows == 0){
         switch(type){
             case AUDIO_CONFIG: ADVISE_USER("Nothing to be selected for AUDIOs"); break;
