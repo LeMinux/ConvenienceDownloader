@@ -142,7 +142,7 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
     fclose(error_log);
     ADVISE_USER("Finished parsing the file");
     if(were_errors == HAD_ERROR){
-        ADVISE_USER("There were some errors while downloading. Check the file tmp/con-downloader-errors.txt");
+        ADVISE_USER("There were some errors while downloading. Check the file /tmp/con-downloader-errors.txt");
     }
 }
 
