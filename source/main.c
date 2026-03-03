@@ -43,7 +43,8 @@ static void editMenu(enum CONFIG config){
 }
 
 static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path){
-    do{
+    enum REPEAT keep_going = REPEAT;
+    while(keep_going == REPEAT){
         int video_path_id = getUserChoiceForDir(VIDEO_CONFIG);
         int audio_path_id = getUserChoiceForDir(AUDIO_CONFIG);
         int cover_path_id = SKIPPING;
@@ -62,11 +63,14 @@ static void executeNoList(const MetaData_t* meta_info, enum DOWNLOAD_COVERS want
                     user_input = VALID;
                 }
             }
+
             if(video_path_id != SKIPPING) (void)downloadVideo(yt_url, video_path_id, meta_info);
             if(audio_path_id != SKIPPING) (void)downloadAudio(yt_url, audio_path_id, meta_info, cover_mode, cover_path);
             if(cover_path_id != SKIPPING) (void)downloadCover(yt_url, cover_path_id);
         }
-    }while(askToRepeat());
+
+        while((keep_going = askToRepeat()) == ASK_AGAIN);
+    }
 }
 
 static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enum DOWNLOAD_COVERS wants_cover, enum COVERS cover_mode, const char* cover_path){
