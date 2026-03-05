@@ -191,7 +191,7 @@ downloader \[OPTIONS\]
     If a root file has new children they will be added to the database.
     The idea is you don't change your directory paths very often, so to speed up Initialization the program doesn't parse all paths at the beginning anymore.
 
-- -s, --strict-meta
+- -s, --strict-meta (NOT IMPLEMENTED)
 
     Use this option if you want to strictly use the metadata you provide.
     The default behavior is to always add artist, album, and genre metadata information.
@@ -212,4 +212,3 @@ downloader \[OPTIONS\]
 -`./download.out -n` no thumbnail are added to mp3 videos.
 
 -`./download.out -g "a genre" -b bangers -a FunnyGuy` Downloads in asking mode setting the metadata for genre to "a genre", albums to bangers, and the artist as FunnyGuy. Remember to quote strings that have spaces so the shell interprets it as one.
-
