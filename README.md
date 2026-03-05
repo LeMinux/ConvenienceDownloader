@@ -21,9 +21,10 @@ downloader \[OPTIONS\]
 - default behavior (Asking behavior)
 
     Asking behavior is used if you do not give a file and is the default behavior.
-    This will prompt your asking you to type the index on where to send files.
-    The list is ordered in alphabetical order with the roots you have specified with their associated paths in alphabetical order.
-    If you want to select to add to the root path itself the first option for a root is always the slash.
+    This behavior will continuously ask you for URLs and where to send the content per URL until you tell it to stop.
+    An index list is provided to help make selection a bit easier, and you will see this in file mode as well.
+    The index list is alphabetically ordered by roots first then they have their children paths are in alphabetical order as well.
+    If you want to select the root path itself it's the first option for that root denoted by a forward slash '/'.
     Example:
     ```
      Root_A
@@ -40,18 +41,16 @@ downloader \[OPTIONS\]
          /c/
     ```
 
-    If you want to skip a prompt because you don't want that type of file you can press enter.
-    The program will then use yt-dlp to download the file types and send them to the destinations your specified.
-    Mp4 files will have embedded metadata that yt-dlp adds, and mp3 files will have the metadata and thumbnail cover added.
-    This is included by default since I like how my audio players sorts the content based on the metadata.
-    After that URL has had its downloads, the program will ask if you want to download more in which case you can say yes/y to repeat the cycle or no/n to quit.
-
-    Currently, when it comes to metadata it will always try to add a field.
+    If you want to skip a file type because you don't want that type of file you can press enter.
+    If you have made a mistake with your index selection, in asking mode you can skip the URL prompt by pressing enter which will skip to asking if you want to download more.
+    File mode doesn't have this as your urls are in a file, so you will need to CTRL + C to abruptly quit if you make a mistake in index selection.
+    The program will then use yt-dlp to download the file types and send them to the destinations you specified.
+    By default there will always be metadata added from the youtube page due to how yt-dlp does it with the options I gave it.
     When you specify one of the tags for metadata you are simply overwriting what was pulled from the page.
     In some cases, like for albums, there may not be a metadata tag so it will be empty.
     I have no way of setting metadata to empty yet, but I'm debating if I would like to add this feature.
     When you do add your own metadata whether it's through the command line or by file the max length is 100 characters.
-    This should be plenty of room for most cases other than maybe the raw exception of a few artists.
+    This should be plenty of room for most cases other than maybe the rare exception of a few artists.
     If the metadata given is too long, the program will keep going, but it will truncate the metadata to 100 characters.
     A warning message will be given in this case.
 
@@ -60,7 +59,7 @@ downloader \[OPTIONS\]
 - -a, --artist ARTIST
 
     Add an artist of your choosing to all downloaded content.
-    In the default mode this will add this artist in the metadata to every downloaded file.
+    In the asking mode this will add this artist in the metadata to every downloaded file.
     In the file mode it will be the default option if there isn't an artist specified for that line.
     Due to how I opted to use yt-dlp for the metadata adding, there are some characters you can't use.
     The main ones being the opening and closing parenthesis as that's part of an output template syntax yt-dlp uses.
@@ -68,7 +67,7 @@ downloader \[OPTIONS\]
 - -b, --album ALBUM
 
     Add an album of your choosing to all downloaded content.
-    In the default mode this will add this album in the metadata to every downloaded file.
+    In the asking mode this will add this album in the metadata to every downloaded file.
     In the file mode it will be the default option if there isn't an album specified for that line.
     Due to how I opted to use yt-dlp for the metadata adding, there are some characters you can't use.
     The main ones being the opening and closing parenthesis as that's part of an output template syntax yt-dlp uses.
@@ -95,8 +94,9 @@ downloader \[OPTIONS\]
     The audio config is for where your .mp3 files can be sent.
     The video config is for where your .mp4 files can be sent.
     The cover config is for where you can specify to download thumbnails from videos.
-    The blacklist is there for if you have cheeky directories that you don't want to send any content into.
+    The blacklist is there for if you don't want the program to go inside of that directory when looking for sub directories, nor use the directory itself as an index option.
     An example is if you were to specify a larger parent directory like Documents, but don't want to send stuff into WordDocs.
+    You can use a blacklist path like /home/user/Documents/WordDocs.
     The blacklist applies to all configs, so you can't have a blacklist for just video or audio destinations.
 
    - Add
@@ -106,7 +106,7 @@ downloader \[OPTIONS\]
 
    - Update
         Assuming you have paths to update, you can specify the index of what root to update.
-        You can only update the depth of a path as updating the path is just a deletion.
+        You can only update the depth of a path as updating the path is just a deletion and an adding.
         There is special behavior to this option though.
         If you have no intention of updating the depth you can skip it, and it will cause the program to search for subdirectories in that root.
         This is useful if you want to just update one root because you have added extra subdirectories in there.
@@ -122,14 +122,15 @@ downloader \[OPTIONS\]
     Specifying a file changes the behavior away from asking, so you will only be prompted once where to send information.
     This means everything in that file will be sent to the same destinations you give.
     Just like asking however, any of the other options that add metadata or covers will be applied to all of URLs in the list.
-    As an example adding the --artist AHHHHHH will add AHHHHHH as the artist in the metadata for all the downloaded files in the list.
+    As an example adding the --artist AHHHHHH will add AHHHHHH as the artist in the metadata for all the downloaded video and audio files in the list.
     Another example of `./downloader --genre THIS --artist IS --album SPOOKY` will set the genre to 'THIS', artist to 'IS', and album to 'SPOOKY' for all downloaded content in the file.
     However, it may be desirable to change this behavior, so a special syntax for file lines is given.
-    Each URL should be on a separate line in the format of YT_URL|GENRE:ARTIST:ALBUM:
+    Each URL must be on a separate line in the format of YT_URL|GENRE:ARTIST:ALBUM:
     Text after the pipe is there for if you want to change the metadata special for that line different from the overall metadata given at the command line.
     If you don't want to add different metadata you can just include the URL without the pipe.
-    You also don't require the ending semicolon, but you can't skip colons in between if you are wanting to skip a metadata.
+    You also don't require an ending semicolon, but you can't skip colons in between if you are wanting to skip a metadata.
     If you do want to skip a tag make sure to end it with an ending colon so it can be determined as empty.
+    You also can't include a colon in the tag as that will stop the parsing early for that tag.
 
     Example:
     ```
@@ -159,7 +160,7 @@ downloader \[OPTIONS\]
 - -g, --genre GENRE
 
     Add a genre of your choosing to all downloaded content.
-    In the default mode this will add this genre in the metadata to every downloaded file.
+    In the asking mode this will add this genre in the metadata to every downloaded file.
     In the file mode it will be the default option if there isn't a genre specified for that line.
     Due to how I opted to use yt-dlp for the metadata adding, there are some characters you can't use.
     The main ones being the opening and closing parenthesis as that's part of an output template syntax yt-dlp uses.
@@ -207,8 +208,6 @@ downloader \[OPTIONS\]
 
 -`./download.out -f listOfURLs.txt` downloads all urls in that list to where the user specifies during execution. This does not prompt per entry in the list. This also downloads the youtube thumbnail and places it into the .mp3.
 
--`./download.out -f listOfURLsANDMP3.txt -c ./coverArt.jpg` downloads all urls and adds coverArt.jpg to all .mp3 files and sends them to the specified mp4 and mp3 directories
-
 -`./download.out -n` no thumbnail are added to mp3 videos.
 
--`./download.out -g "a genre" -b bangers -a FunnyGuy` Downloads in asking mode setting the metadata for genre to "a genre", albums to bangers, and the artist as FunnyGuy. Remember to quote strings that have spaces so the shell interprets it as one.
+-`./download.out -g "a genre" -b bangers -a FunnyGuy` Downloads in asking mode setting the metadata for genre to "a genre", albums to "bangers", and the artist as "FunnyGuy". Remember to quote strings that have spaces so the shell interprets it as one.
