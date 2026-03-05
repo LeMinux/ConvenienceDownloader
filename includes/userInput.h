@@ -1,31 +1,52 @@
 #ifndef USERINPUT_H
 #define USERINPUT_H
 
+#include <stdio.h>
+#include <stddef.h>
+#include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "helpers.h"
-#include "fileOps.h"
 #include "globals.h"
+#include "downloading.h"
 
-//error message defines
-#define DOWNLOAD_FAIL_MSG "\nError DWNF: Failed to download with provided URL"
-#define TEMP_FILE_FAIL_MSG "\nERROR READ: Error in reading temporary file"
-#define FILE_FAIL_MSG  "\nERROR GVFL: Error in reading given file. File does not exist"
-#define DIR_FAIL_MSG  "\nERROR GVDR: Error in reading given directory. Directory does not exist"
-#define MP4_FAIL_MSG "\nERROR MVP4: Error in moving video file to desired directory"
-#define MP3_FAIL_MSG "\nERROR MVP3: Error in moving audio file to desired directory"
-#define SKIP_VALID_MSG "\nERROR INVD: Error in user skipping selecting a directory"
+//Another NASA sin :(
+#ifdef PREVENT_INTERNAL_LINKAGE
+    #include "testWrapInput.h"
+#endif
 
-#define CHUNK_READ 51
+#define AUDIO_STRING "audio"
+#define VIDEO_STRING "video"
+#define COVER_STRING "cover"
+#define BLACK_STRING "black"
+#define INF_STRING "INF"
 
-//gets the URL from the user
-//the parameter is an array of YT_URL_BUFFER size since
-//the only required part needed is the base URL and the video ID parameter
-void getURL(char [YT_URL_INPUT_SIZE]);
+#define FILE_LINE_BUF_SIZE (YT_URL_INPUT_SIZE + (3 * META_LEN))
+
+#define OPTION_LEN 5
+
+enum REPEAT {ASK_AGAIN = -1, NO_REPEAT, REPEAT};
+enum FILE_INPUT {BAD_LINE = -1, DONE, GOOD_LINE};
+
+/*
+*	gets the URL from the user.
+*	the parameter is a passed by reference string to place the ID into
+*	It's not necessary to carry around the entire string as sometimes there can
+*	be really long youtube URLs, and the only thing that's really needed to get
+*	to a youtube video is the beginning youtube.com protion and the video ID parameter
+*
+*	return:
+*    VALID for a valid URL INVALID to prompt input again.
+*    If input is VALID the video ID is placed into the parameter.
+*    Don't try to use the ID if INVALID is passed as this method won't overwrite
+*    previous contents so you will use what ever was in ret_id before calling.
+*/
+enum INPUT getURLFromUser(char* ret_url);
 
 /*
 *	downloads a song given the URL for it
@@ -37,45 +58,129 @@ void getURL(char [YT_URL_INPUT_SIZE]);
 *	downloadCoverArt: 0 to for not downloading thumbnails and 1 to download thumbnails
 *
 *	return: success or failure
-*/
 int downloadFromURL(const char* youtubeURL, int mode, int downloadCoverArt);
+*/
 
 /*
 *	asks the user if they would like to continue downloading
 *
-*	return: 0 for yes 1 for no
+*	return: REPEAT for yes NO_REPEAT for no ASK_AGAIN if input is invalid
 */
-int askToRepeat(void);
+enum REPEAT askToRepeat(void);
 
-
-char* getUserChoiceForDir(const char* baseDir, const char* prompt);
-
-char* getUserChoiceForDirNoSkip(const char* baseDir, const char* prompt);
 
 /*
-*	method for obtaining input from file streams where input size is known
-*	returns how many characters read for any error checking needed
-*	this excludes the count for the nul byte
-*	Uses fgets so it is gaurenteed to be nul terminating
+*	Obtains user input where size is bounded.
+*	Best used for strings on the stack where bounds is known.
+*	Input is read until it encounters a newline or EOF or size - 1 characters.
+*	If a newline is encountered it's replaced with a nul byte and length is adjusted.
+*	If you care about knowing if a newline was present in the input a passed by reference enum
+*	is used. This way you can determine if the user input something larger than expected so that
+*	you don't use truncated input. This parameter can be NULL if it's not cared about.
+*	This is meant for c-strings, so a bound of 1 isn't useful as that'll just give you a nul byte.
+*	Since this is a core function for input, as many others call it, if a file stream
+*	error does occur then the program will exit. The expectation should be that
+*	if I get return value from this function then everything is fine rather than
+*	having to check for an error then having to figure out what that error is from others.
 *
-*	stream: file stream which can include stdin*
+*	stream: file stream which can include stdin
 *	dest: destination string and should not be NULL
-*		NULL is not checked since if you are calling this you already can check yourself
-*	buffer: size of input expected. This should account for the nul byte
+*	buffer: size of input buffer. This should account for the nul byte like you would for fgets.
+*	is_found: enum to determine if a newline was found in input.
 *
-*	return: returns how much was read excluding nul byte
+*   return:
+*   length of what was read excluding the nul byte.
+*   The amount returned is able to be used to determine the position of the nul byte.
 */
-int exactInput(FILE* stream, char* dest, int buffer);
+size_t boundedInput(FILE* stream, char* dest, size_t size, enum FOUND_END* is_found);
+
 
 /*
-*	helper method to read a line in a file of an unknown length
-*	returns the length of the amount read
+ * Translate the user's command line argument into a config option
+ *
+ * input: User's command line input for the -e option
+ *
+ * return: AUDIO, VIDEO, COVER, BLACK, or NOT_A_CONFIG
+ */
+enum CONFIG getConfigToEdit(const char* input);
+
+//these below used to be in their own separate file,
+//but now they are here
+
+/*
+*   Takes input from the user to accept a directory.
+*   The returned pointer is allocated on the heap and should be freed.
+*   This still remains true even on empty input.
+*   A string literal of "" could be returned, but that would mean this
+*   method has two different behaviors with one potentially leading to
+*   modifying a string literal by casting away the const
 *
-*	stream: File stream to take input from
-*	dest: address to string which can be NULL
-*
-*	return: returns how much was read excluding nul byte
+*   return: NULL on error or a malloced absolute path
 */
-int unknownInput(FILE* stream, char** dest);
+char* takeDirectoryInput(void);
+
+/*
+*   Function for taking in input for what depth a root path should have.
+*   There is no index 0, so index 1 is the first index.
+*
+*   return: returns a value < INT_MAX or the value of INF_DEPTH or INVALID
+*/
+int takeDepthInput(void);
+
+/*
+*   Function for taking in input for what index a root path is.
+*
+*   param: max_index specifies what is the maximum index allowed
+*
+*   return: returns a value < max_index or INVALID
+*/
+int takeIndexInput(int max_index);
+
+/*
+*   Presents the user with an indexed selection for what path to send stuff to
+*   The selection is for paths and not roots.
+*   The user can opt to skip this choice if they don't need it.
+*
+*   return:
+*       path_id associate with the selection
+*       OR
+*       SKIPPING if the user wants to skip
+*/
+int getUserChoiceForDir(enum CONFIG type);
+
+/*
+*   Sanitization is needed due to how yt-dlp handles reading OUTPUT TEMPLATES.
+*   They have a format of %(<all the options>)s and if the user inputs
+*   an output template then yt-dlp crashes trying to double interpret.
+*   My guess to why it crashes is because it's trying to access a JSON key:value
+*   from a non-JSON such as just the variable or someting.
+*   A % is fine to include it's mostly the () that cause problems.
+*   semicolons do need to be escaped, but I'm just not going to worry about it and remove them.
+*
+*   return:
+*   meta_arg in-place replaced data removing potentially bad characters
+*   size_t return of the new length of meta_arg
+*/
+size_t sanitizeMetaString(char* meta_arg);
+
+
+/*
+*   Reads a line from the user's given file from the --file option and parses meta information.
+*   Meta information that is found is added to the passed by reference MetaData_t parameter.
+*   This information is allocated on the HEAP and should be freed to prevent memory leaks.
+*   The return value should be use to indicate if the url in url_buffer is valid.
+*   Don't use the url_buffer if BAD_LINE is returned.
+*
+*   list: File stream to read from
+*   url_buffer: the url_buffer is placed in here weither good or bad
+*   data: Meta information allocated on the HEAP will be placed into here for the callee to use
+*
+*   return:
+*       GOOD_LINE if the line is a usable url
+*       BAD_LINE if the line isn't usable
+*       DONE if there is no more content to read
+*
+*/
+enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data);
 
 #endif

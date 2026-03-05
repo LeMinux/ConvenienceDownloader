@@ -4,7 +4,11 @@
 *.txt
 *.copy
 downloader
+new_downloader
 debug
 leak
-test
 Destinations/
+objects/
+deps/
+test_env/
+dir_env/

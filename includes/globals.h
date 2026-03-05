@@ -1,23 +1,53 @@
 #ifndef __GLOBALS_H
 #define __GLOBALS_H
 
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+
+#define VERSION "2026 3.1"
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
+#define YELLOW    "\033[33m"
 #define CYAN    "\033[36m"
-#define NO_ERROR 0
-#define HAD_ERROR -1
+
+#define MAX_DEPTH 2048
+#define INF_DEPTH -5
+#define META_SIZE 101
+#define META_LEN 100
+
+#define YOUTUBE_URL "https://www.youtube.com/watch?v="
+
+#define LEN_BEFORE_ID 32
+#define YT_ID_LEN 11
+
+#define YT_URL_INPUT_SIZE (LEN_BEFORE_ID + YT_ID_LEN + 1)
+#define YT_URL_INPUT_LEN YT_URL_INPUT_SIZE - 1
+#define YT_ID_SIZE 12
+
+enum ERROR {HAD_ERROR = -1, NO_ERROR = 0};
+enum CONFIG {NOT_A_CONFIG = -1, AUDIO_CONFIG = 1, VIDEO_CONFIG, COVER_CONFIG, BLACK_CONFIG};
+enum INPUT {SKIPPING = -2, INVALID, VALID};
+enum COVERS {THUMB_ART = 0, GIVEN_ART, NO_ART};
+enum FOUND_END {NOT_PRESENT = 0, WAS_PRESENT};
+//I'm not sure why the FOUND_END enum seems to not give warnings in this file, but do if it's in the userInput.h file.
+//The errors are occur when compiling the tests and they say information about forward declaring an enum.
+//My only guess is that testWrapInput.h doesn't know about the size of the enum?
 
 #define PRINT_ERROR(message_) ((void)fputs(RED message_ RESET"\n", stderr))
 
-//general failed malloc message
-#define FAILED_MALLOC_MSG "\nError MEM: Allocation of memory failed"
+//If you're a NASA programmer seeing this sorry for the variadic macro.
+//Although you probably don't like the usage of dynamic memory after initalization from the printf family anyway lol
+//Or really the code because I have a few things that go against the 10 rules.
+#define PRINT_FORMAT_ERROR(format_, ...) ((void)fprintf(stderr, RED format_ RESET"\n", __VA_ARGS__))
 
-#define YT_URL_INPUT_SIZE 44 //this is from the beginning of the URL to the end of the ID (32 + 11 + 1)
-#define YT_ID_SIZE 12
+#define ADVISE_USER(message_) ((void)puts(CYAN message_ RESET))
+#define ADVISE_USER_FORMAT(format_, ...) ((void)fprintf(stderr, CYAN format_ RESET"\n", __VA_ARGS__))
+
+#define WARN_USER(message_) ((void)puts(YELLOW message_ RESET))
+#define WARN_USER_FORMAT(format_, ...) ((void)fprintf(stderr, YELLOW format_ RESET"\n", __VA_ARGS__))
+
 
 #endif

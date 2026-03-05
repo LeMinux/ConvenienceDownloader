@@ -1,86 +1,214 @@
 # ConvenienceDownloader
-C program that uses yt-dlp and ffmpeg to download from youtube. First it downloads the video as a .mp4 into the current directory then converts to .mp3 depending on if you skipped that. It then moves the file(s) to the specified directory. Now yes, yt-dlp does already have these kind of features but I wanted to make this my first C project.
+
+Boiled down, this is wrapper for yt-dlp for my convenience that is tailored for Linux.
+This is the first C project that I made going back to when I made this as a freshman in college.
+My commit history will show the fun journey from lack of experience to hopefully better experience (please don't remind me of the function pointers).
+You may be wondering why I made this in C and not some easier language like python.
+Simple answer is I like C, and it's fun learning details at a much lower level.
+These little details are what helped me create a mind focused on security trying to understand how to make things not blow up.
+Hopefully, my code demonstrates my skills in trying to code securely, and is understandable so that flaws can be found.
 
 ## Initialization
-  - Type "make" to use the default execution of make which will create the "Destinations" directory if it does not exist. Running the code with ./download.out or make run will then ask for you to specify where to send video, audio, and cover art files.
+
+1. Type "make init" in a terminal in the directory where the makefile is to create the database needed.
+2. Type "make" in a terminal in the directory where the makefile is to create the binary.
+3. Execute the program with the -e/--edit [TYPE] and select the add option to add paths to the database.
 
 ## Usage
-  - General
 
-    When you run the program it will ask you specify where you want to send video and audio files. Here you are prompted to enter the number associated with that path. It is done this way because you may have many paths and typing the entire path out is annoying. However, note that the maximum number of paths you can have is 9999. You can also type skip to skip sending files for that type, or type exit to leave the program. After you enter where you you want to send video and audio files it will ask for a youtube URL. Youtube mobile urls will not work it has to be in the format of "https://www.youtube.com/watch?v=[11 character id]" like this "https://www.youtube.com/watch?v=Or4IE8fkpn4". Once that url has been downloaded and sent to where you wanted it will ask if you want to download again if you didn't specify a file, but if you did specify a file it continue to the next entry.
-  - default   
+downloader \[OPTIONS\]
 
-    Just the executable name. This downloads a single youtube video, but will prompt the user each time if they want to download more after finishing downloading. The user is also prompted each time per URL where to send MP4 and MP3 files. This will also download the youtube thumbnail and place it as a cover art.
-    
-  - -l
+- default behavior (Asking behavior)
 
-     List available directories as specified by the given parent directory in Destinations.    
-    During execution of the program the same list of available directories will be specified also.
-    
-  - -f 
+    Asking behavior is used if you do not give a file and is the default behavior.
+    This will prompt your asking you to type the index on where to send files.
+    The list is ordered in alphabetical order with the roots you have specified with their associated paths in alphabetical order.
+    If you want to select to add to the root path itself the first option for a root is always the slash.
+    Example:
+    ```
+     Root_A
+         /
+         /b/
+         /c/
+         /d/
 
-    This flag is useful in changing the behavior of program operation. Use this flag when you want to bulk send your downloads into one directory. Separate the list by newlines of youtube URLs, .mp3 file paths, and tags. This flag will only ask once where to send files, but in the file itself you can use tags to change where to send files.
+     Root_K
+         /
+         /a/
+         /a/b/
+         /b/
+         /c/
+    ```
 
-    These tags are
-    -  ![3, 4, or c]> <new directory path that exists when you use the -l flag>
-        - 3 to change where to send audio
-        - 4 to change where to send video
-        - c to change where to send cover arts
-    -  !s> [3, 4, or c]
-        - 3 is to skip downloading audio
-        - 4 is to skip downloading video
-        - c is to skip cover arts
+    If you want to skip a prompt because you don't want that type of file you can press enter.
+    The program will then use yt-dlp to download the file types and send them to the destinations your specified.
+    Mp4 files will have embedded metadata that yt-dlp adds, and mp3 files will have the metadata and thumbnail cover added.
+    This is included by default since I like how my audio players sorts the content based on the metadata.
+    After that URL has had its downloads, the program will ask if you want to download more in which case you can say yes/y to repeat the cycle or no/n to quit.
 
-      ```Ex: !3>Music/Wacky/```
+    Currently, when it comes to metadata it will always try to add a field.
+    When you specify one of the tags for metadata you are simply overwriting what was pulled from the page.
+    In some cases, like for albums, there may not be a metadata tag so it will be empty.
+    I have no way of setting metadata to empty yet, but I'm debating if I would like to add this feature.
+    When you do add your own metadata whether it's through the command line or by file the max length is 100 characters.
+    This should be plenty of room for most cases other than maybe the raw exception of a few artists.
+    If the metadata given is too long, the program will keep going, but it will truncate the metadata to 100 characters.
+    A warning message will be given in this case.
 
-      ```Ex: !3>Music/Wacky```
+## Options
 
-      ```Ex: !s>4```
+- -a, --artist ARTIST
 
-    **The write to destination flags (-w4, -w3, -wc) specified below are for providing root directories for the program to scan through. You can specify multiple, but you can only use one of these flags at a time and must separate each root path with a space when using the command.**
-    ```Ex: <executable> -w4 Music/Loud/ ../Funny/```
-    NOT
-    ```<executable> -w4 Music/Loud ../Funny/ -w3 Music/Smaller.```
+    Add an artist of your choosing to all downloaded content.
+    In the default mode this will add this artist in the metadata to every downloaded file.
+    In the file mode it will be the default option if there isn't an artist specified for that line.
+    Due to how I opted to use yt-dlp for the metadata adding, there are some characters you can't use.
+    The main ones being the opening and closing parenthesis as that's part of an output template syntax yt-dlp uses.
 
-  - -w4
+- -b, --album ALBUM
 
-    Used to specify the parent directory(s) on where to download MP4(video) files. Ex: Dir/ -> Dir/subdir(s) -> Dir/subdir(s)/subdir(s)/.../
-    
-  - -w3
+    Add an album of your choosing to all downloaded content.
+    In the default mode this will add this album in the metadata to every downloaded file.
+    In the file mode it will be the default option if there isn't an album specified for that line.
+    Due to how I opted to use yt-dlp for the metadata adding, there are some characters you can't use.
+    The main ones being the opening and closing parenthesis as that's part of an output template syntax yt-dlp uses.
 
-    Used to specify the parent directory(s) on where to send MP3(audio) files.
-    
-  - -wc  
+- -c, --cover PATH_TO_COVER_ART
 
-     Used to specify the parent directory(s) on where to send cover arts
-    
-  - -ca
+    If you want to add a cover art of your choosing to all downloaded content use this option.
+    In both asking and file behavior it will add the cover art to every downloaded mp3 file.
+    There used to be a NO-ART option, but this has been replaced for the -n/--no-cover option.
+    Since this conflicts with the no cover option you can't use this option in conjunction with it.
 
-    Used to write cover art to MP3 files. 
-    
-    This will overwrite the original files specified in the file given unless it is NO-ART.
-    
-    If this flag is combined with the -f flag it will add the cover art to each entry.
-    
-    Passing in "NO-ART" will just download the .mp3 file with no cover art. MP3 files that already have cover arts will not be affected by this option.
-- --keep-art (not implemented yet)
+- -d, --deep-list
 
-    Use this option if you want to keep the cover art downloaded. By default cover arts will not be kept, so use this to keep them.
-    Note that you can not keep cover arts and specify a cover art to use since these conflict with each other.
-    
-    ## Example Usage
-  
-  -```./download.out -f listOfURLs.txt``` downloads all urls in that list to where the user specifies during execution. This does not prompt per entry in the list. This also downloads the youtube thumbnail and places it into the .mp3.
-  
-  -```./download.out -f listOfURLsANDMP3.txt -ca coverArt.jpg``` downloads all urls and adds coverArt.jpg to .mp3 and sends them to the specified mp4 and mp3 directories
+    List all the paths in your database.
+    This will list your root paths along with their children paths in alphabetical order.
+    The program will exit after printing.
 
-  -```./download.out -f listOfURLsANDMP3.txt -ca NO-ART``` youtube urls will have their video downloaded but no thumbnail. Specifying .mp3 files though will simply move them, so it is useful to bulk move .mp3 files.
-  
-  -```./download.out -ca coverArt.png``` Adds the cover art for each audio you download. This will prompt for placement each time, but it will not ask to change the cover art (at least not yet).
+- -e, --edit TYPE
 
-  -```./download.out``` Downloads the youtube video and its thumbnail. The thumbnail is then added as a cover art to the .mp3. This is great for downloading unrelated videos and having .mp3 with their thumbnail.
+    This will then bring up a menu for you to select what action you want to conduct.
+    The type of config you want to edit can be specified in two ways.
+    In the short form you can use 'a' for audio, 'b' for blacklist, 'c' for covers, and 'v' for videos.
+    In the long form you can use 'audio', 'black', 'cover', and 'video'.
+    The audio config is for where your .mp3 files can be sent.
+    The video config is for where your .mp4 files can be sent.
+    The cover config is for where you can specify to download thumbnails from videos.
+    The blacklist is there for if you have cheeky directories that you don't want to send any content into.
+    An example is if you were to specify a larger parent directory like Documents, but don't want to send stuff into WordDocs.
+    The blacklist applies to all configs, so you can't have a blacklist for just video or audio destinations.
 
-  ## Features
-  - You are able to skip downloading videos or audios, but depending on what you choose you can only opt out of certain ones. For example if you choose to add cover art you can not skip downloading audio files since the purpose of this flag is to add cover art to them, but you can skip downloading videos.
-  - Can choose directories that are deeper than one in.
-  - You can use relative paths as long as you execute within the directory the executable is in. Ex: ../Music/Bangers instead of /home/User/Music/Bangers.
+   - Add
+        Asks you to add a new path and depth for that config.
+        This can be an absolute or relative path, but please note that the database does not store relative paths.
+        The relative path will be converted to an absolute path so that it can be used anywhere.
+
+   - Update
+        Assuming you have paths to update, you can specify the index of what root to update.
+        You can only update the depth of a path as updating the path is just a deletion.
+        There is special behavior to this option though.
+        If you have no intention of updating the depth you can skip it, and it will cause the program to search for subdirectories in that root.
+        This is useful if you want to just update one root because you have added extra subdirectories in there.
+        If it is found that this root path doesn't exist however, the root entry and its paths will be automatically removed.
+
+   - Delete
+        Assuming you have paths to delete, you can specify an index on what to delete.
+        This will remove the root entry and all of its children paths.
+
+- -f, --file URL_FILE
+
+    Use this option if you have a list of URLs you want to download.
+    Specifying a file changes the behavior away from asking, so you will only be prompted once where to send information.
+    This means everything in that file will be sent to the same destinations you give.
+    Just like asking however, any of the other options that add metadata or covers will be applied to all of URLs in the list.
+    As an example adding the --artist AHHHHHH will add AHHHHHH as the artist in the metadata for all the downloaded files in the list.
+    Another example of `./downloader --genre THIS --artist IS --album SPOOKY` will set the genre to 'THIS', artist to 'IS', and album to 'SPOOKY' for all downloaded content in the file.
+    However, it may be desirable to change this behavior, so a special syntax for file lines is given.
+    Each URL should be on a separate line in the format of YT_URL|GENRE:ARTIST:ALBUM:
+    Text after the pipe is there for if you want to change the metadata special for that line different from the overall metadata given at the command line.
+    If you don't want to add different metadata you can just include the URL without the pipe.
+    You also don't require the ending semicolon, but you can't skip colons in between if you are wanting to skip a metadata.
+    If you do want to skip a tag make sure to end it with an ending colon so it can be determined as empty.
+
+    Example:
+    ```
+    ./downloader --genre AUGH --artist BAM --album SLAP -f ./I_Dunno_Some_File.txt
+    Overall genre  -> AUGH
+    Overall artist -> BAM
+    Overall album  -> SLAP
+
+    https://www.youtube.com/watch?v=-7nfEMjaM1M                               //genre -> AUGH           artist -> BAM           album -> SLAP
+    https://www.youtube.com/watch?v=Ljt0Sv5qq78|Indie Rock:                   //genre -> Indie Rock     artist -> BAM           album -> SLAP
+    https://www.youtube.com/watch?v=Ljt0Sv5qq78|Indie Rock                    //genre -> Indie Rock     artist -> BAM           album -> SLAP
+    https://www.youtube.com/watch?v=FnxZWWr-5_o|Indie Rock:Motoroma           //genre -> Indie Rock     artist -> Motoroma      album -> SLAP
+    https://www.youtube.com/watch?v=FnxZWWr-5_o|Indie Rock:Motoroma:          //genre -> Indie Rock     artist -> Motoroma      album -> SLAP
+    https://www.youtube.com/watch?v=UeHd4wLrpJg|Indie Rock:Vacations:Vibes:   //genre -> Indie Rock     artist -> Vacations     album -> Vibes
+    https://www.youtube.com/watch?v=UeHd4wLrpJg|Indie Rock:Vacations:Vibes    //genre -> Indie Rock     artist -> Vacations     album -> Vibes
+
+
+    //skipping adding a different genre
+    https://www.youtube.com/watch?v=CdaWP8_RTA4|::WatchDogs:Deadbolt          //genre -> AUGH           artist -> WatchDogs     album -> Deadbolt
+
+    //skipping adding a different artist
+    https://www.youtube.com/watch?v=mmZGrvAvPZM|Game::Skyrim:                 //genre -> Game           artist -> BAM           album -> Skyrim
+
+    //Another way of skipping an album
+    https://www.youtube.com/watch?v=FnxZWWr-5_o|Indie Rock:Motoroma::          //genre -> Indie Rock     artist -> Motoroma      album -> SLAP
+    ```
+- -g, --genre GENRE
+
+    Add a genre of your choosing to all downloaded content.
+    In the default mode this will add this genre in the metadata to every downloaded file.
+    In the file mode it will be the default option if there isn't a genre specified for that line.
+    Due to how I opted to use yt-dlp for the metadata adding, there are some characters you can't use.
+    The main ones being the opening and closing parenthesis as that's part of an output template syntax yt-dlp uses.
+
+- -h, --help
+
+    List the help menu
+
+- -k, --keep-covers
+
+    Disabled by default.
+    Enable the ability to specify where to send thumbnails from what you download.
+    This will bring up another prompt on where to send downloaded files.
+
+
+- -l, --list
+
+    List just the root paths and their depth for every configuration.
+
+-n, --no-covers
+
+    Do not add any cover art to downloaded mp3 files.
+    This options conflicts with the -c/--cover option, so both flags can't be used at the same time.
+
+- -r, --refresh
+
+    This will go through every root file in the database and update them.
+    If a root file does not exist anymore it will be removed.
+    If a root file has new children they will be added to the database.
+    The idea is you don't change your directory paths very often, so to speed up Initialization the program doesn't parse all paths at the beginning anymore.
+
+- -s, --strict-meta (NOT IMPLEMENTED)
+
+    Use this option if you want to strictly use the metadata you provide.
+    The default behavior is to always add artist, album, and genre metadata information.
+    This means if you don't specify an artist it'll always try to add the youtuber that published the video as the artist in the Metadata.
+    If you don't want this and would rather keep that field blank use this option.
+    This way if you were to provide --artist <artist> and --album <album> it won't fill in the genre with a generic field.
+
+- -v, --version
+
+    Print the version number
+
+## Example Usage
+
+-`./download.out -f listOfURLs.txt` downloads all urls in that list to where the user specifies during execution. This does not prompt per entry in the list. This also downloads the youtube thumbnail and places it into the .mp3.
+
+-`./download.out -f listOfURLsANDMP3.txt -c ./coverArt.jpg` downloads all urls and adds coverArt.jpg to all .mp3 files and sends them to the specified mp4 and mp3 directories
+
+-`./download.out -n` no thumbnail are added to mp3 videos.
+
+-`./download.out -g "a genre" -b bangers -a FunnyGuy` Downloads in asking mode setting the metadata for genre to "a genre", albums to bangers, and the artist as FunnyGuy. Remember to quote strings that have spaces so the shell interprets it as one.

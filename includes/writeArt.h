@@ -1,29 +1,28 @@
-#ifndef COVERART_H
-#define COVERART_H
+#ifndef WRITE_ART_H
+#define WRITE_ART_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define ART_ERROR_MSG "Error in adding cover art to .mp3 file"
-#define MV_TEMP_MSG "Error in overwriting original file to place cover art"
-#define MP3_LIST_MSG "Error in opening MP3 list given. File does not exist"
-#define COVER_ART_MSG "Error in finding cover art. Cover art file does not exist."
+#include "execOthers.h"
+#include "fileOps.h"
 
-const static char FFMPEG [] = "ffmpeg";
-const static char DASH_I [] = " -i ";
-const static char OPTIONS [] = " -map 0:0 -map 1:0 -id3v2_version 3 -codec copy -metadata:s:v comment=\"Cover (front)\" ";
-const static char MV [] = "mv ";
+#define TEMP_FILE "/tmp/newly_added_art.mp3"
 
-
-//writes the specified image to the list of songs as mp3's
-//The full path should be specified per entry in the song file
-void writeCovers(FILE*, const char*);
-
-//writes to one song the specified cover art
-//this needs the songName as an mp3
-void writeCover(const char*, const char*);
-
-void removeCoverArt(const char* artName);
+/*
+*   Reads the file that yt-dlp makes that contains the file name and adds
+*   a given cover art to the file.
+*
+*   file_with_path: file path to the file yt-dlp created with the --print-to-file option
+*   cover_path: file path to the desired cover. Since FFMPEG doesn't allow in place
+*   editing the cover art is added to a temporary file in /tmp and then moved into
+*   place.
+*
+*   return:
+*       NO_ERROR if was able to write the cover art without an error
+*       HAD_ERROR if an error prevented writing the cover art
+*/
+enum ERROR writeCover(const char* file_with_path, const char* cover_path);
 
 #endif

@@ -1,29 +1,41 @@
 #ifndef FILEOPS_H
 #define FILEOPS_H
 
+#include <errno.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
-#include "helpers.h"
 #include "globals.h"
-
 
 #define CONVERT_FAIL_MSG "\nERROR CNVT: Error in converting from .mp4 to .mp3"
 
-//in dirent.h the max is 256 including nul terminator
-#define MAX_FILE_NAME 255
-#define NOT_A_DIR 0
+/*
+ *  Wrapper of fopen to check additonal properties.
+ *  These extra checks are for if the file is an actual file and not a directory as fopen won't NULL on directories.
+ *  Mostly this is for paths given from a user.
+ *
+ *  file_path: path to the file
+ *  mode: same mode you would give to fopen()
+ *
+ *  return:
+ *      NULL if couldn't open file or file is not a file
+ *      a FILE* if it could
+ */
+FILE* openFile(const char* file_path, const char* mode);
 
-int moveFile(const char* fileName, const char* destination);
-void getFileNameByID(const char* id, const char* extension, char* outString, int length);
-//void getSubdirectories(const char* basePath, Node_t** list);
-void convertToMp3(const char* songName);
-
-int checkIfExists(const char*);
-
-int validateDirPath(const char*);
+/*
+ *  Check if a path given is a directory, and exists.
+ *  Don't expect to be saved from race conditions since the database only holds paths.
+ *  Updates that happen on the OS will not be reflected in the database.
+ *  The conditions for being valid are if it's a directory, the end is not a link,
+ *  and if it's accessible
+ *
+ *   return: VALID if meets conditions INVALID otherwise.
+ */
+enum INPUT checkDirPath(const char* dir_path);
 
 #endif
