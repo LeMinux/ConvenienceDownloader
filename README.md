@@ -180,7 +180,7 @@ downloader \[OPTIONS\]
 
     List just the root paths and their depth for every configuration.
 
--n, --no-covers
+- -n, --no-covers
 
     Do not add any cover art to downloaded mp3 files.
     This options conflicts with the -c/--cover option, so both flags can't be used at the same time.
