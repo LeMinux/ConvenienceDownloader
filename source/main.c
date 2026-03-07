@@ -77,6 +77,7 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
     FILE* error_log = fopen("/tmp/con-downloader-errors.txt", "w");
     if(error_log == NULL){
         PRINT_ERROR("Could not create file for logging errors");
+        closeDatabase();
         exit(EXIT_FAILURE);
     }
 
@@ -149,13 +150,12 @@ static void executeWithList(FILE* list, const MetaData_t* overall_meta_info, enu
 //NEED TO ENFORCE A SIZE ON THE METADATA
 //might as well ger ride of malloc usage there
 int main(int argc, char** argv){
-    if(initDatabase() == HAD_ERROR){
-        exit(EXIT_FAILURE);
-    }
+    if(initDatabase() == HAD_ERROR) exit(EXIT_FAILURE);
 
     FILE* cover_art = NULL;
     FILE* url_list = NULL;
 
+    int exit_status = EXIT_SUCCESS;
     int opt = 0;
     int parsing = 1;
     int edit_choice  = -1;
@@ -209,13 +209,16 @@ int main(int argc, char** argv){
             case 'c':
                 if(cover_mode != THUMB_ART){
                     PRINT_ERROR("Can not specify both cover modes as they conflict");
-                    exit(EXIT_FAILURE);
+                    goto end_program;
                 }
+
                 cover_art = openFile(optarg, "r");
                 if(cover_art == NULL){
                     PRINT_ERROR("Couldn't open provided cover file\n");
-                    exit(EXIT_FAILURE);
+                    exit_status = EXIT_FAILURE;
+                    goto end_program;
                 }
+
                 //can be a TOCTOU, but this is handed off to another program
                 //so not like I can use the fd anyway.
                 fclose(cover_art);
@@ -226,9 +229,9 @@ int main(int argc, char** argv){
             case 'd':
                 if(listAllRootWithPaths() == HAD_ERROR){
                     PRINT_ERROR("Sorry couldn't list all paths :(");
-                    exit(EXIT_FAILURE);
+                    exit_status = EXIT_FAILURE;
                 }
-                exit(EXIT_SUCCESS);
+                goto end_program;
             break;
 
             case 'e':
@@ -237,16 +240,17 @@ int main(int argc, char** argv){
                     editMenu(edit_choice);
                 }else{
                     PRINT_ERROR("Configs to edit are audio (a), black (b), video (v), and cover (c)");
-                    exit(EXIT_FAILURE);
+                    exit_status = EXIT_FAILURE;
                 }
-                exit(EXIT_SUCCESS);
+                goto end_program;
             break;
 
             case 'f':
                 url_list = openFile(optarg, "r");
                 if(url_list == NULL){
                     PRINT_ERROR("Couldn't open provided URL file\n");
-                    exit(EXIT_FAILURE);
+                    exit_status = EXIT_FAILURE;
+                    goto end_program;
                 }
             break;
 
@@ -274,7 +278,7 @@ int main(int argc, char** argv){
                     "-v, --version\t\t\tPrint the current version\n"
                     ,argv[0]
                 );
-                exit(EXIT_SUCCESS);
+                goto end_program;
             break;
 
             case 'k':
@@ -284,15 +288,16 @@ int main(int argc, char** argv){
             case 'l':
                 if(listAllRoots() == HAD_ERROR){
                     PRINT_ERROR("Sorry couldn't list root paths :(");
-                    exit(EXIT_FAILURE);
+                    exit_status = EXIT_FAILURE;
                 }
-                exit(EXIT_SUCCESS);
+                goto end_program;
             break;
 
             case 'n':
                 if(cover_mode != THUMB_ART){
                     PRINT_ERROR("Can not specify both cover modes as they conflict");
-                    exit(EXIT_FAILURE);
+                    exit_status = EXIT_FAILURE;
+                    goto end_program;
                 }
 
                 cover_mode = NO_ART;
@@ -304,7 +309,7 @@ int main(int argc, char** argv){
                 }else{
                     ADVISE_USER("Database refreshed!");
                 }
-                exit(EXIT_SUCCESS);
+                goto end_program;
             break;
 
             case 's':
@@ -313,11 +318,11 @@ int main(int argc, char** argv){
 
             case 'v':
                 puts(VERSION);
-                exit(EXIT_SUCCESS);
+                goto end_program;
             break;
 
             default:
-                exit(EXIT_FAILURE);
+                goto end_program;
             break;
         }
     } //end of arg parsing
@@ -330,13 +335,15 @@ int main(int argc, char** argv){
     if(download_covers == YES){
         if(getNumOfPathRowsForConfig(COVER_CONFIG) == 0){
             ADVISE_USER("You need to add some cover destinations with --edit");
-            exit(EXIT_FAILURE);
+            exit_status = EXIT_FAILURE;
+            goto end_program;
         }
     }else{
         if(getNumOfPathRowsForConfig(VIDEO_CONFIG) == 0 &&
             getNumOfPathRowsForConfig(AUDIO_CONFIG) == 0){
             ADVISE_USER("You need to add audio and video destinations with --edit");
-            exit(EXIT_FAILURE);
+            exit_status = EXIT_FAILURE;
+            goto end_program;
         }
     }
 
@@ -347,5 +354,7 @@ int main(int argc, char** argv){
         (void)fclose(url_list);
     }
 
+    end_program:
+    closeDatabase();
     return EXIT_SUCCESS;
 }
