@@ -27,9 +27,9 @@ static void clearLine(FILE* stream){
 *   The actual ID portion is passed in since that gives more control, and the
 *   caller gives what they believe is the id segment.
 *
-*   id_segment: character array of YT_ID_LEN + 1 size
+*   id_segment: character array of YT_ID_SIZE
 */
-static enum INPUT validIDPortion(const char* id_segment){
+static enum INPUT validIDPortion(const char id_segment[YT_ID_SIZE]){
     assert(id_segment != NULL);
     assert(strlen(id_segment) == YT_ID_LEN);
 

@@ -180,7 +180,6 @@ size_t sanitizeMetaString(char* meta_arg);
 *       DONE if there is no more content to read
 *
 */
-
 enum FILE_INPUT readFileLine(FILE* list, char url_buffer[YT_URL_INPUT_SIZE], MetaData_t* data);
 
 #endif
