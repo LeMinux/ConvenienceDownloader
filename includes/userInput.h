@@ -46,7 +46,7 @@ enum FILE_INPUT {BAD_LINE = -1, DONE, GOOD_LINE};
 *    Don't try to use the ID if INVALID is passed as this method won't overwrite
 *    previous contents so you will use what ever was in ret_id before calling.
 */
-enum INPUT getURLFromUser(char* ret_url);
+enum INPUT getURLFromUser(char ret_url[YT_URL_INPUT_SIZE]);
 
 /*
 *	downloads a song given the URL for it
@@ -167,13 +167,12 @@ size_t sanitizeMetaString(char* meta_arg);
 /*
 *   Reads a line from the user's given file from the --file option and parses meta information.
 *   Meta information that is found is added to the passed by reference MetaData_t parameter.
-*   This information is allocated on the HEAP and should be freed to prevent memory leaks.
 *   The return value should be use to indicate if the url in url_buffer is valid.
 *   Don't use the url_buffer if BAD_LINE is returned.
 *
 *   list: File stream to read from
-*   url_buffer: the url_buffer is placed in here weither good or bad
-*   data: Meta information allocated on the HEAP will be placed into here for the callee to use
+*   url_buffer: the url_buffer is placed in here wether good or bad
+*   data: Meta information will be placed into here for the callee to use
 *
 *   return:
 *       GOOD_LINE if the line is a usable url
@@ -181,6 +180,7 @@ size_t sanitizeMetaString(char* meta_arg);
 *       DONE if there is no more content to read
 *
 */
-enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data);
+
+enum FILE_INPUT readFileLine(FILE* list, char url_buffer[YT_URL_INPUT_SIZE], MetaData_t* data);
 
 #endif

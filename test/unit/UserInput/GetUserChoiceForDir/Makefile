@@ -5,7 +5,7 @@ SOURCE_CODE_DIR:=../../../../source
 INCLUDES:=-I../../../../includes -I./includes
 
 CC:=gcc
-COMPILER_FLAG:=-DPREVENT_INTERNAL_LINKAGE -DTESTING
+COMPILER_FLAG:=-DPREVENT_INTERNAL_LINKAGE -DUSE_TESTING_DB
 DEP_FLAGS :=-MP -MD
 C_FLAGS :=-Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes \
 		  -Wmissing-prototypes -Wstrict-overflow=5 -Wwrite-strings

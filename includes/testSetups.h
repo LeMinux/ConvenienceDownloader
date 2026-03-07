@@ -145,7 +145,7 @@ int createTestDBWithRootsAndPaths(void** state);
 /*
 * closes in memory database
 */
-int closeDB(void** state);
+int closeTestDB(void** state);
 
 /*
 * Helper function to add an extra root entry into the database.

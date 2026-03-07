@@ -228,7 +228,7 @@ int createTestDBWithRootsAndPaths(void** state){
     return 0;
 }
 
-int closeDB(void** state){
+int closeTestDB(void** state){
     (void)sqlite3_close(*state);
     return 0;
 }

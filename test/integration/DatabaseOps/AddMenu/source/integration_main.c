@@ -3,31 +3,31 @@
 const char* init_db_path = "../../../../source/initDB.sql";
 
 int main(void){
-    #ifndef TESTING
-        fprintf(stderr, "Need to define the TESTING conditional compiler flag when compiling\n");
+    #ifndef USE_TESTING_DB
+        fprintf(stderr, "Need to define the USE_TESTING_DB conditional compiler flag when compiling\n");
         exit(EXIT_FAILURE);
     #endif
 
     const struct CMUnitTest add_tests[] = {
-        cmocka_unit_test_setup_teardown(testAddMenuCatchesInvalidPath, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuCatchesInvalidDepth, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuCatchesPathInBlackList, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuCatchesDuplicateNameAndType, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuCatchesSkippingPath, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuCatchesSkippingDepth, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesInvalidPath, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesInvalidDepth, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesPathInBlackList, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesDuplicateNameAndType, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesSkippingPath, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuCatchesSkippingDepth, createTestDB, closeTestDB),
 
-        cmocka_unit_test_setup_teardown(testAddMenuEnterInfInputOnRootDir, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuMaxDepth, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuLargerDepthThanWhatRootHas, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuSmallerDepthThanWhatRootHas, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuZeroDepthOnRoot, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuOneDepthOnRoot, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testAddMenuEnterInfInputOnRootDir, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuMaxDepth, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuLargerDepthThanWhatRootHas, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuSmallerDepthThanWhatRootHas, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuZeroDepthOnRoot, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuOneDepthOnRoot, createTestDB, closeTestDB),
 
-        cmocka_unit_test_setup_teardown(testAddMenuToBlackList, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuToVideoConfig, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuToCoverConfig, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuDuplicateNameButDiffConfigType, createTestDB, closeDB),
-        cmocka_unit_test_setup_teardown(testAddMenuPathIsInBlackList, createTestDB, closeDB),
+        cmocka_unit_test_setup_teardown(testAddMenuToBlackList, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuToVideoConfig, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuToCoverConfig, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuDuplicateNameButDiffConfigType, createTestDB, closeTestDB),
+        cmocka_unit_test_setup_teardown(testAddMenuPathIsInBlackList, createTestDB, closeTestDB),
     };
 
     return cmocka_run_group_tests(add_tests, NULL, NULL);

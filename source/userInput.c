@@ -3,22 +3,23 @@
 #include "../includes/databaseOps.h"
 
 /*
-*	 helper method to flush the stream to the next line.
-*	 This does not use fflush because it is meant for output streams not input,
-*	 this should be used after user input is taken
-*	 To avoid having to press enter twice consider where the new line character
-*	 is when parsing the input
+*   helper method to flush the stream to the next line.
+*   This does not use fflush because it is meant for output streams not input,
+*   this should be used after user input is taken
+*   To avoid having to press enter twice consider where the new line character
+*   is when parsing the input
 *
-*	stream: file stream to take input from
+*   stream: file stream to take input from
 */
 static void clearLine(FILE* stream){
-	int data = '\0';
-	while ((data = getc(stream)) != '\n' && data != EOF) { }
+    int data = '\0';
+    while((data = getc(stream)) != '\n' && data != EOF) { }
 
-	if(ferror(stream)){
-		PRINT_ERROR("Encountered a stream error while clearing the file/stream");
-		exit(EXIT_FAILURE);
-	}
+    if(ferror(stream)){
+        PRINT_ERROR("Encountered a stream error while clearing!\n Input is now undetermined and the program will exit.");
+        closeDatabase();
+        exit(EXIT_FAILURE);
+    }
 }
 
 /*
@@ -137,7 +138,7 @@ static void printQuestion(enum CONFIG type){
         case AUDIO_CONFIG: puts("Where do you want to send audio files?"); break;
         case VIDEO_CONFIG: puts("Where do you want to send video files?"); break;
         case COVER_CONFIG: puts("Where do you want to send cover arts?"); break;
-        default: exit(EXIT_FAILURE); break;
+        default: exit(EXIT_FAILURE); break; //really just to appease the compiler
     }
 }
 
@@ -170,6 +171,7 @@ size_t boundedInput(FILE* stream, char* dest, size_t dest_size, enum FOUND_END* 
             case EOF:
                 if(ferror(stream)){
                     PRINT_ERROR("Encountered an error reading stream for input!\n Input is a core function of the program thus this is unrecoverable and the program will exit.");
+                    closeDatabase();
                     exit(EXIT_FAILURE);
                 }
                 found_end = YES;
@@ -324,7 +326,7 @@ int takeDepthInput(void){
 
 //YT urls that have stuff like the radio or playlist in the URL is fine
 //since the only important part is the URL and the ID.
-enum INPUT getURLFromUser(char* ret_url){
+enum INPUT getURLFromUser(char ret_url[YT_URL_INPUT_SIZE]){
     assert(ret_url != NULL);
 
     (void)printf("Enter the youtube URL that you want to download -> ");
@@ -455,7 +457,10 @@ size_t sanitizeMetaString(char* meta_arg){
 
 //I am aware that if a metatag being added contains a colon then it'll stop
 //at the colon since I have no form of escaping it.
-enum FILE_INPUT readFileLine(FILE* list, char* url_buffer, MetaData_t* data){
+enum FILE_INPUT readFileLine(FILE* list, char url_buffer[YT_URL_INPUT_SIZE], MetaData_t* data){
+    assert(list != NULL);
+    assert(data != NULL);
+
     char file_line [FILE_LINE_BUF_SIZE];
     enum FOUND_END end_line;
     size_t line_len = boundedInput(list, file_line, FILE_LINE_BUF_SIZE, &end_line);

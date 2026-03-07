@@ -3,8 +3,8 @@
 const char* init_db_path = "../../../../source/initDB.sql";
 
 int main(void){
-    #ifndef TESTING
-        fprintf(stderr, "Need to define the TESTING conditional compiler flag when compiling\n");
+    #ifndef USE_TESTING_DB
+        fprintf(stderr, "Need to define the USE_TESTING_DB conditional compiler flag when compiling\n");
         exit(EXIT_FAILURE);
     #endif
 
@@ -15,5 +15,5 @@ int main(void){
         cmocka_unit_test(testDownloadVideoPartialMetaDataFillsRestWithPageContent),
     };
 
-    return cmocka_run_group_tests(download_video_tests, createTestDB, closeDB);
+    return cmocka_run_group_tests(download_video_tests, createTestDB, closeTestDB);
 }
