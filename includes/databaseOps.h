@@ -17,7 +17,7 @@ enum OPTIONS {ADD_OPT = '1', UPT_OPT, DEL_OPT, EXT_OPT};
 //connections calls within the file have to be done
 //Now yes to make testing easier I could return a sqlite*.
 //However, I want to experiment with file bound variables, and what that means for testing.
-#ifdef TESTING
+#ifdef USE_TESTING_DB
 
 #define TESTING_CONFIG_DB ":memory:"
 
@@ -32,6 +32,16 @@ void __testingSetDB(sqlite3* testing_db);
 *   return: NO_ERROR if could open database HAD_ERROR otherwise
 */
 enum ERROR initDatabase(void);
+
+
+/*
+ *  Closes the single database connection static to the file.
+ *  Although it's not completely necessary as when the program exits
+ *  the OS will conduct automatic clean up this will at least ensure
+ *  the database can cleanly rollback if needed.
+ *
+ */
+void closeDatabase(void);
 
 /*
 *   Function to refresh the database by checking what paths still exists.

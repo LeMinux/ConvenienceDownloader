@@ -734,6 +734,10 @@ enum ERROR initDatabase(void){
     return init_status;
 }
 
+void closeDatabase(void){
+    (void)sqlite3_close(single_database_connection);
+}
+
 
 enum ERROR refreshDatabase(void){
     assert(single_database_connection != NULL);
@@ -1176,7 +1180,7 @@ enum ERROR listAllRootWithPaths(){
     return NO_ERROR;
 }
 
-#ifdef TESTING
+#ifdef USE_TESTING_DB
 
 void __testingSetDB(sqlite3* testing_db){
     single_database_connection = testing_db;
