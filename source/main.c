@@ -356,5 +356,5 @@ int main(int argc, char** argv){
 
     end_program:
     closeDatabase();
-    return EXIT_SUCCESS;
+    return exit_status;
 }
