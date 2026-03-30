@@ -377,7 +377,7 @@ enum CONFIG getConfigToEdit(const char* input){
             case 'V': case 'v': return VIDEO_CONFIG; break;
             case 'C': case 'c': return COVER_CONFIG; break;
             case 'B': case 'b': return BLACK_CONFIG; break;
-            default: return -1; break;
+            default: return NOT_A_CONFIG; break;
         }
     }else if(input_length == OPTION_LEN){
         if(strcasecmp(input, AUDIO_STRING) == 0){
