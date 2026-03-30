@@ -12,6 +12,8 @@
 *   stream: file stream to take input from
 */
 static void clearLine(FILE* stream){
+    assert(stream != NULL);
+
     int data = '\0';
     while((data = getc(stream)) != '\n' && data != EOF) { }
 
@@ -60,6 +62,8 @@ static enum INPUT validIDPortion(const char id_segment[YT_ID_SIZE]){
 *   url_len: The length of the input taken
 */
 static enum INPUT validateURL(const char* url, size_t url_len){
+    assert(url != NULL);
+
     char* begin_point = NULL;
     if((begin_point = strstr(url, YOUTUBE_URL)) == NULL || begin_point - url != 0){
         ADVISE_USER_FORMAT("'%s' is not a youtube URL. It should look like %sXXXXXXXXXXX", url, YOUTUBE_URL);
